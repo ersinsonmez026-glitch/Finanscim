@@ -800,11 +800,10 @@ function monthlyRows(ym){
       amount:debtTL(d), status:'bekliyor' });
   });
   state.kmhAccounts.forEach(k=>{
-    // Ödenecek Borç, KMH'de her zaman Toplam Borç (k.debt) ile AYNI merkezi değeri kullanır —
-    // ayrı bir sayı olarak ikinci kez hesaplanmaz. KMH döner bir hesap olduğu için "ödendi"
-    // durumu SADECE borç tamamen kapandığında (debt<=0) oluşur — kısmi bir ödeme, kalan
-    // borcun Aylık Borç'tan tamamen düşmesine yol AÇMAZ.
-    const amt = k.debt||0;
+    // Aylık Borç'a KMH'nin yalnızca bu dönem ödenmesi planlanan tutarı (Ödenecek Borç) dahil
+    // edilir — toplam revolving bakiyenin tamamı değil. Ödenecek Borç ödenip sıfırlanınca satır
+    // tamamen kalkar, böylece Toplam Borç ile Aylık Borç aynı tutarı iki kez saymaz.
+    const amt = k.plannedPayment||0;
     if(amt>0){
       rows.push({ kind:'kmh', refId:k.id, key:k.id+'#'+ym, day:k.dueDay||1, name:bankByCode(k.bankCode).name+' KMH', cat:'kmh',
         amount:amt, status: periodStatus(false, ym, k.dueDay) });
@@ -1096,7 +1095,10 @@ function renderCards(){
       const debt = c.totalDebt||0;
       const remainingLimit = (c.limit||0) - debt;
       const paid = !!(st && st.status==='odendi');
-      const statusKey = periodStatus(paid, state.selectedMonth, c.dueDay);
+      // Borç yoksa (Toplam Borç = 0 ve bu ay için ödenecek bir miktar da yoksa) hiçbir zaman
+      // GECİKTİ/BEKLİYOR gösterme — doğrudan ÖDENDİ (yeşil) say.
+      const noOutstanding = debt<=0 && (!st || (st.amount||0)<=0);
+      const statusKey = noOutstanding ? 'odendi' : periodStatus(paid, state.selectedMonth, c.dueDay);
       const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
       return `<div class="record-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}">
         <div class="record-top">
@@ -1133,10 +1135,12 @@ function renderKmh(){
   return state.kmhAccounts.map(k=>{
       const bank = bankByCode(k.bankCode);
       const debt = k.debt||0;
+      const planned = k.plannedPayment||0;
       const remainingLimit = (k.limit||0) - debt;
-      // KMH döner bir hesap: borç tamamen kapanmadıkça (debt<=0) ÖDENDİ sayılmaz — kısmi bir
-      // ödeme yapılmış olsa bile kalan borç hâlâ "ödenmesi gereken" bir tutardır.
-      const statusKey = periodStatus(debt<=0, currentYm(), k.dueDay);
+      // Toplam Borç ve Ödenecek Borç birbirinden BAĞIMSIZ iki değerdir: Toplam Borç KMH'nin
+      // güncel toplam bakiyesi, Ödenecek Borç ise kullanıcının bu dönem ödemek üzere ayırdığı
+      // tutardır. İkisi de sıfırsa (hiç borç kalmamışsa) hesap GECİKTİ/BEKLİYOR değil, ÖDENDİ sayılır.
+      const statusKey = (debt<=0 && planned<=0) ? 'odendi' : periodStatus(false, currentYm(), k.dueDay);
       const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
       const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
       return `<div class="record-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}">
@@ -1152,7 +1156,7 @@ function renderKmh(){
         <div class="record-stats">
           <div class="record-stat"><div class="l">Toplam Limit</div><div class="v">${formatTL(k.limit||0)}</div></div>
           <div class="record-stat"><div class="l">Toplam Borç</div><div class="v">${formatTL(debt)}</div></div>
-          <div class="record-stat"><div class="l">Ödenecek Borç</div><div class="v">${formatTL(debt)}</div></div>
+          <div class="record-stat"><div class="l">Ödenecek Borç</div><div class="v">${formatTL(planned)}</div></div>
           <div class="record-stat"><div class="l">Kalan Limit</div><div class="v">${formatTL(remainingLimit)}</div></div>
         </div>
         <div class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</div>
@@ -1208,6 +1212,7 @@ function renderDebts(){
   return `<div class="section-title">Toplam Elden Borcum: ${formatTL(total)}</div>` +
     state.debts.map(d=>{
       const ic = DEBT_TYPE_ICONS[d.debtType] || DEBT_TYPE_ICONS.TL;
+      const statusKey = d.paid ? 'odendi' : 'bekliyor';
       return `
       <div class="item-card" data-action="open-modal" data-modal="viewDebt" data-id="${d.id}" data-lp-type="debt" data-lp-id="${d.id}">
         <div class="item-top">
@@ -1215,12 +1220,12 @@ function renderDebts(){
             <span class="cat-icon" style="background:${ic.bg};color:${ic.color}">${ic.icon}</span>
             <div><p class="item-title">${esc(d.person)}</p><p class="item-sub">${d.direction==='borcum'?'Benim borcum':'Bana borcu'} · ${debtDisplay(d)}</p></div>
           </div>
-          <div class="item-amt">${formatTL(debtTL(d))}</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+            <span class="record-status-pill ${statusKey}">${statusKey==='odendi'?'ÖDENDİ':'BEKLİYOR'}</span>
+            <div class="item-amt">${formatTL(debtTL(d))}</div>
+          </div>
         </div>
-        <div class="item-meta-row">
-          <span class="pill ${d.paid?'odendi':'bekliyor'}">${d.paid?'ödendi':'bekliyor'}</span>
-          <span>${d.date||''}</span>
-        </div>
+        ${d.date?`<div class="item-meta-row" style="justify-content:flex-end;"><span>${d.date}</span></div>`:''}
       </div>`;
     }).join('') + addCard;
 }
@@ -1357,16 +1362,18 @@ const modalTemplates = {
     const k = state.kmhAccounts.find(x=>x.id===id);
     const bank = bankByCode(k.bankCode);
     const debt = k.debt||0;
+    const planned = k.plannedPayment||0;
     const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
     return `
     <h3>${bank.name} — KMH Ayarları</h3>
     <div class="field"><label>KMH Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${k.limit?k.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
     <div class="field"><label>Toplam Borç (TL)</label><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${debt?debt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+    <div class="field"><label>Ödenecek Borç (TL)</label><input id="f_planned" type="text" inputmode="numeric" class="tl-input" value="${planned?planned.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+    <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 12px;">Bu dönem ödemek üzere ayırdığınız tutar — toplam borcunuzun tamamı olmak zorunda değildir.</p>
     <div class="field"><label>Son Ödeme Günü</label>${dayWheel('kmhDayChoice', k.dueDay)}</div>
     <p class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
-    <div class="field" style="margin-top:14px;"><label>Bu Ay Ödediğiniz Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-    <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 0;">Girilen tutar, yukarıdaki Toplam Borç'tan düşülerek kaydedilir.</p>
     <button class="save-btn" data-action="save-kmh-settings" data-id="${id}">Kaydet</button>
+    ${planned>0?`<button class="save-btn" style="background:var(--paid);margin-top:8px;" data-action="mark-kmh-paid" data-id="${id}">Ödenecek Borcu Ödendi Olarak İşaretle</button>`:''}
     <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
     <button class="danger-btn" data-action="delete-kmh" data-id="${id}">KMH Hesabını Sil</button>
   `; },
@@ -1756,17 +1763,30 @@ document.body.addEventListener('click', function(e){
     save(); closeModal(); navigate('kmh'); return;
   }
   if(action==='save-kmh-settings'){
-    // KMH'de Toplam Borç ve Ödenecek Borç TEK bir merkezi değeri (k.debt) paylaşır — ikisi de
-    // aynı anda değişir, hiçbir zaman ayrı ayrı iki kez hesaplanmaz (bkz. talimat: KMH borcu
-    // ana sayfada iki kez hesaplanmamalı). "Bu Ay Ödediğiniz Tutar" girilen Toplam Borç'tan
-    // doğrudan düşülür — kısmi bir ödeme kalan borcu Aylık Borç'tan tamamen SİLMEZ.
-    const id=t.dataset.id, limit=tlVal('f_limit'), totalDebtInput=tlVal('f_totalDebt'), paid=tlVal('f_amount');
+    // Toplam Borç (k.debt) ve Ödenecek Borç (k.plannedPayment) BİRBİRİNDEN BAĞIMSIZ iki alandır:
+    // Toplam Borç KMH'nin güncel toplam bakiyesi, Ödenecek Borç ise kullanıcının bu dönem
+    // ödemek üzere ayırdığı (Toplam Borç'un tamamı olmak zorunda olmayan) tutardır. Burada
+    // ikisi de doğrudan kullanıcının girdiği değere ayarlanır — biri diğerinden hesaplanmaz.
+    const id=t.dataset.id, limit=tlVal('f_limit'), totalDebtInput=tlVal('f_totalDebt'), plannedInput=tlVal('f_planned');
     if(!limit){ alert('KMH limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
     const k = state.kmhAccounts.find(x=>x.id===id);
     if(k){
       k.limit = limit; k.dueDay = day;
-      k.debt = Math.max(0, totalDebtInput - paid);
+      k.debt = totalDebtInput;
+      k.plannedPayment = Math.min(plannedInput, totalDebtInput);
+    }
+    save(); closeModal(); render(); return;
+  }
+  if(action==='mark-kmh-paid'){
+    // Kullanıcı, o an ayrılmış Ödenecek Borç tutarını ödendi olarak işaretler: bu tutar hem
+    // Toplam Borç'tan hem (dolayısıyla) Aylık Borç'tan aynı anda düşer, Ödenecek Borç sıfırlanır,
+    // Toplam Limit hiç değişmez.
+    const id=t.dataset.id;
+    const k = state.kmhAccounts.find(x=>x.id===id);
+    if(k){
+      const planned = k.plannedPayment||0;
+      k.debt = Math.max(0, (k.debt||0) - planned);
       k.plannedPayment = 0;
     }
     save(); closeModal(); render(); return;
@@ -1924,15 +1944,18 @@ document.body.addEventListener('click', function(e){
       return;
     }
     if(kind==='kmh'){
-      // Aylık sayfadaki hızlı geçiş: borcu tamamen kapatır/geri açar. Kalan bakiyeyi düzeltmek
-      // (kısmi ödeme) için KMH sayfasındaki ayrıntılı "Bu Ay Ödediğiniz Tutar" alanı kullanılır.
+      // Aylık sayfadaki hızlı geçiş: o an ayrılmış Ödenecek Borç tutarını öder/geri açar.
+      // Toplam Borç'un tamamını değil, sadece bu dönem için planlanan tutarı etkiler.
       const k = state.kmhAccounts.find(x=>x.id===t.dataset.ref);
       if(k){
-        if((k.debt||0) <= 0 && k.lastPayoff){
-          k.debt = k.lastPayoff; k.lastPayoff = 0;
-        } else if((k.debt||0) > 0){
-          k.lastPayoff = k.debt;
-          k.debt = 0;
+        if((k.plannedPayment||0) <= 0 && k.lastPlanned){
+          k.plannedPayment = k.lastPlanned;
+          k.debt = (k.debt||0) + k.lastPlanned;
+          k.lastPlanned = 0;
+        } else if((k.plannedPayment||0) > 0){
+          k.lastPlanned = k.plannedPayment;
+          k.debt = Math.max(0, (k.debt||0) - k.plannedPayment);
+          k.plannedPayment = 0;
         }
         save(); render();
       }
@@ -2070,8 +2093,8 @@ function get_cash_debt_data(){
     tutar_tl: debtTL(d), odendi: !!d.paid }));
 }
 function get_kmh_data(){
-  return state.kmhAccounts.map(k=>{ const debt = k.debt||0;
-    return { banka:bankByCode(k.bankCode).name, limit:k.limit||0, toplam_borc:debt, odenecek_borc:debt,
+  return state.kmhAccounts.map(k=>{ const debt = k.debt||0; const planned = k.plannedPayment||0;
+    return { banka:bankByCode(k.bankCode).name, limit:k.limit||0, toplam_borc:debt, odenecek_borc:planned,
       kalan_limit:(k.limit||0)-debt, gunluk_yaklasik_faiz: Math.round(debt*(KMH_MONTHLY_INTEREST_RATE/30)) }; });
 }
 function get_monthly_payments(month){ return monthlyRows(month||state.selectedMonth); }
@@ -2165,15 +2188,17 @@ KURALLAR:
 6) Cevapların kısa, net ve samimi bir Türkçeyle olsun — gereksiz uzatma.`;
 }
 
-async function callGemini(contents, thinkingLevel){
-  const key = getORKey();
-  if(!key) throw new Error('API anahtarı ayarlanmamış. Lütfen önce 🤖 simgesinden anahtarını gir.');
-  const body = {
-    system_instruction: { parts:[{ text: buildAiSystemPrompt() }] },
-    contents,
-    tools: [{ functionDeclarations: AI_READ_TOOLS.concat(AI_ACTION_TOOLS) }],
-    generationConfig: { thinkingConfig: { thinkingLevel: thinkingLevel || 'low' } },
-  };
+// Gemini'nin "düşünme seviyesi" alanı için tek bir yerden hem yeni (thinkingLevel enum)
+// hem eski (thinkingBudget sayısal) API sözleşmesini üretiyoruz; hangisi kabul edilmiyorsa
+// aşağıdaki callGemini() otomatik olarak generationConfig'siz bir yedek deneme yapıyor,
+// böylece API'nin tam olarak hangi alanı beklediğinden bağımsız olarak asistan çalışmaya devam eder.
+function buildGenerationConfig(thinkingLevel){
+  const level = thinkingLevel || 'low';
+  const budget = level==='medium' ? 1024 : 0; // basit komut: düşünmeyi kapat (en hızlı), karmaşık: sınırlı bütçe
+  return { thinkingConfig: { thinkingLevel: level, thinkingBudget: budget } };
+}
+
+async function geminiRequest(key, body){
   let resp;
   try{
     resp = await fetch(GEMINI_API_URL + '?key=' + encodeURIComponent(key), {
@@ -2182,20 +2207,60 @@ async function callGemini(contents, thinkingLevel){
       body: JSON.stringify(body),
     });
   }catch(networkErr){
-    throw new Error('Yapay zekaya bağlanılamadı. İnternet bağlantını kontrol edip tekrar dener misin?');
+    const e = new Error('Yapay zekaya bağlanılamadı. İnternet bağlantını kontrol edip tekrar dener misin?');
+    e.kind = 'network';
+    throw e;
   }
   if(!resp.ok){
-    if(resp.status===401 || resp.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
-    if(resp.status===429) throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
-    throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
+    let detail = '';
+    try{ detail = await resp.text(); }catch(_e){}
+    if(detail) console.error('Gemini API hatası ('+resp.status+'):', detail);
+    const e = new Error('http_'+resp.status);
+    e.status = resp.status;
+    e.detail = detail;
+    throw e;
   }
   let data;
   try{ data = await resp.json(); }
-  catch(e){ throw new Error('Yapay zekadan beklenmeyen bir cevap geldi, lütfen tekrar dener misin?'); }
+  catch(e2){ const e = new Error('Yapay zekadan beklenmeyen bir cevap geldi, lütfen tekrar dener misin?'); e.kind='parse'; throw e; }
   const candidate = data.candidates && data.candidates[0];
   const parts = candidate && candidate.content && candidate.content.parts;
-  if(!parts || !parts.length) throw new Error('Yapay zekadan boş bir cevap geldi, lütfen tekrar dener misin?');
+  if(!parts || !parts.length){
+    const e = new Error('Yapay zekadan boş bir cevap geldi, lütfen tekrar dener misin?');
+    e.kind = 'empty';
+    throw e;
+  }
   return parts;
+}
+
+async function callGemini(contents, thinkingLevel){
+  const key = getORKey();
+  if(!key) throw new Error('API anahtarı ayarlanmamış. Lütfen önce 🤖 simgesinden anahtarını gir.');
+  const baseBody = {
+    systemInstruction: { parts:[{ text: buildAiSystemPrompt() }] },
+    contents,
+    tools: [{ functionDeclarations: AI_READ_TOOLS.concat(AI_ACTION_TOOLS) }],
+  };
+  try{
+    return await geminiRequest(key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
+  }catch(err){
+    if(err.kind==='network' || err.kind==='parse' || err.kind==='empty') throw err;
+    // 400 (Bad Request) çoğunlukla generationConfig/thinkingConfig gibi opsiyonel bir alanın
+    // bu model sürümünde tanınmamasından kaynaklanır — o alan olmadan tek seferlik yeniden dene,
+    // böylece asistan "düşünme seviyesi" desteklenmese bile çalışmaya devam eder.
+    if(err.status===400){
+      try{
+        return await geminiRequest(key, baseBody);
+      }catch(err2){
+        if(err2.detail) console.error('Gemini API yedek deneme de başarısız:', err2.detail);
+        throw new Error('Yapay zeka isteği geçersiz görünüyor. Lütfen tekrar dener misin?');
+      }
+    }
+    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
+    if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
+    if(err.status===429) throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
+    throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
+  }
 }
 
 // Basit sezgisel kural: günlük/basit komutlar için düşük, karmaşık analiz/özet istekleri için
@@ -2305,19 +2370,24 @@ function executeAiAction(cmd){
       return `${bank.name} KMH hesabı ${formatTL(limit)} limitle eklendi.`;
     }
     case 'setKmhDebt': {
-      // KMH'de Toplam Borç ve Ödenecek Borç tek bir merkezi değeri (k.debt) paylaşır.
+      // Toplam Borç (k.debt), Ödenecek Borç'tan (k.plannedPayment) BAĞIMSIZ bir alandır.
       const k = findKmhByBank(p.bankName);
       if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
       const amount = Number(p.amount)||0;
       k.debt = amount;
+      if((k.plannedPayment||0) > amount) k.plannedPayment = amount;
       save(); render();
       return `${bankByCode(k.bankCode).name} KMH toplam borcu ${formatTL(amount)} olarak güncellendi.`;
     }
     case 'markKmhPaid': {
+      // Kullanıcının o an ayırdığı Ödenecek Borç tutarı ödenir: bu tutar hem Toplam Borç'tan
+      // hem Aylık Borç'tan aynı anda düşer, Ödenecek Borç sıfırlanır, Toplam Limit değişmez.
       const k = findKmhByBank(p.bankName);
       if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
-      const paid = Math.min(Number(p.amount)||(k.debt||0), k.debt||0);
+      const due = k.plannedPayment||0;
+      const paid = Math.min(Number(p.amount)||due, due, k.debt||0);
       k.debt = Math.max(0, (k.debt||0) - paid);
+      k.plannedPayment = Math.max(0, due - paid);
       save(); render();
       return `${bankByCode(k.bankCode).name} KMH ödemesi (${formatTL(paid)}) yapıldı; Toplam Borç ve Ödenecek Borç aynı anda düştü, kalan limit arttı.`;
     }
