@@ -1022,13 +1022,18 @@ function renderLoans(){
       const paidCount = insts.filter(i=>i.status==='odendi').length;
       const remaining = l.count - paidCount;
       const nextUnpaid = insts.find(i=>i.status!=='odendi');
-      const allPaid = !nextUnpaid;
       const dueStr = nextUnpaid ? formatDMY(nextUnpaid.ym, l.dueDay) : '-';
       const bank = bankByCode(l.bankCode);
-      // Kredi tamamen bitmişse (kalan taksit yok) artık ödenmesi gereken bir borç kalmamıştır —
-      // kutu tamamen BOŞ kalır, yeşil arka plan gösterilir (ÖDENDİ yazısı değil).
-      const statusKey = allPaid ? 'odendi' : nextUnpaid.status;
-      const pillLabel = allPaid ? '&nbsp;' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
+      // Durum kutusu her zaman SEÇİLİ AYIN (Aylık sayfadaki ile aynı, tek kaynaktan) taksitini
+      // yansıtır — "sıradaki ödenmemiş taksit"i değil. Böylece Eylül ödendiğinde, henüz Ekim
+      // gelmediyse kart hâlâ ÖDENDİ gösterir; yeni ay geldiğinde kendi taksitine göre güncellenir.
+      // Seçili ay için hiç taksit yoksa (kredi henüz başlamamış ya da tamamen bitmişse) kutu
+      // tamamen BOŞ kalır, yeşil arka plan gösterilir.
+      const thisMonthInst = loanInstallmentForMonth(l, state.selectedMonth);
+      let statusKey, pillLabel;
+      if(!thisMonthInst){ statusKey = 'odendi'; pillLabel = '&nbsp;'; }
+      else if(thisMonthInst.status==='odendi'){ statusKey = 'odendi'; pillLabel = 'ÖDENDİ'; }
+      else { statusKey = thisMonthInst.status; pillLabel = statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'; }
       return `<div class="record-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -2283,7 +2288,16 @@ async function callGemini(contents, thinkingLevel){
     }
     if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
     if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
-    if(err.status===429) throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
+    if(err.status===429){
+      // Geçici bir hız-sınırı takılması olabilir (art arda gelen istekler) — kullanıcıya hemen
+      // hata göstermeden kısa bir bekleme sonrası TEK seferlik sessiz bir yeniden deneme yap.
+      await new Promise(res=>setTimeout(res, 3000));
+      try{
+        return await geminiRequest(key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
+      }catch(err3){
+        throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
+      }
+    }
     throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
   }
 }
