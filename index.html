@@ -133,15 +133,14 @@ button{font-family:var(--font-body);}
 .record-sub{font-size:12px;color:var(--ink-soft);margin-top:1px;}
 .record-status-pill{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:12.5px;
   font-weight:700;white-space:nowrap;}
-.record-status-pill.ok{background:var(--paid-soft);color:var(--paid);}
-.record-status-pill.wait{background:var(--debt-soft);color:var(--debt);}
+.record-status-pill.odendi{background:var(--paid-soft);color:var(--paid);}
+.record-status-pill.bekliyor{background:var(--pending-soft);color:var(--pending);}
+.record-status-pill.gecikti{background:var(--debt-soft);color:var(--debt);}
 .record-chevron{color:var(--ink-soft);font-size:15px;margin-left:2px;}
 .record-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:14px;}
 .record-stat .l{font-size:10.5px;color:var(--ink-soft);min-height:26px;line-height:1.25;display:flex;align-items:flex-start;}
 .record-stat .v{font-size:13.5px;font-weight:700;font-family:var(--font-display);margin-top:2px;color:var(--accent);}
-.record-banner{display:flex;align-items:center;gap:8px;border-radius:10px;padding:9px 12px;margin-top:12px;font-size:12.5px;font-weight:600;}
-.record-banner.ok{background:var(--paid-soft);color:var(--paid);}
-.record-banner.wait{background:var(--debt-soft);color:var(--debt);}
+.kmh-interest-note{font-size:11px;color:var(--ink-soft);margin-top:8px;}
 .dashed-add-card{display:flex;align-items:center;gap:12px;border:2px dashed var(--border);border-radius:14px;
   padding:14px;cursor:pointer;margin-bottom:14px;background:none;width:100%;text-align:left;}
 .dashed-add-icon{width:38px;height:38px;border-radius:50%;background:var(--accent);color:#fff;font-size:20px;
@@ -198,9 +197,9 @@ button{font-family:var(--font-body);}
 .ai-bubble.ai-thinking{color:var(--ink-soft);font-style:italic;}
 .ai-confirm-row{display:flex;gap:8px;margin-top:8px;}
 .ai-input-row{display:flex;align-items:center;gap:8px;padding:10px 4px 4px;border-top:1px solid var(--border);}
-.ai-mic-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--surface);
-  font-size:16px;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.ai-mic-btn.listening{background:var(--debt);color:#fff;border-color:var(--debt);}
+.ai-header-row{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 6px;}
+.ai-close-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface);
+  color:var(--ink);font-size:17px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .ai-input-box{flex:1;border:1px solid var(--border);border-radius:20px;padding:10px 14px;font-size:14px;
   background:var(--surface);color:var(--ink);}
 .ai-send-btn{background:var(--accent);color:#fff;border:none;border-radius:20px;padding:10px 16px;font-size:13.5px;
@@ -680,16 +679,25 @@ function todayYM(){ return monthKey(new Date()); }
 function cmpYM(a,b){ return a===b?0:(a<b?-1:1); }
 
 // ---------- LOAN LOGIC ----------
+// ---------- ORTAK 3-DURUM MANTIĞI (ÖDENDİ / BEKLİYOR / GECİKTİ) ----------
+// Tüm borç türleri (kredi taksiti, kart ekstresi, fatura, KMH) için TEK bir merkezi kural:
+// ödenmişse ÖDENDİ; ödenmemiş ve son ödeme günü henüz gelmemişse BEKLİYOR;
+// ödenmemiş ve son ödeme günü geçmişse GECİKTİ. Yeni dönem her zaman ayın 1'inde başlar
+// (ym, o kaydın ait olduğu ayı — takvim ayının kendisini — temsil eder; "son ödeme gününe
+// N gün kala" tarzı bir erken geçiş YOKTUR).
+function currentYm(){ return monthKey(new Date()); }
+function periodStatus(paid, ym, dueDay){
+  if(paid) return 'odendi';
+  const dueDate = new Date(...ym.split('-').map((v,idx)=>idx===1?Number(v)-1:Number(v)), dueDay||1);
+  return dueDate < new Date(new Date().setHours(0,0,0,0)) ? 'gecikti' : 'bekliyor';
+}
 function loanInstallments(loan){
   const list = [];
   for(let i=0;i<loan.count;i++){
     const ym = addMonths(loan.startMonth, i);
     const key = loan.id+'#'+i;
-    let status = (state.loanStatus[key]) || 'bekliyor';
-    if(status==='bekliyor'){
-      const dueDate = new Date(...ym.split('-').map((v,idx)=>idx===1?Number(v)-1:Number(v)), loan.dueDay||1);
-      if(dueDate < new Date(new Date().setHours(0,0,0,0))) status='gecikti';
-    }
+    const paid = state.loanStatus[key]==='odendi';
+    const status = periodStatus(paid, ym, loan.dueDay);
     list.push({ index:i, ym, amount:loan.amount, status, key });
   }
   return list;
@@ -713,12 +721,12 @@ function prevMonthOverride(bill, ym){
 }
 function billRecord(bill, ym){
   const ov = state.billOverrides[bill.id] && state.billOverrides[bill.id][ym];
-  if(ov) return { amount: ov.amount, status: ov.status, isEstimate:false, estimateType:null };
+  if(ov) return { amount: ov.amount, status: periodStatus(ov.status==='odendi', ym, bill.dueDay), isEstimate:false, estimateType:null };
   const prev = prevMonthOverride(bill, ym);
   if(prev){
-    return { amount: prev.amount, status:'bekliyor', isEstimate:true, estimateType: bill.isFixed?'sabit · geçen ayla aynı':'tahmini · geçen aya göre' };
+    return { amount: prev.amount, status: periodStatus(false, ym, bill.dueDay), isEstimate:true, estimateType: bill.isFixed?'sabit · geçen ayla aynı':'tahmini · geçen aya göre' };
   }
-  return { amount: bill.estimatedAmount||0, status:'bekliyor', isEstimate:true, estimateType:'tahmini' };
+  return { amount: bill.estimatedAmount||0, status: periodStatus(false, ym, bill.dueDay), isEstimate:true, estimateType:'tahmini' };
 }
 function setBillRecord(billId, ym, amount, status){
   if(!state.billOverrides[billId]) state.billOverrides[billId]={};
@@ -792,9 +800,15 @@ function monthlyRows(ym){
       amount:debtTL(d), status:'bekliyor' });
   });
   state.kmhAccounts.forEach(k=>{
-    const amt = k.plannedPayment||0;
-    if(amt>0) rows.push({ kind:'kmh', refId:k.id, key:k.id, day:k.dueDay||1, name:bankByCode(k.bankCode).name+' KMH', cat:'kmh',
-      amount:amt, status:k.paymentStatus||'bekliyor' });
+    // Ödenecek Borç, KMH'de her zaman Toplam Borç (k.debt) ile AYNI merkezi değeri kullanır —
+    // ayrı bir sayı olarak ikinci kez hesaplanmaz. KMH döner bir hesap olduğu için "ödendi"
+    // durumu SADECE borç tamamen kapandığında (debt<=0) oluşur — kısmi bir ödeme, kalan
+    // borcun Aylık Borç'tan tamamen düşmesine yol AÇMAZ.
+    const amt = k.debt||0;
+    if(amt>0){
+      rows.push({ kind:'kmh', refId:k.id, key:k.id+'#'+ym, day:k.dueDay||1, name:bankByCode(k.bankCode).name+' KMH', cat:'kmh',
+        amount:amt, status: periodStatus(false, ym, k.dueDay) });
+    }
   });
   rows.sort((a,b)=>a.day-b.day);
   return rows;
@@ -900,7 +914,7 @@ function initLongPress(container){
 function render(){
   $fab.style.display='none';
   $headerAction.style.display='none';
-  document.getElementById('homeFab').style.display = (ui.page==='home') ? 'none' : 'flex';
+  document.getElementById('homeFab').style.display = (ui.page==='home' || ui.page==='ai') ? 'none' : 'flex';
   updateNotifBadge();
   const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, cards:renderCards, kmh:renderKmh,
     bills:renderBills, debts:renderDebts, monthly:renderMonthly, ai:renderAI };
@@ -1012,10 +1026,8 @@ function renderLoans(){
       const allPaid = !nextUnpaid;
       const dueStr = nextUnpaid ? formatDMY(nextUnpaid.ym, l.dueDay) : '-';
       const bank = bankByCode(l.bankCode);
-      const pillCls = allPaid ? 'ok' : 'wait';
-      const pillLabel = allPaid ? '✓ Ödendi' : (nextUnpaid.status==='gecikti' ? '🕐 Gecikti' : '🕐 Bekliyor');
-      const bannerCls = allPaid ? 'ok' : 'wait';
-      const bannerText = allPaid ? '✓ Tüm taksitler tamamlandı.' : '🕐 Bu ayki taksit henüz ödenmedi.';
+      const statusKey = allPaid ? 'odendi' : nextUnpaid.status;
+      const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
       return `<div class="record-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -1023,7 +1035,7 @@ function renderLoans(){
             <div class="record-title">${bank.name}</div>
             <div class="record-sub">${esc(l.loanType||l.name)}</div>
           </div>
-          <span class="record-status-pill ${pillCls}">${pillLabel}</span>
+          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
           <span class="record-chevron">›</span>
         </div>
         <div class="record-stats">
@@ -1032,7 +1044,6 @@ function renderLoans(){
           <div class="record-stat"><div class="l">Kalan Taksit</div><div class="v">${remaining}/${l.count}</div></div>
           <div class="record-stat"><div class="l">Son Ödeme Tarihi</div><div class="v" style="font-size:12px;">${dueStr}</div></div>
         </div>
-        <div class="record-banner ${bannerCls}">${bannerText}</div>
       </div>`;
     }).join('') + `
     <button class="dashed-add-card" data-action="open-modal" data-modal="addLoan">
@@ -1084,11 +1095,9 @@ function renderCards(){
       const bank = bankByCode(c.bankCode);
       const debt = c.totalDebt||0;
       const remainingLimit = (c.limit||0) - debt;
-      const paid = st && st.status==='odendi';
-      const pillCls = paid ? 'ok' : 'wait';
-      const pillLabel = paid ? '✓ Ödendi' : '🕐 Bekliyor';
-      const bannerCls = paid ? 'ok' : 'wait';
-      const bannerText = paid ? '✓ Bu ayki ödeme yapıldı.' : '🕐 Bu ayki ödeme henüz yapılmadı.';
+      const paid = !!(st && st.status==='odendi');
+      const statusKey = periodStatus(paid, state.selectedMonth, c.dueDay);
+      const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
       return `<div class="record-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -1096,7 +1105,7 @@ function renderCards(){
             <div class="record-title">${bank.name}</div>
             <div class="record-sub">Kredi Kartı · Her ayın ${c.dueDay||'-'}'i</div>
           </div>
-          <span class="record-status-pill ${pillCls}">${pillLabel}</span>
+          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
           <span class="record-chevron">›</span>
         </div>
         <div class="record-stats">
@@ -1105,7 +1114,6 @@ function renderCards(){
           <div class="record-stat"><div class="l">Ödenecek Miktar</div><div class="v">${st?formatTL(st.amount):'—'}</div></div>
           <div class="record-stat"><div class="l">Kalan Limit</div><div class="v">${formatTL(remainingLimit)}</div></div>
         </div>
-        <div class="record-banner ${bannerCls}">${bannerText}</div>
       </div>`;
     }).join('') + `
     <button class="dashed-add-card" data-action="open-modal" data-modal="addCard">
@@ -1124,15 +1132,13 @@ function renderKmh(){
     </button>`;
   return state.kmhAccounts.map(k=>{
       const bank = bankByCode(k.bankCode);
-      const cost = calculateKmhInterest(k.transactions||[], todayStr());
-      const debt = cost.principal;
-      const planned = k.plannedPayment||0;
-      const paymentStatus = k.paymentStatus||'bekliyor';
-      const paid = paymentStatus==='odendi';
-      const pillCls = paid ? 'ok' : 'wait';
-      const pillLabel = paid ? '✓ Ödendi' : '🕐 Bekliyor';
-      const bannerCls = paid ? 'ok' : 'wait';
-      const bannerText = paid ? '✓ Bu ayki ödeme yapıldı.' : '🕐 Bu ayki ödeme henüz yapılmadı.';
+      const debt = k.debt||0;
+      const remainingLimit = (k.limit||0) - debt;
+      // KMH döner bir hesap: borç tamamen kapanmadıkça (debt<=0) ÖDENDİ sayılmaz — kısmi bir
+      // ödeme yapılmış olsa bile kalan borç hâlâ "ödenmesi gereken" bir tutardır.
+      const statusKey = periodStatus(debt<=0, currentYm(), k.dueDay);
+      const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
+      const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
       return `<div class="record-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -1140,17 +1146,16 @@ function renderKmh(){
             <div class="record-title">${bank.name}</div>
             <div class="record-sub">KMH · Her ayın ${k.dueDay||'-'}'i</div>
           </div>
-          <span class="record-status-pill ${pillCls}">${pillLabel}</span>
+          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
           <span class="record-chevron">›</span>
         </div>
         <div class="record-stats">
           <div class="record-stat"><div class="l">Toplam Limit</div><div class="v">${formatTL(k.limit||0)}</div></div>
-          <div class="record-stat"><div class="l">Ana Para</div><div class="v">${formatTL(debt)}</div></div>
-          <div class="record-stat"><div class="l">Ödenecek Miktar</div><div class="v">${formatTL(planned)}</div></div>
-          <div class="record-stat"><div class="l">Toplam Maliyet</div><div class="v">${formatTL(debt+cost.total)}</div></div>
+          <div class="record-stat"><div class="l">Toplam Borç</div><div class="v">${formatTL(debt)}</div></div>
+          <div class="record-stat"><div class="l">Ödenecek Borç</div><div class="v">${formatTL(debt)}</div></div>
+          <div class="record-stat"><div class="l">Kalan Limit</div><div class="v">${formatTL(remainingLimit)}</div></div>
         </div>
-        <div style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;">Faiz+BSMV+KKDF (bugüne kadar): ${formatTL(cost.total)}</div>
-        <div class="record-banner ${bannerCls}">${bannerText}</div>
+        <div class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</div>
       </div>`;
     }).join('') + `
     <button class="dashed-add-card" data-action="open-modal" data-modal="addKmh">
@@ -1170,16 +1175,17 @@ function renderBills(){
     state.bills.map(b=>{
       const r = billRecord(b, state.selectedMonth);
       const ic = BILL_ICONS[b.category] || BILL_ICONS['Abonelikler'];
+      const pillLabel = r.status==='odendi' ? 'ÖDENDİ' : (r.status==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
       return `<div class="item-card" data-action="open-modal" data-modal="billRecord" data-id="${b.id}" data-lp-type="bill" data-lp-id="${b.id}">
         <div class="item-top">
           <div class="cat-icon-row">
             <span class="cat-icon" style="background:${ic.bg};color:${ic.color}">${ic.icon}</span>
             <div><p class="item-title">${esc(b.name)}</p><p class="item-sub">${esc(b.category)}</p></div>
           </div>
-          <div class="item-amt">${r.amount>0?formatTL(r.amount):'Tutar bekleniyor'}</div>
+          <span class="record-status-pill ${r.status}">${pillLabel}</span>
         </div>
         <div class="item-meta-row">
-          <span class="pill ${r.status}">${r.isEstimate?(r.estimateType+' · '):''}${r.status}</span>
+          <span>${r.amount>0?formatTL(r.amount):'Tutar bekleniyor'}</span>
           <span>Son ödeme: her ayın ${b.dueDay}'i</span>
         </div>
         <div class="item-meta-row" style="justify-content:space-between;align-items:center;">
@@ -1350,51 +1356,19 @@ const modalTemplates = {
   kmhSettings(id){
     const k = state.kmhAccounts.find(x=>x.id===id);
     const bank = bankByCode(k.bankCode);
-    const c = calculateKmhInterest(k.transactions||[], todayStr());
-    const txList = (k.transactions||[]).slice().sort((a,b)=>b.date<a.date?-1:1);
+    const debt = k.debt||0;
+    const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
     return `
     <h3>${bank.name} — KMH Ayarları</h3>
     <div class="field"><label>KMH Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${k.limit?k.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+    <div class="field"><label>Toplam Borç (TL)</label><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${debt?debt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
     <div class="field"><label>Son Ödeme Günü</label>${dayWheel('kmhDayChoice', k.dueDay)}</div>
-
-    <div class="section-title" style="margin-top:14px;">Güncel Maliyet (bugüne kadar)</div>
-    <div class="summary-grid">
-      <div class="summary-cell"><div class="l">Ana Para</div><div class="v">${formatTL(c.principal)}</div></div>
-      <div class="summary-cell"><div class="l">Faiz</div><div class="v">${formatTL(c.interest)}</div></div>
-      <div class="summary-cell"><div class="l">BSMV</div><div class="v">${formatTL(c.bsmv)}</div></div>
-      <div class="summary-cell"><div class="l">KKDF</div><div class="v">${formatTL(c.kkdf)}</div></div>
-    </div>
-    <div class="record-banner ok" style="margin-top:8px;">Toplam Maliyet: ${formatTL(c.principal + c.total)}</div>
-    <p style="font-size:11px;color:var(--ink-soft);margin:6px 0 0;">Faiz aylık %${(KMH_MONTHLY_INTEREST_RATE*100).toFixed(2)} oranıyla, kullanılan tutar ve gün sayısına göre günlük hesaplanır. BSMV ve KKDF, faizin %15'i + %15'i olarak eklenir.</p>
-
-    <div class="section-title" style="margin-top:14px;">İşlem Geçmişi</div>
-    ${txList.length===0 ? '<p style="font-size:12.5px;color:var(--ink-soft);">Henüz işlem yok.</p>' : txList.map(tx=>`
-      <div class="inst-row">
-        <span class="inst-date">${tx.date}</span>
-        <span class="inst-amt">${tx.amount>=0?'Kullanım':'Ödeme'}<br><small style="color:var(--ink-soft);font-family:var(--font-body);">${formatTL(Math.abs(tx.amount))}</small></span>
-        <button class="danger-btn" style="margin:0;padding:6px 10px;font-size:11px;" data-action="delete-kmh-tx" data-id="${id}" data-tx="${tx.id}">Sil</button>
-      </div>`).join('')}
-    <button class="save-btn" style="background:var(--pending);margin-top:8px;" data-action="open-modal" data-modal="kmhAddTx" data-id="${id}">+ Yeni İşlem Ekle (Kullanım/Ödeme)</button>
-
-    <div class="field" style="margin-top:14px;"><label>Ödenecek Miktar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" value="${k.plannedPayment?k.plannedPayment.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-    <div class="toggle-row"><span>Bu ay ödendi olarak işaretle</span><div class="switch ${k.paymentStatus==='odendi'?'on':''}" id="f_paid" data-action="toggle-switch"><div class="knob"></div></div></div>
+    <p class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
+    <div class="field" style="margin-top:14px;"><label>Bu Ay Ödediğiniz Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+    <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 0;">Girilen tutar, yukarıdaki Toplam Borç'tan düşülerek kaydedilir.</p>
     <button class="save-btn" data-action="save-kmh-settings" data-id="${id}">Kaydet</button>
     <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
     <button class="danger-btn" data-action="delete-kmh" data-id="${id}">KMH Hesabını Sil</button>
-  `; },
-  kmhAddTx(id){
-    return `
-    <h3>KMH İşlemi Ekle</h3>
-    <div class="field"><label>Tür</label>
-      <div class="choice-row" id="kmhTxTypeChoice">
-        <button data-val="kullanim" data-action="pick-choice" class="active">Kullanım (+)</button>
-        <button data-val="odeme" data-action="pick-choice">Ödeme (−)</button>
-      </div>
-    </div>
-    <div class="field"><label>Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-    <div class="field"><label>Tarih</label><input id="f_txdate" type="date" value="${todayStr()}"></div>
-    <button class="save-btn" data-action="save-kmh-tx" data-id="${id}">Kaydet</button>
-    <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
   `; },
   addBill(){ return `
     <h3>Abonelik / Fatura Ekle</h3>
@@ -1486,14 +1460,14 @@ const modalTemplates = {
     <button class="danger-btn" data-action="delete-manual-payment" data-id="${id}">Ödemeyi Sil</button>
   `; },
   aiSettings(){
-    const key = localStorage.getItem('or_api_key') || '';
+    const key = localStorage.getItem('gemini_api_key') || '';
     return `
     <h3>🤖 Yapay Zeka Ayarları</h3>
     <p style="font-size:12.5px;color:var(--ink-soft);margin:-6px 0 12px;line-height:1.5;">
-      openrouter.ai adresinden ücretsiz bir hesap açıp API anahtarı oluştur, aşağıya yapıştır.
-      Anahtar sadece bu cihazda saklanır, kimseyle paylaşılmaz.
+      Google AI Studio'dan (aistudio.google.com) ücretsiz bir Gemini API anahtarı oluştur, aşağıya yapıştır.
+      Anahtar sadece bu cihazda saklanır, kimseyle veya bir sunucuya gönderilmez, sadece Google'ın API'sine doğrudan bu cihazdan istek atmak için kullanılır.
     </p>
-    <div class="field"><label>OpenRouter API Anahtarı</label><input id="f_orkey" value="${esc(key)}" placeholder="sk-or-v1-..." style="font-size:12px;"></div>
+    <div class="field"><label>Gemini API Anahtarı</label><input id="f_orkey" value="${esc(key)}" placeholder="AIzaSy..." style="font-size:12px;"></div>
     <button class="save-btn" data-action="save-ai-key">Kaydet</button>
     <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
   `; },
@@ -1557,15 +1531,6 @@ const modalTemplates = {
 
 // ---------- EVENT DELEGATION ----------
 document.getElementById('homeFab').addEventListener('click', ()=> navigate('home'));
-document.addEventListener('pointerdown', (e)=>{
-  const mic = e.target.closest('#aiMicBtn');
-  if(!mic) return;
-  e.preventDefault();
-  if(!getORKey()){ openModal('aiSettings'); return; }
-  if(hasSpeechRecognition()){ startListening(); }
-});
-document.addEventListener('pointerup', (e)=>{ if(e.target.closest('#aiMicBtn')) stopListening(); });
-document.addEventListener('pointerleave', (e)=>{ if(e.target.closest && e.target.closest('#aiMicBtn')) stopListening(); }, true);
 document.getElementById('notifBell').addEventListener('click', ()=> openModal('notifications'));
 document.getElementById('downloadBtn').addEventListener('click', async ()=>{
   try{
@@ -1781,73 +1746,30 @@ document.body.addEventListener('click', function(e){
     });
     return;
   }
-  if(action==='toggle-kmh-payment'){
-    const k = state.kmhAccounts.find(x=>x.id===t.dataset.id);
-    if(k){
-      const planned = k.plannedPayment||0;
-      if(k.paymentStatus==='odendi'){
-        k.paymentStatus='bekliyor';
-        k.debt = (k.debt||0) + planned;
-      } else {
-        k.paymentStatus='odendi';
-        k.debt = Math.max(0, (k.debt||0) - planned);
-      }
-      save(); render();
-    }
-    return;
-  }
   if(action==='save-kmh'){
     const bankRow=document.getElementById('kmhBankChoice');
     const bankCode = bankRow.dataset.value || bankRow.querySelector('.active').dataset.val;
     const limit=tlVal('f_limit');
     if(!limit){ alert('KMH limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
-    state.kmhAccounts.push({ id:uid(), bankCode, limit, dueDay:day, debt:0, plannedPayment:0, paymentStatus:'bekliyor', transactions:[] });
+    state.kmhAccounts.push({ id:uid(), bankCode, limit, dueDay:day, debt:0, plannedPayment:0, paymentStatus:'bekliyor', paymentStatusYm:null, transactions:[] });
     save(); closeModal(); navigate('kmh'); return;
   }
   if(action==='save-kmh-settings'){
-    const id=t.dataset.id, limit=tlVal('f_limit'), planned=tlVal('f_amount');
+    // KMH'de Toplam Borç ve Ödenecek Borç TEK bir merkezi değeri (k.debt) paylaşır — ikisi de
+    // aynı anda değişir, hiçbir zaman ayrı ayrı iki kez hesaplanmaz (bkz. talimat: KMH borcu
+    // ana sayfada iki kez hesaplanmamalı). "Bu Ay Ödediğiniz Tutar" girilen Toplam Borç'tan
+    // doğrudan düşülür — kısmi bir ödeme kalan borcu Aylık Borç'tan tamamen SİLMEZ.
+    const id=t.dataset.id, limit=tlVal('f_limit'), totalDebtInput=tlVal('f_totalDebt'), paid=tlVal('f_amount');
     if(!limit){ alert('KMH limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
-    const paidOn = document.getElementById('f_paid').classList.contains('on');
     const k = state.kmhAccounts.find(x=>x.id===id);
     if(k){
-      const wasPaid = k.paymentStatus==='odendi';
-      if(!k.transactions) k.transactions=[];
-      if(!wasPaid && paidOn && planned>0){
-        k.transactions.push({ id:uid(), date:todayStr(), amount:-planned });
-      } else if(wasPaid && !paidOn && planned>0){
-        k.transactions.push({ id:uid(), date:todayStr(), amount:planned });
-      }
-      k.limit = limit; k.dueDay = day; k.plannedPayment = planned;
-      k.paymentStatus = paidOn?'odendi':'bekliyor';
-      k.debt = calculateKmhInterest(k.transactions, todayStr()).principal;
+      k.limit = limit; k.dueDay = day;
+      k.debt = Math.max(0, totalDebtInput - paid);
+      k.plannedPayment = 0;
     }
     save(); closeModal(); render(); return;
-  }
-  if(action==='save-kmh-tx'){
-    const id=t.dataset.id, amount=tlVal('f_amount'), date=document.getElementById('f_txdate').value||todayStr();
-    const typeRow = document.getElementById('kmhTxTypeChoice');
-    const type = typeRow.dataset.value || typeRow.querySelector('.active').dataset.val;
-    if(!amount){ alert('Tutar girmeden kaydedilemez.'); return; }
-    const k = state.kmhAccounts.find(x=>x.id===id);
-    if(k){
-      if(!k.transactions) k.transactions=[];
-      k.transactions.push({ id:uid(), date, amount: type==='odeme' ? -amount : amount });
-      k.debt = calculateKmhInterest(k.transactions, todayStr()).principal;
-      save();
-    }
-    closeModal(); openModal('kmhSettings', id); return;
-  }
-  if(action==='delete-kmh-tx'){
-    const id=t.dataset.id, txId=t.dataset.tx;
-    const k = state.kmhAccounts.find(x=>x.id===id);
-    if(k){
-      k.transactions = (k.transactions||[]).filter(tx=>tx.id!==txId);
-      k.debt = calculateKmhInterest(k.transactions, todayStr()).principal;
-      save();
-    }
-    openModal('kmhSettings', id); return;
   }
   if(action==='delete-kmh'){
     const id=t.dataset.id;
@@ -1878,11 +1800,12 @@ document.body.addEventListener('click', function(e){
   if(action==='ai-cancel'){ cancelPendingAction(parseInt(t.dataset.idx)); return; }
   if(action==='save-ai-key'){
     const key = val('f_orkey');
-    if(key) localStorage.setItem('or_api_key', key);
-    else localStorage.removeItem('or_api_key');
+    if(key) localStorage.setItem('gemini_api_key', key);
+    else localStorage.removeItem('gemini_api_key');
     closeModal();
     return;
   }
+  if(action==='ai-close'){ navigate('home'); return; }
   if(action==='toggle-bill-autopay'){
     const bill = state.bills.find(b=>b.id===t.dataset.id);
     if(bill){ bill.autoPay = !bill.autoPay; save(); render(); }
@@ -2001,13 +1924,16 @@ document.body.addEventListener('click', function(e){
       return;
     }
     if(kind==='kmh'){
+      // Aylık sayfadaki hızlı geçiş: borcu tamamen kapatır/geri açar. Kalan bakiyeyi düzeltmek
+      // (kısmi ödeme) için KMH sayfasındaki ayrıntılı "Bu Ay Ödediğiniz Tutar" alanı kullanılır.
       const k = state.kmhAccounts.find(x=>x.id===t.dataset.ref);
       if(k){
-        const planned = k.plannedPayment||0;
-        if(!k.transactions) k.transactions=[];
-        if(k.paymentStatus==='odendi'){ k.paymentStatus='bekliyor'; k.transactions.push({id:uid(),date:todayStr(),amount:planned}); }
-        else { k.paymentStatus='odendi'; k.transactions.push({id:uid(),date:todayStr(),amount:-planned}); }
-        k.debt = calculateKmhInterest(k.transactions, todayStr()).principal;
+        if((k.debt||0) <= 0 && k.lastPayoff){
+          k.debt = k.lastPayoff; k.lastPayoff = 0;
+        } else if((k.debt||0) > 0){
+          k.lastPayoff = k.debt;
+          k.debt = 0;
+        }
         save(); render();
       }
       return;
@@ -2107,12 +2033,13 @@ if(vcEl) vcEl.textContent = '🔢 Bu, ' + state.visitCount + '. açılışın (k
 if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
-// ---------- YAPAY ZEKA (OpenRouter) — Akıllı Finans Asistanı ----------
-const AI_MODEL = 'openrouter/free'; // OpenRouter'ın ücretsiz modeller arasından otomatik seçim yapmasını sağlar.
+// ---------- YAPAY ZEKA (Google Gemini — Function/Tool Calling) — Akıllı Finans Asistanı ----------
+const AI_MODEL = 'gemini-3.8-flash';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + AI_MODEL + ':generateContent';
 let aiMessages = []; // {role:'user'|'assistant', text, pendingAction?} — sadece bu oturumda tutulur.
 let pendingAiAction = null;
 
-function getORKey(){ return localStorage.getItem('or_api_key') || ''; }
+function getORKey(){ return localStorage.getItem('gemini_api_key') || ''; }
 
 // ---- Kontrollü fonksiyonlar (Yapay Zeka SADECE bunlar üzerinden veri okuyabilir) ----
 function get_total_debt(){
@@ -2143,9 +2070,9 @@ function get_cash_debt_data(){
     tutar_tl: debtTL(d), odendi: !!d.paid }));
 }
 function get_kmh_data(){
-  return state.kmhAccounts.map(k=>{ const c = calculateKmhInterest(k.transactions||[], todayStr());
-    return { banka:bankByCode(k.bankCode).name, limit:k.limit||0, ana_para:c.principal, faiz:c.interest,
-      bsmv:c.bsmv, kkdf:c.kkdf, toplam_maliyet:c.total, odenecek_miktar:k.plannedPayment||0 }; });
+  return state.kmhAccounts.map(k=>{ const debt = k.debt||0;
+    return { banka:bankByCode(k.bankCode).name, limit:k.limit||0, toplam_borc:debt, odenecek_borc:debt,
+      kalan_limit:(k.limit||0)-debt, gunluk_yaklasik_faiz: Math.round(debt*(KMH_MONTHLY_INTEREST_RATE/30)) }; });
 }
 function get_monthly_payments(month){ return monthlyRows(month||state.selectedMonth); }
 function get_upcoming_payments(){
@@ -2164,86 +2091,119 @@ function search_debt_records(query){
     .map(d=>({ kisi:d.person, tutar_tl:debtTL(d), odendi:!!d.paid }));
 }
 
-function buildAiContext(){
-  return JSON.stringify({
-    toplam_borc: get_total_debt(),
-    aylik_gelir: get_monthly_income().aylik_gelir,
-    secili_ay: state.selectedMonth,
-    aylik_ozet: calculate_monthly_summary(state.selectedMonth),
-    krediler: get_credit_data(),
-    kredi_kartlari: get_credit_card_data(),
-    kmh_hesaplari: get_kmh_data(),
-    faturalar: get_bill_data(),
-    elden_borclar: get_cash_debt_data(),
-    yaklasan_odemeler: get_upcoming_payments(),
-  }, null, 0);
+// ---- Okuma araçları (function declarations) — model gerektiğinde bunları çağırır, biz de
+// SADECE bu fonksiyonlar üzerinden veri açığa çıkarırız. Her mesajda tüm veritabanı GÖNDERİLMEZ;
+// model hangi veriye ihtiyacı olduğuna kendi karar verip ilgili aracı çağırır. ----
+const AI_READ_TOOLS = [
+  { name:'get_total_debt', description:'Kullanıcının kalan toplam borcunu (krediler+kartlar+KMH+elden borçlar toplamı, ve alt kırılımları) döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_monthly_income', description:'Kullanıcının aylık gelirini döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_monthly_debt', description:'Belirtilen ayda (YYYY-MM formatında, boş bırakılırsa uygulamada şu an seçili ay) ödenmesi gereken TOPLAM aylık borcu döner.', parameters:{ type:'OBJECT', properties:{ month:{ type:'STRING', description:'YYYY-MM formatında ay, opsiyonel' } } } },
+  { name:'get_monthly_remaining', description:'Belirtilen ay için aylık gelirden aylık borç düşüldükten sonra kalan tutarı döner.', parameters:{ type:'OBJECT', properties:{ month:{ type:'STRING' } } } },
+  { name:'get_credit_data', description:'Tüm kredilerin listesini (banka, aylık taksit, kalan taksit sayısı, kalan borç) döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_credit_card_data', description:'Tüm kredi kartlarının listesini (banka, limit, toplam borç, bu ayki ödenecek miktar, kalan limit) döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_kmh_data', description:'Tüm KMH hesaplarının listesini (banka, limit, toplam borç, ödenecek borç, kalan limit, günlük yaklaşık faiz) döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_bill_data', description:'Tüm fatura/aboneliklerin bu ayki tutar ve ödeme durumunu döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_cash_debt_data', description:'Elden borç/alacak kayıtlarının listesini döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'get_upcoming_payments', description:'Henüz ödenmemiş, en yakın son ödeme tarihine sahip 5 ödemeyi döner.', parameters:{ type:'OBJECT', properties:{} } },
+  { name:'calculate_kmh_interest', description:'Henüz gerçek bir kayıt olmayan, varsayımsal bir KMH senaryosu için ("X TL kullansam Y gün sonra ne kadar öderim" gibi) yaklaşık faiz+BSMV+KKDF tutarını hesaplar. Bu hesabı SEN yapma, mutlaka bu aracı çağır.', parameters:{ type:'OBJECT', properties:{ amount:{type:'NUMBER'}, days:{type:'NUMBER'} }, required:['amount','days'] } },
+  { name:'search_debt_records', description:'Kişi ismine göre elden borç kayıtlarında arama yapar.', parameters:{ type:'OBJECT', properties:{ query:{type:'STRING'} }, required:['query'] } },
+];
+
+// ---- Yazma (veri değiştiren) araçlar — model bunlardan birini "çağırdığında" veri HEMEN
+// değişmez: uygulama önce kullanıcıya "summary" alanındaki Türkçe özeti ONAYLA/VAZGEÇ ile
+// gösterir, gerçek değişiklik SADECE kullanıcı ONAYLA'ya bastığında executeAiAction() içinde olur.
+const AI_ACTION_TOOLS = [
+  { name:'addLoan', description:'Yeni bir kredi kaydı ekler.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, loanType:{type:'STRING'}, amount:{type:'NUMBER',description:'aylık taksit tutarı'}, count:{type:'NUMBER',description:'toplam taksit sayısı'}, summary:{type:'STRING'} }, required:['amount','count','summary'] } },
+  { name:'markLoanPaid', description:'Bir kredinin içinde bulunulan aya ait, henüz ödenmemiş taksitini ÖDENDİ olarak işaretler.', parameters:{ type:'OBJECT', properties:{ loanName:{type:'STRING',description:'kredi adı veya banka adı'}, summary:{type:'STRING'} }, required:['summary'] } },
+  { name:'addCard', description:'Yeni bir kredi kartı ekler.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, limit:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['limit','summary'] } },
+  { name:'setCardDebt', description:'Bir kredi kartının toplam borcunu belirli bir tutara ayarlar (düzeltme amaçlı).', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
+  { name:'setCardPlanned', description:'Bir kredi kartı için bu ay ödenecek planlı miktarı ayarlar.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
+  { name:'markCardPaid', description:'Bir kredi kartının bu ayki ödenecek miktarını ÖDENDİ olarak işaretler ve borçtan düşer.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, summary:{type:'STRING'} }, required:['summary'] } },
+  { name:'addKmh', description:'Yeni bir KMH (kredili mevduat hesabı) ekler.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, limit:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['limit','summary'] } },
+  { name:'setKmhDebt', description:'Bir KMH hesabının toplam (=ödenecek) borcunu belirli bir tutara ayarlar (düzeltme amaçlı).', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
+  { name:'markKmhPaid', description:'Bir KMH hesabına, kullanıcının bu ay ödediği tutar kadar ödeme kaydeder; bu tutar hem toplam borçtan hem ödenecek borçtan aynı anda düşer ve kalan limite eklenir.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER',description:'ödenen tutar'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
+  { name:'addBill', description:'Yeni bir fatura/abonelik kaydı ekler.', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING'}, category:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['summary'] } },
+  { name:'markBillPaid', description:'Bir fatura/aboneliği bu ay için ÖDENDİ olarak işaretler. Örn: "Elektrik faturasını ödedim", "Elektriği ödendi yap".', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING',description:'fatura/abonelik adı veya kategorisi'}, summary:{type:'STRING'} }, required:['name','summary'] } },
+  { name:'setBillAmount', description:'Bir faturanın bu ayki gerçek tutarını günceller.', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['name','amount','summary'] } },
+  { name:'toggleBillAutoPay', description:'Bir faturanın otomatik ödeme talimatını açar/kapatır.', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING'}, on:{type:'BOOLEAN'}, summary:{type:'STRING'} }, required:['name','on','summary'] } },
+  { name:'addDebt', description:'Yeni bir elden borç/alacak kaydı ekler.', parameters:{ type:'OBJECT', properties:{ person:{type:'STRING'}, direction:{type:'STRING',description:'"borcum" (benim borcum) veya "alacak" (bana borcu)'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['person','amount','summary'] } },
+  { name:'markDebtPaid', description:'Bir elden borç kaydını ÖDENDİ olarak işaretler.', parameters:{ type:'OBJECT', properties:{ person:{type:'STRING'}, summary:{type:'STRING'} }, required:['person','summary'] } },
+  { name:'setIncome', description:'Kullanıcının aylık gelirini günceller.', parameters:{ type:'OBJECT', properties:{ amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
+];
+const AI_WRITE_ACTION_NAMES = AI_ACTION_TOOLS.map(t=>t.name);
+
+function dispatchAiReadTool(name, args){
+  args = args||{};
+  switch(name){
+    case 'get_total_debt': return get_total_debt();
+    case 'get_monthly_income': return get_monthly_income();
+    case 'get_monthly_debt': return get_monthly_debt(args.month);
+    case 'get_monthly_remaining': return get_monthly_remaining(args.month);
+    case 'get_credit_data': return get_credit_data();
+    case 'get_credit_card_data': return get_credit_card_data();
+    case 'get_kmh_data': return get_kmh_data();
+    case 'get_bill_data': return get_bill_data();
+    case 'get_cash_debt_data': return get_cash_debt_data();
+    case 'get_upcoming_payments': return get_upcoming_payments();
+    case 'calculate_kmh_interest': return calculate_kmh_interest(args.amount, args.days);
+    case 'search_debt_records': return search_debt_records(args.query);
+    default: return { hata: 'Bilinmeyen fonksiyon: '+name };
+  }
 }
 
 function buildAiSystemPrompt(){
-  return `Sen "Finansçım" uygulamasının Akıllı Finans Asistanısın. Kullanıcıya kendi gerçek finansal verilerine dayanarak yardımcı olursun. Aşağıda kullanıcının GÜNCEL VERİLERİ JSON olarak verilmiştir — hesaplama yaparken SADECE bu verileri ve burada belirtilen kuralları kullan, kendi kafandan tahmini rakam üretme.
+  return `Sen "Finansçım" uygulamasının Akıllı Finans Asistanısın. Kullanıcıyla YALNIZCA yazılı sohbet üzerinden konuşursun (sesli özellik yok). Kullanıcının doğal, günlük Türkçesini doğru anlamalısın — aynı isteği farklı şekillerde söyleyebilir (örn. "Elektrik faturasını ödedim.", "Elektriği ödendi yap.", "Bu ayki kredimi ödedim.", "Kredi taksidini kapat.", "Bu ay borçlarım ne kadar?", "Toplam borcum kaç?", "Bu ay ne kadar ödeme yapacağım?", "KMH borcum ne kadar?", "Kredi kartımı ödedim.", "Bunu ödendi olarak işaretle."). Basit ve net isteklerde ASLA "Sizi anlayamadım, tekrar sorar mısınız?" deme — niyeti anlamaya çalış, gerekiyorsa kısaca netleştirici bir soru sor.
 
-GÜNCEL VERİLER:
-${buildAiContext()}
+Bugünün tarihi: ${todayStr()}. Uygulamada şu an seçili ay: ${state.selectedMonth}.
 
-CEVAP FORMATI — SADECE aşağıdaki JSON biçimlerinden TAM OLARAK BİRİYLE cevap ver, başka hiçbir metin/markdown/kod bloğu ekleme:
-
-1) Sadece bilgi/hesaplama sorusu ise (veri değişmiyor):
-{"type":"answer","message":"Türkçe, kısa ve net cevap"}
-
-2) Kullanıcı "X TL KMH'yi Y gün kullansam ne kadar öderim" tarzı bir SENARYO soruyorsa (henüz gerçek bir kaydı değil, varsayımsal hesap):
-{"type":"calc_kmh","amount":10000,"days":15}
-(Biz gerçek hesaplamayı kendi fonksiyonumuzla yapıp sana değil, doğrudan kullanıcıya göstereceğiz — burada sadece tutar ve gün sayısını doğru çıkar.)
-
-3) Kullanıcı bir kayıt EKLEMEK/DÜZENLEMEK/SİLMEK istiyorsa (bu, veri değiştiren HER istek için zorunludur, kullanıcı "evet/tamam/yap" dese bile ASLA doğrudan işlem yapma):
-{"type":"action","action":"addBill","params":{"name":"Elektrik","category":"Elektrik","amount":2500},"summary":"Elektrik faturası, 2.500 TL tutarında eklenecek."}
-Kullanılabilir action isimleri: addLoan, markLoanPaid, addCard, setCardDebt, setCardPlanned, markCardPaid, addKmh, setKmhDebt, setKmhPlanned, markKmhPaid, addBill, markBillPaid, setBillAmount, toggleBillAutoPay, addDebt, markDebtPaid, setIncome.
-"summary" alanı kullanıcının onay ekranında göreceği, kısa ve net Türkçe özet olmalı.
-
-4) İstek belirsizse:
-{"type":"clarify","message":"netleştirici soru"}
-
-ÖNEMLİ KURALLAR:
-- "type":"action" dışında HİÇBİR yanıt veri değiştirmez — kullanıcı arayüzdeki ONAYLA butonuna basmadan hiçbir kayıt eklenmez/silinmez/değiştirilmez. Bunu sen değil, uygulama garanti eder.
-- KMH faiz/maliyet sorularında kendi kafandan %X hesaplama YAPMA — "calc_kmh" tipini kullan ya da yukarıdaki kmh_hesaplari verisindeki hazır sonuçları oku.
-- Uygulamada veri yoksa "veri yok" de, veri varmış gibi davranma.
-- Tahmini bir şey söylüyorsan "yaklaşık" kelimesini kullan.`;
+KURALLAR:
+1) Kullanıcının verisine SADECE sana tanımlı get_/search_/calculate_ araçlarını çağırarak eriş. Kendi kafandan rakam, bakiye ya da tarih UYDURMA. Bir soruyu cevaplamadan önce ihtiyacın olan veriyi ilgili aracı çağırarak al.
+2) Basit matematiksel toplama/çıkarma işlemlerini SEN yapma — ilgili "get_" aracı zaten hesaplanmış sonucu döner, onu kullan. KMH faiz/maliyet senaryolarında calculate_kmh_interest aracını çağır, kendi kafandan %X hesaplama yapma.
+3) Kullanıcı bir kayıt EKLEMEK/DEĞİŞTİRMEK/ÖDENDİ İŞARETLEMEK istediğinde (veri değiştiren HER istek için, kullanıcı "evet/tamam/yap" dese bile) SADECE ilgili yazma aracını (action) çağır — veriyi KENDİN asla değiştiremezsin, uygulama bu çağrıyı kullanıcıya ONAYLA/VAZGEÇ olarak gösterecek ve veri SADECE kullanıcı ONAYLA'ya basarsa değişecek. Bu araçları çağırırken MUTLAKA kısa ve net bir Türkçe "summary" (özet) parametresi de ver — kullanıcı onay ekranında bunu görecek.
+4) İstek belirsizse (örn. hangi kredi/kart/fatura olduğu anlaşılmıyorsa ve birden fazla kayıt varsa) kısa bir netleştirici soru sor, araç çağırma.
+5) Tahmini/yaklaşık bir şey söylüyorsan "yaklaşık" kelimesini kullan. Uygulamada ilgili veri hiç yoksa "veri yok" de, veri varmış gibi davranma.
+6) Cevapların kısa, net ve samimi bir Türkçeyle olsun — gereksiz uzatma.`;
 }
 
-async function callOpenRouter(messages){
+async function callGemini(contents, thinkingLevel){
   const key = getORKey();
   if(!key) throw new Error('API anahtarı ayarlanmamış. Lütfen önce 🤖 simgesinden anahtarını gir.');
+  const body = {
+    system_instruction: { parts:[{ text: buildAiSystemPrompt() }] },
+    contents,
+    tools: [{ functionDeclarations: AI_READ_TOOLS.concat(AI_ACTION_TOOLS) }],
+    generationConfig: { thinkingConfig: { thinkingLevel: thinkingLevel || 'low' } },
+  };
   let resp;
   try{
-    resp = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    resp = await fetch(GEMINI_API_URL + '?key=' + encodeURIComponent(key), {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: AI_MODEL, messages, temperature: 0.2 }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     });
   }catch(networkErr){
     throw new Error('Yapay zekaya bağlanılamadı. İnternet bağlantını kontrol edip tekrar dener misin?');
   }
   if(!resp.ok){
-    if(resp.status===401) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
+    if(resp.status===401 || resp.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
     if(resp.status===429) throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
     throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
   }
   let data;
   try{ data = await resp.json(); }
   catch(e){ throw new Error('Yapay zekadan beklenmeyen bir cevap geldi, lütfen tekrar dener misin?'); }
-  const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-  if(!content) throw new Error('Yapay zekadan boş bir cevap geldi, lütfen tekrar dener misin?');
-  return content;
+  const candidate = data.candidates && data.candidates[0];
+  const parts = candidate && candidate.content && candidate.content.parts;
+  if(!parts || !parts.length) throw new Error('Yapay zekadan boş bir cevap geldi, lütfen tekrar dener misin?');
+  return parts;
 }
 
-function parseAiJson(content){
-  if(!content) return null;
-  let text = content.trim().replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```$/,'').trim();
-  try{ return JSON.parse(text); }
-  catch(e){
-    const m = text.match(/\{[\s\S]*\}/);
-    if(m){ try{ return JSON.parse(m[0]); }catch(e2){ return null; } }
-    return null;
-  }
+// Basit sezgisel kural: günlük/basit komutlar için düşük, karmaşık analiz/özet istekleri için
+// orta düşünme seviyesi — hız için gereksiz yere yüksek seviye kullanılmaz.
+function pickThinkingLevel(text){
+  const q = (text||'').toLocaleLowerCase('tr');
+  const complexHints = ['analiz','özet','karşılaştır','tahmin','plan','strateji','rapor','öner','değerlendir'];
+  return complexHints.some(h=>q.includes(h)) ? 'medium' : 'low';
 }
 
 function findBank(nameFragment){
@@ -2340,38 +2300,26 @@ function executeAiAction(cmd){
       const bank = findBank(p.bankName);
       const limit = Number(p.limit)||0;
       if(!limit) return 'KMH limitini anlayamadım.';
-      state.kmhAccounts.push({ id:uid(), bankCode:bank.code, limit, dueDay:15, debt:0, plannedPayment:0, paymentStatus:'bekliyor', transactions:[] });
+      state.kmhAccounts.push({ id:uid(), bankCode:bank.code, limit, dueDay:15, debt:0, plannedPayment:0, paymentStatus:'bekliyor', paymentStatusYm:null, transactions:[] });
       save(); render();
       return `${bank.name} KMH hesabı ${formatTL(limit)} limitle eklendi.`;
     }
     case 'setKmhDebt': {
+      // KMH'de Toplam Borç ve Ödenecek Borç tek bir merkezi değeri (k.debt) paylaşır.
       const k = findKmhByBank(p.bankName);
       if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
       const amount = Number(p.amount)||0;
-      if(!k.transactions) k.transactions=[];
-      const delta = amount - calculateKmhInterest(k.transactions, todayStr()).principal;
-      if(delta!==0) k.transactions.push({ id:uid(), date:todayStr(), amount:delta });
       k.debt = amount;
       save(); render();
       return `${bankByCode(k.bankCode).name} KMH toplam borcu ${formatTL(amount)} olarak güncellendi.`;
     }
-    case 'setKmhPlanned': {
-      const k = findKmhByBank(p.bankName);
-      if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
-      k.plannedPayment = Number(p.amount)||0;
-      save(); render();
-      return `${bankByCode(k.bankCode).name} KMH için ödenecek miktar ${formatTL(k.plannedPayment)} olarak ayarlandı.`;
-    }
     case 'markKmhPaid': {
       const k = findKmhByBank(p.bankName);
       if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
-      const planned = k.plannedPayment||0;
-      if(!k.transactions) k.transactions=[];
-      k.transactions.push({ id:uid(), date:todayStr(), amount:-planned });
-      k.debt = calculateKmhInterest(k.transactions, todayStr()).principal;
-      k.paymentStatus = 'odendi';
+      const paid = Math.min(Number(p.amount)||(k.debt||0), k.debt||0);
+      k.debt = Math.max(0, (k.debt||0) - paid);
       save(); render();
-      return `${bankByCode(k.bankCode).name} KMH ödemesi (${formatTL(planned)}) yapıldı, borçtan düşüldü.`;
+      return `${bankByCode(k.bankCode).name} KMH ödemesi (${formatTL(paid)}) yapıldı; Toplam Borç ve Ödenecek Borç aynı anda düştü, kalan limit arttı.`;
     }
     case 'addBill': {
       const amount = Number(p.amount)||0;
@@ -2425,43 +2373,60 @@ function executeAiAction(cmd){
   }
 }
 
-// ---- Sohbet akışı ----
+// ---- Sohbet akışı (Gemini Function/Tool Calling) ----
+// geminiHistory: Gemini'nin "contents" formatında tuttuğumuz gerçek konuşma geçmişi — aiMessages
+// (ekranda gösterilen balonlar) ile aynı şey DEĞİLDİR. Her mesajda tüm finans verisi BURAYA
+// gömülmez; model ihtiyaç duyduğu veriyi get_/search_/calculate_ araçlarını çağırarak alır.
+let geminiHistory = [];
+
 async function sendAiMessage(text){
   if(!text) return;
   if(!getORKey()){ openModal('aiSettings'); return; }
   aiMessages.push({ role:'user', text });
   aiMessages.push({ role:'assistant', text:'…', thinking:true });
   render();
-  const history = [
-    { role:'system', content: buildAiSystemPrompt() },
-    ...aiMessages.filter(m=>!m.thinking).slice(0,-1).map(m=>({ role:m.role, content:m.text })),
-    { role:'user', content:text },
-  ];
+  geminiHistory.push({ role:'user', parts:[{ text }] });
+  const thinkingLevel = pickThinkingLevel(text);
   try{
-    const content = await callOpenRouter(history);
-    const cmd = parseAiJson(content);
+    let finalText = null;
+    let pendingCmd = null;
+    for(let round=0; round<5 && finalText===null && !pendingCmd; round++){
+      const parts = await callGemini(geminiHistory, thinkingLevel);
+      const funcCallPart = parts.find(p=>p.functionCall);
+      if(funcCallPart){
+        const { name, args } = funcCallPart.functionCall;
+        if(AI_WRITE_ACTION_NAMES.includes(name)){
+          // Yazma (veri değiştiren) aracı — HİÇBİR ZAMAN otomatik çalıştırılmaz. Sadece
+          // kullanıcı arayüzde ONAYLA'ya basınca executeAiAction() ile gerçekleşir.
+          pendingCmd = { action:name, params:args||{}, summary:(args&&args.summary) || 'Bu işlemi yapmak istiyor musun?' };
+          // Konuşma geçmişini tutarlı tutmak için modelin çağrısını ve bekleme durumunu kaydet;
+          // gerçek sonucu değil, sadece onaya sunulduğunu yazıyoruz.
+          geminiHistory.push({ role:'model', parts:[{ functionCall:{ name, args:args||{} } }] });
+          geminiHistory.push({ role:'user', parts:[{ functionResponse:{ name, response:{ durum:'kullanıcı_onayı_bekleniyor' } } }] });
+        } else {
+          // Okuma aracı — hemen çalıştır, sonucu modele geri ver ki cevabı tamamlasın.
+          const result = dispatchAiReadTool(name, args||{});
+          geminiHistory.push({ role:'model', parts:[{ functionCall:{ name, args:args||{} } }] });
+          geminiHistory.push({ role:'user', parts:[{ functionResponse:{ name, response: result==null?{}:{ sonuc: result } } }] });
+        }
+      } else {
+        const textPart = parts.find(p=>p.text);
+        finalText = (textPart && textPart.text) || 'Cevabı anlayamadım, tekrar sorar mısın?';
+        geminiHistory.push({ role:'model', parts:[{ text: finalText }] });
+      }
+    }
     aiMessages.pop(); // "…" balonunu kaldır
-    if(!cmd || !cmd.type){
-      aiMessages.push({ role:'assistant', text:'Cevabı anlayamadım, tekrar sorar mısın?' });
-    } else if(cmd.type==='answer'){
-      aiMessages.push({ role:'assistant', text: cmd.message || '...' });
-    } else if(cmd.type==='clarify'){
-      aiMessages.push({ role:'assistant', text: cmd.message || 'Biraz daha detay verir misin?' });
-    } else if(cmd.type==='calc_kmh'){
-      const r = calculateKmhScenario(Number(cmd.amount)||0, Number(cmd.days)||0);
-      const msg = `${formatTL(Number(cmd.amount)||0)} tutarında KMH'yi ${cmd.days} gün kullansan, yaklaşık:\n`+
-        `• Faiz: ${formatTL(r.interest)}\n• BSMV: ${formatTL(r.bsmv)}\n• KKDF: ${formatTL(r.kkdf)}\n`+
-        `• Toplam maliyet: ${formatTL(r.total)} (aylık %${(KMH_MONTHLY_INTEREST_RATE*100).toFixed(2)} varsayılan oranla, yaklaşık bir hesaptır)`;
-      aiMessages.push({ role:'assistant', text: msg });
-    } else if(cmd.type==='action'){
-      pendingAiAction = cmd;
-      aiMessages.push({ role:'assistant', text: cmd.summary || 'Bu işlemi yapmak istiyor musun?', pendingAction: cmd });
+    if(pendingCmd){
+      pendingAiAction = pendingCmd;
+      aiMessages.push({ role:'assistant', text: pendingCmd.summary, pendingAction: pendingCmd });
     } else {
-      aiMessages.push({ role:'assistant', text:'Cevabı anlayamadım, tekrar sorar mısın?' });
+      aiMessages.push({ role:'assistant', text: finalText || 'Cevabı anlayamadım, tekrar sorar mısın?' });
     }
   } catch(err){
     aiMessages.pop();
     aiMessages.push({ role:'assistant', text: '⚠️ ' + (err.message || 'Beklenmeyen bir hata oluştu, lütfen tekrar dener misin?') });
+    // Hatalı turu geçmişten temizle ki bir sonraki mesaj bozuk bir bağlamla başlamasın.
+    if(geminiHistory.length && geminiHistory[geminiHistory.length-1].role==='user') geminiHistory.pop();
   }
   render();
 }
@@ -2500,55 +2465,18 @@ function renderAI(){
   }).join('');
   return `
     <div class="ai-chat-wrap">
-      <div style="display:flex;justify-content:flex-end;padding:2px 2px 6px;">
+      <div class="ai-header-row">
         <button data-action="open-modal" data-modal="aiSettings" style="background:none;border:none;color:var(--ink-soft);font-size:12px;cursor:pointer;">⚙ API Ayarı</button>
+        <button class="ai-close-btn" data-action="ai-close" title="Kapat">✕</button>
       </div>
       <div class="ai-messages" id="aiMessages">
         ${bubbles || '<div class="empty">Merhaba! Kredilerin, kartların, faturaların ve KMH hesapların hakkında soru sorabilir, hesap yaptırabilir ya da yeni kayıt eklememi isteyebilirsin.</div>'}
       </div>
       <div class="ai-input-row">
-        <button class="ai-mic-btn" id="aiMicBtn" title="Konuş">🎤</button>
         <input id="aiInputBox" class="ai-input-box" placeholder="Mesajını yaz..." autocomplete="off">
         <button class="ai-send-btn" data-action="ai-send">Gönder</button>
       </div>
     </div>`;
-}
-
-function isIOS(){
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
-}
-function hasSpeechRecognition(){
-  // iOS Safari, tarayıcının kendi konuşma tanıma nesnesini tanımlıyor gibi görünse de
-  // gerçekte çalışmıyor (buton "dinliyor" durumunda asılı kalıyor) — bu yüzden iOS'ta
-  // hiç denemeden doğrudan klavye/metin girişine bırakıyoruz.
-  if(isIOS()) return false;
-  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
-}
-let aiRecognition = null, aiRecognizing = false, aiRecognitionTimeout = null;
-function startListening(){
-  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
-  try{ aiRecognition = new Ctor(); } catch(e){ return; }
-  aiRecognition.lang = 'tr-TR';
-  aiRecognition.interimResults = false;
-  aiRecognition.maxAlternatives = 1;
-  aiRecognizing = true;
-  const mic = document.getElementById('aiMicBtn');
-  if(mic) mic.classList.add('listening');
-  aiRecognition.onresult = (e)=>{
-    clearTimeout(aiRecognitionTimeout);
-    const text = e.results[0][0].transcript;
-    const box = document.getElementById('aiInputBox');
-    if(box) box.value = text; // Doğrudan gönderilmez — kullanıcı önce metni görür/değiştirir, sonra Gönder'e basar.
-  };
-  aiRecognition.onerror = ()=>{ clearTimeout(aiRecognitionTimeout); if(mic) mic.classList.remove('listening'); };
-  aiRecognition.onend = ()=>{ clearTimeout(aiRecognitionTimeout); aiRecognizing=false; if(mic) mic.classList.remove('listening'); };
-  try{ aiRecognition.start(); } catch(e){ return; }
-  aiRecognitionTimeout = setTimeout(()=>{
-    if(aiRecognizing){ try{ aiRecognition.stop(); }catch(e){} aiRecognizing=false; if(mic) mic.classList.remove('listening'); }
-  }, 8000);
-}
-function stopListening(){
-  if(aiRecognition && aiRecognizing){ try{ aiRecognition.stop(); }catch(e){} }
 }
 
 
