@@ -1831,6 +1831,7 @@ document.body.addEventListener('click', function(e){
   }
   if(action==='ai-send'){
     if(aiBusy) return; // yanıt beklenirken aynı isteğin tekrar tekrar gönderilmesini engelle
+    if(Date.now() < aiCooldownUntil) return; // 429 sonrası 10 saniyelik bekleme dolmadan yeni istek atma
     const box = document.getElementById('aiInputBox');
     if(box){ const v = box.value.trim(); if(v){ box.value=''; sendAiMessage(v); } }
     return;
@@ -2076,7 +2077,7 @@ if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
 // ---------- YAPAY ZEKA (Google Gemini — Function/Tool Calling) — Akıllı Finans Asistanı ----------
-const AI_MODEL = 'gemini-1.5-flash';
+const AI_MODEL = 'gemini-2.0-flash-lite';
 function geminiUrlFor(model){ return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'; }
 const GEMINI_API_URL = geminiUrlFor(AI_MODEL);
 let aiMessages = []; // {role:'user'|'assistant', text, pendingAction?} — sadece bu oturumda tutulur.
@@ -2218,18 +2219,33 @@ function buildGenerationConfig(thinkingLevel){
   return { thinkingConfig: { thinkingLevel: level, thinkingBudget: budget } };
 }
 
+// İstek en az 15 saniye yanıt bekler (zaman aşımı) — bu süre dolmadan "modele ulaşılamadı" gibi
+// erken bir hata gösterilmez; yanıt gerçekten hiç gelmezse AbortController isteği keser ve
+// kullanıcıya net bir "zaman aşımı" mesajı gösterilir.
+const AI_REQUEST_TIMEOUT_MS = 20000;
+
 async function geminiRequest(url, key, body){
   let resp;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(()=>controller.abort(), AI_REQUEST_TIMEOUT_MS);
   try{
     resp = await fetch(url + '?key=' + encodeURIComponent(key), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
   }catch(networkErr){
+    if(networkErr && networkErr.name === 'AbortError'){
+      const e = new Error('Yapay zekadan yanıt gelmedi (zaman aşımı). Lütfen tekrar dener misin?');
+      e.kind = 'timeout';
+      throw e;
+    }
     const e = new Error('Yapay zekaya bağlanılamadı. İnternet bağlantını kontrol edip tekrar dener misin?');
     e.kind = 'network';
     throw e;
+  }finally{
+    clearTimeout(timeoutId);
   }
   if(!resp.ok){
     let detail = '';
@@ -2286,11 +2302,15 @@ async function callGemini(contents, thinkingLevel){
   try{
     return await geminiRequest(geminiUrlFor(AI_MODEL), key, body);
   }catch(err){
-    if(err.kind==='network' || err.kind==='parse' || err.kind==='empty') throw err;
+    if(err.kind==='network' || err.kind==='parse' || err.kind==='empty' || err.kind==='timeout') throw err;
     if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
     if(err.status===400) throw new Error('Yapay zeka isteği geçersiz görünüyor. Lütfen tekrar dener misin?');
     if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
-    if(err.status===429) throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
+    if(err.status===429){
+      const e = new Error('Çok hızlı mesaj gönderdiniz, lütfen 10 saniye bekleyin.');
+      e.kind = 'rate_limit';
+      throw e;
+    }
     throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
   }
 }
@@ -2481,10 +2501,12 @@ function executeAiAction(cmd){
 // gömülmez; model ihtiyaç duyduğu veriyi get_/search_/calculate_ araçlarını çağırarak alır.
 let geminiHistory = [];
 let aiBusy = false; // bir yanıt beklenirken yeni istek gönderilmesini / donmayı engeller
+let aiCooldownUntil = 0; // 429 (çok fazla istek) sonrası butonun pasif kalacağı an (Date.now() ms)
 
 async function sendAiMessage(text){
   if(!text) return;
   if(aiBusy) return; // önceki istek hâlâ cevap beklerken aynı isteği ikinci kez gönderme
+  if(Date.now() < aiCooldownUntil) return; // 429 sonrası 10 saniyelik bekleme dolmadan yeni istek atma
   if(!getORKey()){ openModal('aiSettings'); return; }
   aiBusy = true;
   const sendBtn = document.querySelector('[data-action="ai-send"]');
@@ -2534,6 +2556,13 @@ async function sendAiMessage(text){
     aiMessages.push({ role:'assistant', text: '⚠️ ' + (err.message || 'Beklenmeyen bir hata oluştu, lütfen tekrar dener misin?') });
     // Hatalı turu geçmişten temizle ki bir sonraki mesaj bozuk bir bağlamla başlamasın.
     if(geminiHistory.length && geminiHistory[geminiHistory.length-1].role==='user') geminiHistory.pop();
+    if(err.kind==='rate_limit'){
+      // 429 (kota/dakikalık limit) alındığında art arda otomatik yeniden deneme YAPILMAZ —
+      // bunun yerine kullanıcı görsün diye buton 10 saniyeliğine pasif hale getirilir; süre
+      // dolunca kendiliğinden tekrar aktif olur.
+      aiCooldownUntil = Date.now() + 10000;
+      setTimeout(()=>{ render(); }, 10000);
+    }
   } finally {
     aiBusy = false;
     const sendBtn2 = document.querySelector('[data-action="ai-send"]');
@@ -2561,6 +2590,7 @@ function cancelPendingAction(msgIndex){
 
 function renderAI(){
   $fab.style.display='none';
+  const aiCoolingDown = Date.now() < aiCooldownUntil; // 429 sonrası 10 sn'lik bekleme penceresi
   const bubbles = aiMessages.map((m,i)=>{
     if(m.role==='user'){
       return `<div class="ai-bubble ai-user">${esc(m.text)}</div>`;
@@ -2584,8 +2614,8 @@ function renderAI(){
         ${bubbles || '<div class="empty">Merhaba! Kredilerin, kartların, faturaların ve KMH hesapların hakkında soru sorabilir, hesap yaptırabilir ya da yeni kayıt eklememi isteyebilirsin.</div>'}
       </div>
       <div class="ai-input-row">
-        <input id="aiInputBox" class="ai-input-box" placeholder="Mesajını yaz..." autocomplete="off" ${aiBusy?'disabled':''}>
-        <button class="ai-send-btn" data-action="ai-send" ${aiBusy?'disabled':''}>${aiBusy?'<span class="ai-send-spinner"></span> Gönderiliyor…':'Gönder'}</button>
+        <input id="aiInputBox" class="ai-input-box" placeholder="Mesajını yaz..." autocomplete="off" ${(aiBusy||aiCoolingDown)?'disabled':''}>
+        <button class="ai-send-btn" data-action="ai-send" ${(aiBusy||aiCoolingDown)?'disabled':''}>${aiBusy?'<span class="ai-send-spinner"></span> Gönderiliyor…':(aiCoolingDown?'Bekleyin…':'Gönder')}</button>
       </div>
     </div>`;
 }
