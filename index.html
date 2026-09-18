@@ -1025,8 +1025,10 @@ function renderLoans(){
       const allPaid = !nextUnpaid;
       const dueStr = nextUnpaid ? formatDMY(nextUnpaid.ym, l.dueDay) : '-';
       const bank = bankByCode(l.bankCode);
+      // Kredi tamamen bitmişse (kalan taksit yok) artık ödenmesi gereken bir borç kalmamıştır —
+      // kutu tamamen BOŞ kalır, yeşil arka plan gösterilir (ÖDENDİ yazısı değil).
       const statusKey = allPaid ? 'odendi' : nextUnpaid.status;
-      const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
+      const pillLabel = allPaid ? '&nbsp;' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
       return `<div class="record-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -1094,12 +1096,13 @@ function renderCards(){
       const bank = bankByCode(c.bankCode);
       const debt = c.totalDebt||0;
       const remainingLimit = (c.limit||0) - debt;
+      // Kredi kartında her ay borç olmak zorunda değildir: bu ay için hiç ödenecek bir tutar
+      // (statement) yoksa kutu tamamen BOŞ kalır, yeşil arka plan gösterilir — ÖDENDİ/BEKLİYOR/
+      // GECİKTİ yazılmaz. Sadece bu ay gerçekten ödenecek bir miktar VARSA durum hesaplanır.
+      const hasCharge = !!(st && (st.amount||0) > 0);
       const paid = !!(st && st.status==='odendi');
-      // Borç yoksa (Toplam Borç = 0 ve bu ay için ödenecek bir miktar da yoksa) hiçbir zaman
-      // GECİKTİ/BEKLİYOR gösterme — doğrudan ÖDENDİ (yeşil) say.
-      const noOutstanding = debt<=0 && (!st || (st.amount||0)<=0);
-      const statusKey = noOutstanding ? 'odendi' : periodStatus(paid, state.selectedMonth, c.dueDay);
-      const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
+      const statusKey = hasCharge ? periodStatus(paid, state.selectedMonth, c.dueDay) : 'odendi';
+      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'));
       return `<div class="record-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -1137,11 +1140,12 @@ function renderKmh(){
       const debt = k.debt||0;
       const planned = k.plannedPayment||0;
       const remainingLimit = (k.limit||0) - debt;
-      // Toplam Borç ve Ödenecek Borç birbirinden BAĞIMSIZ iki değerdir: Toplam Borç KMH'nin
-      // güncel toplam bakiyesi, Ödenecek Borç ise kullanıcının bu dönem ödemek üzere ayırdığı
-      // tutardır. İkisi de sıfırsa (hiç borç kalmamışsa) hesap GECİKTİ/BEKLİYOR değil, ÖDENDİ sayılır.
-      const statusKey = (debt<=0 && planned<=0) ? 'odendi' : periodStatus(false, currentYm(), k.dueDay);
-      const pillLabel = statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
+      // Bu dönem ödenecek bir tutar (Ödenecek Borç) ayrılmamışsa kutu tamamen BOŞ kalır, yeşil
+      // arka plan gösterilir — Toplam Borç'ta bakiye kalmış olsa bile henüz "bu ay ödenecek"
+      // bir şey yoktur. Sadece Ödenecek Borç > 0 iken durum (BEKLİYOR/GECİKTİ) hesaplanır.
+      const hasCharge = planned > 0;
+      const statusKey = hasCharge ? periodStatus(false, currentYm(), k.dueDay) : 'odendi';
+      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'));
       const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
       return `<div class="record-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}">
         <div class="record-top">
@@ -1179,14 +1183,18 @@ function renderBills(){
     state.bills.map(b=>{
       const r = billRecord(b, state.selectedMonth);
       const ic = BILL_ICONS[b.category] || BILL_ICONS['Abonelikler'];
-      const pillLabel = r.status==='odendi' ? 'ÖDENDİ' : (r.status==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR');
+      // Bu ay için henüz bir tutar oluşmamışsa (r.amount<=0) kutu tamamen BOŞ kalır, yeşil
+      // arka plan gösterilir — bilinmeyen bir tutar için GECİKTİ/BEKLİYOR yazılmaz.
+      const hasCharge = (r.amount||0) > 0;
+      const statusKey = hasCharge ? r.status : 'odendi';
+      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'));
       return `<div class="item-card" data-action="open-modal" data-modal="billRecord" data-id="${b.id}" data-lp-type="bill" data-lp-id="${b.id}">
         <div class="item-top">
           <div class="cat-icon-row">
             <span class="cat-icon" style="background:${ic.bg};color:${ic.color}">${ic.icon}</span>
             <div><p class="item-title">${esc(b.name)}</p><p class="item-sub">${esc(b.category)}</p></div>
           </div>
-          <span class="record-status-pill ${r.status}">${pillLabel}</span>
+          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
         </div>
         <div class="item-meta-row">
           <span>${r.amount>0?formatTL(r.amount):'Tutar bekleniyor'}</span>
@@ -1382,7 +1390,7 @@ const modalTemplates = {
     <div class="field"><label>Tür</label>${billCatGrid('billCatChoice')}</div>
     <div class="field"><label>Ad (opsiyonel)</label><div id="nameFieldWrap">${billNameField(BILL_CATS[0])}</div></div>
     <div class="amount-fixed-row">
-      <div class="field"><label>Tahmini Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field"><label>Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
       <div class="fixed-toggle-mini"><span>Sabit</span><div class="switch" id="f_isFixed" data-action="toggle-switch"><div class="knob"></div></div></div>
     </div>
     <div class="field"><label>Son Ödeme Günü</label>${dayWheel('billDayChoice')}</div>
@@ -1812,6 +1820,7 @@ document.body.addEventListener('click', function(e){
     save(); closeModal(); navigate('bills'); return;
   }
   if(action==='ai-send'){
+    if(aiBusy) return; // yanıt beklenirken aynı isteğin tekrar tekrar gönderilmesini engelle
     const box = document.getElementById('aiInputBox');
     if(box){ const v = box.value.trim(); if(v){ box.value=''; sendAiMessage(v); } }
     return;
@@ -2233,13 +2242,29 @@ async function geminiRequest(key, body){
   return parts;
 }
 
+// Gemini'nin fonksiyon çağırma şeması, parametresi OLMAYAN bir fonksiyon için "parameters"
+// alanının hiç GÖNDERİLMEMESİNİ bekler — boş bir "properties:{}" nesnesi göndermek isteği
+// tamamen geçersiz kılıp 400 Bad Request ile reddedilmesine yol açabiliyor (ve tek bir bozuk
+// araç tanımı, tools listesindeki TÜM 28 aracı birden geçersiz kılıyor — bu yüzden basit sorular
+// da dahil HER istek başarısız oluyordu). Gönderim öncesi bu alanı burada temizliyoruz.
+function sanitizeToolDeclarations(tools){
+  return tools.map(t=>{
+    const params = t.parameters;
+    if(params && params.properties && Object.keys(params.properties).length===0){
+      const { parameters, ...rest } = t;
+      return rest;
+    }
+    return t;
+  });
+}
+
 async function callGemini(contents, thinkingLevel){
   const key = getORKey();
   if(!key) throw new Error('API anahtarı ayarlanmamış. Lütfen önce 🤖 simgesinden anahtarını gir.');
   const baseBody = {
     systemInstruction: { parts:[{ text: buildAiSystemPrompt() }] },
     contents,
-    tools: [{ functionDeclarations: AI_READ_TOOLS.concat(AI_ACTION_TOOLS) }],
+    tools: [{ functionDeclarations: sanitizeToolDeclarations(AI_READ_TOOLS.concat(AI_ACTION_TOOLS)) }],
   };
   try{
     return await geminiRequest(key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
@@ -2448,10 +2473,15 @@ function executeAiAction(cmd){
 // (ekranda gösterilen balonlar) ile aynı şey DEĞİLDİR. Her mesajda tüm finans verisi BURAYA
 // gömülmez; model ihtiyaç duyduğu veriyi get_/search_/calculate_ araçlarını çağırarak alır.
 let geminiHistory = [];
+let aiBusy = false; // bir yanıt beklenirken yeni istek gönderilmesini / donmayı engeller
 
 async function sendAiMessage(text){
   if(!text) return;
+  if(aiBusy) return; // önceki istek hâlâ cevap beklerken aynı isteği ikinci kez gönderme
   if(!getORKey()){ openModal('aiSettings'); return; }
+  aiBusy = true;
+  const sendBtn = document.querySelector('[data-action="ai-send"]');
+  if(sendBtn) sendBtn.disabled = true;
   aiMessages.push({ role:'user', text });
   aiMessages.push({ role:'assistant', text:'…', thinking:true });
   render();
@@ -2497,6 +2527,10 @@ async function sendAiMessage(text){
     aiMessages.push({ role:'assistant', text: '⚠️ ' + (err.message || 'Beklenmeyen bir hata oluştu, lütfen tekrar dener misin?') });
     // Hatalı turu geçmişten temizle ki bir sonraki mesaj bozuk bir bağlamla başlamasın.
     if(geminiHistory.length && geminiHistory[geminiHistory.length-1].role==='user') geminiHistory.pop();
+  } finally {
+    aiBusy = false;
+    const sendBtn2 = document.querySelector('[data-action="ai-send"]');
+    if(sendBtn2) sendBtn2.disabled = false;
   }
   render();
 }
