@@ -2077,7 +2077,9 @@ if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
 // ---------- YAPAY ZEKA (Google Gemini — Function/Tool Calling) — Akıllı Finans Asistanı ----------
-const AI_MODEL = 'gemini-2.0-flash-lite';
+const AI_MODEL = 'gemini-2.0-flash';
+// Endpoint TAM OLARAK şu formatta kurulur:
+// https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=API_ANAHTARI
 function geminiUrlFor(model){ return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'; }
 const GEMINI_API_URL = geminiUrlFor(AI_MODEL);
 let aiMessages = []; // {role:'user'|'assistant', text, pendingAction?} — sadece bu oturumda tutulur.
@@ -2250,7 +2252,11 @@ async function geminiRequest(url, key, body){
   if(!resp.ok){
     let detail = '';
     try{ detail = await resp.text(); }catch(_e){}
-    if(detail) console.error('Gemini API hatası ('+resp.status+'):', detail);
+    // Hangi HTTP kodunun (400/404/429/vb.) ve hangi gerçek Google hata metninin döndüğü, kullanıcıya
+    // gösterilen sadeleştirilmiş Türkçe mesajdan bağımsız olarak, HER ZAMAN konsola tam olarak yazılır
+    // — böylece tarayıcının geliştirici konsolundan sorunun gerçek kaynağı kesin olarak görülebilir.
+    console.log('[Gemini API] İstek başarısız — URL:', url, '| HTTP durum kodu:', resp.status, resp.statusText);
+    console.log('[Gemini API] Ham hata yanıtı:', detail || '(gövde boş)');
     const e = new Error('http_'+resp.status);
     e.status = resp.status;
     e.detail = detail;
