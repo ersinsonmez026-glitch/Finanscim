@@ -2072,7 +2072,13 @@ if(storageBroken) showStorageWarning();
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
 // ---------- YAPAY ZEKA (Google Gemini — Function/Tool Calling) — Akıllı Finans Asistanı ----------
 const AI_MODEL = 'gemini-3.8-flash';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' + AI_MODEL + ':generateContent';
+// İstenen model (gemini-3.8-flash) bu API anahtarıyla mevcut olmayabilir veya hesap/bölgeye göre
+// henüz açılmamış olabilir — bu durumda TÜM istekler "model bulunamadı" tipi bir hatayla
+// (400/404) reddedilir. Asistanın çalışmaya devam etmesi için, model kaynaklı bir hata alınırsa
+// otomatik olarak bilinen, yaygın kullanılabilir bir modele geçiyoruz.
+const AI_MODEL_FALLBACKS = ['gemini-2.0-flash', 'gemini-1.5-flash'];
+function geminiUrlFor(model){ return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'; }
+const GEMINI_API_URL = geminiUrlFor(AI_MODEL);
 let aiMessages = []; // {role:'user'|'assistant', text, pendingAction?} — sadece bu oturumda tutulur.
 let pendingAiAction = null;
 
@@ -2212,10 +2218,10 @@ function buildGenerationConfig(thinkingLevel){
   return { thinkingConfig: { thinkingLevel: level, thinkingBudget: budget } };
 }
 
-async function geminiRequest(key, body){
+async function geminiRequest(url, key, body){
   let resp;
   try{
-    resp = await fetch(GEMINI_API_URL + '?key=' + encodeURIComponent(key), {
+    resp = await fetch(url + '?key=' + encodeURIComponent(key), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -2263,6 +2269,34 @@ function sanitizeToolDeclarations(tools){
   });
 }
 
+// Tek bir model/URL için istek dener: önce generationConfig'li, o alan bu model sürümünde
+// tanınmıyorsa (400) onsuz TEK seferlik yeniden dener; 429 gelirse kısa bir bekleme sonrası
+// AYNI modele TEK seferlik sessiz bir yeniden deneme yapar. Sonunda hâlâ hata varsa, o hatayı
+// (status bilgisiyle birlikte) olduğu gibi yukarı fırlatır — hangi modele geçileceğine
+// (ya da son hatanın kullanıcıya nasıl gösterileceğine) çağıran callGemini() karar verir.
+async function attemptGeminiModel(url, key, baseBody, thinkingLevel){
+  try{
+    return await geminiRequest(url, key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
+  }catch(err){
+    if(err.kind==='network' || err.kind==='parse' || err.kind==='empty') throw err;
+    if(err.status===400){
+      try{
+        return await geminiRequest(url, key, baseBody);
+      }catch(err2){
+        if(err2.detail) console.error('Gemini API yedek deneme de başarısız ('+url+'):', err2.detail);
+        throw err2;
+      }
+    }
+    if(err.status===429){
+      // Geçici bir hız-sınırı takılması olabilir (art arda gelen istekler) — kullanıcıya hemen
+      // hata göstermeden kısa bir bekleme sonrası TEK seferlik sessiz bir yeniden deneme yap.
+      await new Promise(res=>setTimeout(res, 3000));
+      return await geminiRequest(url, key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
+    }
+    throw err;
+  }
+}
+
 async function callGemini(contents, thinkingLevel){
   const key = getORKey();
   if(!key) throw new Error('API anahtarı ayarlanmamış. Lütfen önce 🤖 simgesinden anahtarını gir.');
@@ -2271,35 +2305,34 @@ async function callGemini(contents, thinkingLevel){
     contents,
     tools: [{ functionDeclarations: sanitizeToolDeclarations(AI_READ_TOOLS.concat(AI_ACTION_TOOLS)) }],
   };
-  try{
-    return await geminiRequest(key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
-  }catch(err){
-    if(err.kind==='network' || err.kind==='parse' || err.kind==='empty') throw err;
-    // 400 (Bad Request) çoğunlukla generationConfig/thinkingConfig gibi opsiyonel bir alanın
-    // bu model sürümünde tanınmamasından kaynaklanır — o alan olmadan tek seferlik yeniden dene,
-    // böylece asistan "düşünme seviyesi" desteklenmese bile çalışmaya devam eder.
-    if(err.status===400){
-      try{
-        return await geminiRequest(key, baseBody);
-      }catch(err2){
-        if(err2.detail) console.error('Gemini API yedek deneme de başarısız:', err2.detail);
-        throw new Error('Yapay zeka isteği geçersiz görünüyor. Lütfen tekrar dener misin?');
+  // İstenen model (AI_MODEL) bu API anahtarıyla mevcut olmayabilir ya da hesap/bölgeye göre
+  // henüz açılmamış olabilir. Bu durumda TÜM istekler "model bulunamadı" tipi bir hatayla
+  // (400/404) reddedilir. Asistanın çalışmaya devam etmesi için, model kaynaklı bir hata
+  // alınırsa otomatik olarak listedeki bir SONRAKİ bilinen modele geçip aynı isteği tekrarlıyoruz.
+  const models = [AI_MODEL].concat(AI_MODEL_FALLBACKS);
+  for(let i=0; i<models.length; i++){
+    const model = models[i];
+    const isLastModel = i === models.length - 1;
+    try{
+      return await attemptGeminiModel(geminiUrlFor(model), key, baseBody, thinkingLevel);
+    }catch(err){
+      if(err.kind==='network' || err.kind==='parse' || err.kind==='empty') throw err;
+      // Anahtar hatası ya da erişim izni hatası modele özgü değil — başka bir model denemenin
+      // faydası olmaz, hemen açıkça bildir.
+      if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
+      // 400/404 çoğunlukla modelin bu anahtar/hesap için geçersiz ya da erişilemez olmasından
+      // kaynaklanır — listede daha deneyecek bir model varsa sessizce ona geç.
+      if((err.status===400 || err.status===404) && !isLastModel){
+        console.warn('Gemini modeli "'+model+'" başarısız oldu (HTTP '+err.status+'), sıradaki modele geçiliyor…');
+        continue;
       }
+      if(err.status===400) throw new Error('Yapay zeka isteği geçersiz görünüyor. Lütfen tekrar dener misin?');
+      if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
+      if(err.status===429) throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
+      throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
     }
-    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
-    if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
-    if(err.status===429){
-      // Geçici bir hız-sınırı takılması olabilir (art arda gelen istekler) — kullanıcıya hemen
-      // hata göstermeden kısa bir bekleme sonrası TEK seferlik sessiz bir yeniden deneme yap.
-      await new Promise(res=>setTimeout(res, 3000));
-      try{
-        return await geminiRequest(key, Object.assign({}, baseBody, { generationConfig: buildGenerationConfig(thinkingLevel) }));
-      }catch(err3){
-        throw new Error('Şu anda çok fazla istek var, birkaç saniye sonra tekrar dener misin?');
-      }
-    }
-    throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
   }
+  throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
 }
 
 // Basit sezgisel kural: günlük/basit komutlar için düşük, karmaşık analiz/özet istekleri için
