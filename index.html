@@ -45,18 +45,38 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-
 button{font-family:var(--font-body);}
 .app{display:flex;height:100vh;max-width:520px;margin:0 auto;position:relative;}
 
-.topbar{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:5;position:relative;}
-.topbar-left{display:flex;align-items:center;gap:10px;z-index:1;}
-.topbar-right{display:flex;align-items:center;gap:4px;margin-left:auto;z-index:1;}
-.topbar-ai-icon{font-size:19px;line-height:1;}
-.topbar-title-centered{position:absolute;left:0;right:0;text-align:center;font-family:var(--font-display);
-  font-weight:500;font-size:19px;margin:0;pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.topbar .header-action{background:none;border:none;color:var(--accent);font-size:22px;cursor:pointer;padding:4px 6px;}
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:5;}
+.topbar-left{display:flex;align-items:center;gap:10px;z-index:1;min-width:0;}
+.topbar-logo{width:34px;height:34px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#164f46);
+  color:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;}
+.topbar-titleblock{min-width:0;}
+.topbar-title{font-family:var(--font-display);font-weight:500;font-size:17px;margin:0;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-date{font-size:11px;color:var(--ink-soft);margin:1px 0 0;line-height:1.2;}
+.topbar-right{display:flex;align-items:center;gap:4px;margin-left:auto;z-index:1;flex-shrink:0;}
+.topbar .header-action{background:none;border:none;color:var(--accent);font-size:22px;cursor:pointer;padding:4px 6px;position:relative;}
 .notif-badge{position:absolute;top:2px;right:2px;background:var(--debt);color:#fff;font-size:10px;font-weight:700;
   min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
+#notifBell.bell-active{animation:bellShake 2.6s ease-in-out infinite;}
+@keyframes bellShake{
+  0%,92%,100%{transform:rotate(0);}
+  93%{transform:rotate(-14deg);} 94%{transform:rotate(12deg);} 95%{transform:rotate(-10deg);}
+  96%{transform:rotate(8deg);} 97%{transform:rotate(-4deg);} 98%{transform:rotate(0);}
+}
 
 .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;}
-.content{flex:1;overflow-y:auto;padding:16px 16px 70px;}
+.content{flex:1;overflow-y:auto;padding:16px 16px 92px;}
+
+.bottombar-wrap{position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column;z-index:6;
+  max-width:520px;margin:0 auto;}
+.bottombar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;
+  background:var(--surface);border-top:1px solid var(--border);}
+.bottombar-btn{display:flex;align-items:center;gap:7px;background:none;border:none;color:var(--ink);
+  font-size:13.5px;font-weight:600;font-family:var(--font-body);cursor:pointer;padding:8px 14px;border-radius:14px;}
+.bottombar-btn .bb-icon{font-size:18px;line-height:1;}
+.bottombar-btn.active{background:var(--accent-soft);color:var(--accent);}
+.day-quote{text-align:center;font-size:11px;color:var(--ink-soft);padding:5px 16px 8px;font-style:italic;
+  background:var(--surface);border-top:1px solid var(--border);line-height:1.35;}
 .storage-warning{background:var(--debt);color:#fff;padding:10px 14px;font-size:12px;text-align:center;line-height:1.4;}
 
 .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:9;}
@@ -183,12 +203,9 @@ button{font-family:var(--font-body);}
 
 .empty{text-align:center;padding:34px 10px;color:var(--ink-soft);font-size:13.5px;}
 
-.fab{position:fixed;left:18px;bottom:20px;width:54px;height:54px;border-radius:50%;background:var(--accent);
+.fab{position:fixed;left:18px;bottom:96px;width:54px;height:54px;border-radius:50%;background:var(--accent);
   color:#fff;border:none;font-size:26px;box-shadow:0 6px 18px rgba(0,0,0,.2);cursor:pointer;z-index:6;
   display:flex;align-items:center;justify-content:center;}
-.home-fab{position:fixed;right:22px;bottom:30px;width:50px;height:50px;border-radius:50%;background:var(--surface);
-  border:1px solid var(--border);color:var(--ink);font-size:20px;display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 16px rgba(0,0,0,.15);cursor:pointer;z-index:6;}
 .ai-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px);}
 .ai-messages{flex:1;overflow-y:auto;padding:6px 2px;display:flex;flex-direction:column;gap:8px;}
 .ai-bubble{max-width:82%;padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.45;}
@@ -346,12 +363,15 @@ button{font-family:var(--font-body);}
   <div class="main">
     <header class="topbar">
       <div class="topbar-left">
-        <button class="header-action" id="downloadBtn" title="Dosyayı İndir">⬇️</button>
-        <span class="topbar-ai-icon" data-action="nav" data-page="ai" style="cursor:pointer;">🤖</span>
+        <div class="topbar-logo">F</div>
+        <div class="topbar-titleblock">
+          <h1 id="pageTitle" class="topbar-title">Ana Sayfa</h1>
+          <p id="topbarDate" class="topbar-date"></p>
+        </div>
       </div>
-      <h1 id="pageTitle" class="topbar-title-centered">Ana Sayfa</h1>
       <div class="topbar-right">
-        <button class="header-action" id="notifBell" title="Bildirimler" style="position:relative;">🔔<span id="notifBadge" class="notif-badge" style="display:none;"></span></button>
+        <button class="header-action" id="downloadBtn" title="Dosyayı İndir">⬇️</button>
+        <button class="header-action" id="notifBell" title="Bildirimler">🔔<span id="notifBadge" class="notif-badge" style="display:none;"></span></button>
         <button class="header-action" id="headerAction" style="display:none">+</button>
       </div>
     </header>
@@ -359,11 +379,17 @@ button{font-family:var(--font-body);}
       ⚠️ Bu tarayıcıda veriler kaydedilemiyor (gizli/özel sekme olabilir). Girdiklerin kalıcı olmayabilir — normal Safari/Chrome sekmesinde aç.
     </div>
     <div id="content" class="content"></div>
+    <div class="bottombar-wrap">
+      <p class="day-quote" id="dayQuote"></p>
+      <nav class="bottombar">
+        <button class="bottombar-btn" id="navAiBtn"><span class="bb-icon">🤖</span>Finans Asistanı</button>
+        <button class="bottombar-btn" id="navHomeBtn"><span class="bb-icon">🏠</span>Ana Sayfa</button>
+      </nav>
+    </div>
   </div>
 </div>
 
 <button class="fab" id="fab" style="display:none">+</button>
-<button class="home-fab" id="homeFab">🏠</button>
 
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal-sheet" id="modalSheet"></div>
@@ -373,8 +399,36 @@ button{font-family:var(--font-body);}
 (function(){
 'use strict';
 const STORAGE_KEY = 'borcum-full-v1';
-const GOLD_RATE = 6850; // 16 Eylül 2026 itibarıyla piyasadaki yaklaşık 24 ayar gram altın fiyatı (TL) - gerçek sürümde canlı API'den güncellenecek
-const FX = { USD: 48.65, EUR: 56.23 }; // 16 Eylül 2026 itibarıyla yaklaşık serbest piyasa kuru - gerçek sürümde canlı API
+let GOLD_RATE = 6850; // Yedek (offline) değer — canlı veri çekilemezse kullanılır. fetchLiveRates() başarılı olursa güncellenir.
+let FX = { USD: 48.65, EUR: 56.23 }; // Yedek (offline) değerler — canlı veri çekilemezse kullanılır.
+let liveRatesUpdatedAt = null; // Canlı kurların en son ne zaman çekildiği (Date) — Piyasa/döviz gösterimlerinde kullanılabilir.
+
+// Ücretsiz, key gerektirmeyen, CORS'a açık kur/altın verisi (jsDelivr CDN üzerinden @fawazahmed0/currency-api).
+// Tek istekte hem USD/TRY hem USD/EUR (buradan EUR/TRY türetilir) alınır; ayrı istekte ons altın TRY karşılığı alınıp grama çevrilir.
+async function fetchLiveRates(){
+  try{
+    const [usdRes, xauRes] = await Promise.all([
+      fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json'),
+      fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xau.json'),
+    ]);
+    if(!usdRes.ok || !xauRes.ok) throw new Error('HTTP ' + usdRes.status + ' / ' + xauRes.status);
+    const usdData = await usdRes.json();
+    const xauData = await xauRes.json();
+    const usdTry = usdData.usd && usdData.usd.try;
+    const usdEur = usdData.usd && usdData.usd.eur;
+    const xauTry = xauData.xau && xauData.xau.try; // 1 ons altının TL karşılığı
+    if(usdTry && usdEur){
+      FX = { USD: usdTry, EUR: usdTry / usdEur };
+    }
+    if(xauTry){
+      GOLD_RATE = xauTry / 31.1034768; // ons -> gram
+    }
+    liveRatesUpdatedAt = new Date();
+    render();
+  }catch(err){
+    console.log('[Kur/Altın API] Canlı veri çekilemedi, yedek (offline) değerler kullanılıyor:', err && err.message);
+  }
+}
 const GOLD_UNITS = { gram22:0.916, gram24:1, ceyrek:1.75, yarim:3.5, tam:7, cumhuriyet:7.2, ata:6.6 };
 const GOLD_LABELS = { gram22:'22 Ayar Gram', gram24:'24 Ayar Gram', ceyrek:'Çeyrek', yarim:'Yarım', tam:'Tam', cumhuriyet:'Cumhuriyet', ata:'Ata' };
 const DEBT_TYPE_ICONS = {
@@ -393,7 +447,19 @@ const DEBT_TYPE_ICONS = {
 const CAT_ICONS = { kredi:{icon:'🏦',bg:'var(--accent-soft)',color:'var(--accent)'}, kart:{icon:'💳',bg:'var(--pending-soft)',color:'var(--pending)'},
   kmh:{icon:'🏧',bg:'var(--soon-soft)',color:'var(--soon)'},
   fatura:{icon:'🧾',bg:'var(--debt-soft)',color:'var(--debt)'}, elden:{icon:'🤝',bg:'var(--paid-soft)',color:'var(--paid)'} };
-const KMH_MONTHLY_INTEREST_RATE = 0.0435; // Varsayılan aylık akdi faiz oranı (%4,35) — bankana göre değişebilir, KMH ayarlarından düzenlenebilir hale getirilecek.
+// KMH faizi Türkiye'de BDDK/TCMB tarafından tavanlanır ve bankaların büyük çoğunluğu bu tavanı doğrudan uygular.
+// 1 Ocak 2026 itibarıyla yasal tavan: normal kullanımda aylık %4,25, gecikmede aylık %4,55.
+// Banka bazlı gerçek farklar netleşmediği için (karşılaştırma siteleri hepsine aynı genel aralığı veriyor),
+// tüm bankalar için YAKLAŞIK olarak aynı tavan oranı kullanılıyor. Kullanıcı KMH hesabı eklerken/düzenlerken
+// kendi bankasının gerçek oranını girerse o değer esas alınır; girmezse buradaki yaklaşık oran kullanılır.
+const KMH_MONTHLY_INTEREST_RATE = 0.0425; // Yaklaşık — BDDK aylık tavan oranı (normal kullanım).
+const KMH_LATE_MONTHLY_INTEREST_RATE = 0.0455; // Yaklaşık — BDDK aylık tavan oranı (gecikmeli kullanım).
+// Banka bazlı yaklaşık faiz tablosu — BANKS listesi aşağıda tanımlandığı için ilk kullanımda (lazy) kurulur.
+let _kmhBankRatesCache = null;
+function kmhRateForBank(bankCode){
+  if(!_kmhBankRatesCache) _kmhBankRatesCache = Object.fromEntries(BANKS.map(b=>[b.code, KMH_MONTHLY_INTEREST_RATE]));
+  return _kmhBankRatesCache[bankCode] || KMH_MONTHLY_INTEREST_RATE;
+}
 const KMH_TAX_RATES = { bsmv: 0.15, kkdf: 0.15 }; // BSMV ve KKDF, hesaplanan NET FAİZ tutarının %15'i olarak uygulanır (doğrulanmış güncel oran).
 
 /**
@@ -872,9 +938,39 @@ function updateNotifBadge(){
   const n = getNotifications();
   const count = n.overdue.length + n.dueToday.length + n.soon.length;
   const badge = document.getElementById('notifBadge');
+  const bell = document.getElementById('notifBell');
   if(!badge) return;
-  if(count>0){ badge.textContent = count>9?'9+':count; badge.style.display='flex'; }
-  else badge.style.display='none';
+  if(count>0){ badge.textContent = count>9?'9+':count; badge.style.display='flex'; if(bell) bell.classList.add('bell-active'); }
+  else { badge.style.display='none'; if(bell) bell.classList.remove('bell-active'); }
+}
+
+// ---------- GÜNÜN SÖZÜ ----------
+const GENERAL_QUOTES = [
+  'Küçük birikimler, büyük özgürlüklerin ilk adımıdır.',
+  'Bütçeni yönetmek, geleceğini yönetmektir.',
+  'Bugün harcamadığın bir kuruş, yarının güvencesidir.',
+  'Borcunu bilmek, ondan kurtulmanın ilk şartıdır.',
+  'Düzenli takip, en büyük tasarruf yöntemidir.',
+  'Para biriktirmek bir alışkanlıktır, miktar değil.',
+  'Finansal özgürlük, planlı adımlarla gelir.',
+  'Harcamadan önce düşünmek, sonra pişman olmaktan iyidir.',
+  'Bir bütçe, sadece rakamlar değil, bir özgürlük planıdır.',
+  'Bugünkü tasarruf, yarınki huzurdur.',
+];
+const HOLIDAY_QUOTES = {
+  '04-23': 'Egemenlik kayıtsız şartsız milletindir. — 23 Nisan Ulusal Egemenlik ve Çocuk Bayramı kutlu olsun! 🇹🇷',
+  '05-19': 'Türk gençliği, Türk milletinin bağımsızlık ruhudur. — 19 Mayıs Atatürk\'ü Anma, Gençlik ve Spor Bayramı kutlu olsun! 🇹🇷',
+  '07-15': 'Vatan sağ olsun. — 15 Temmuz Demokrasi ve Millî Birlik Günü\'nü saygıyla anıyoruz. 🇹🇷',
+  '08-30': 'Ordular, ilk hedefiniz Akdeniz\'dir, ileri! — 30 Ağustos Zafer Bayramı kutlu olsun! 🇹🇷',
+  '10-29': 'Türk milletinin karakterine en uygun idare şekli, Cumhuriyet idaresidir. — 29 Ekim Cumhuriyet Bayramımız kutlu olsun! 🇹🇷',
+  '11-10': 'Beni görmek demek, mutlaka yüzümü görmek demek değildir. — Atatürk\'ü saygı ve özlemle anıyoruz. 🇹🇷',
+};
+function getDayQuote(){
+  const now = new Date();
+  const mmdd = String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  if(HOLIDAY_QUOTES[mmdd]) return HOLIDAY_QUOTES[mmdd];
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(),0,0)) / 86400000);
+  return GENERAL_QUOTES[dayOfYear % GENERAL_QUOTES.length];
 }
 
 function askConfirm(message, onYes){
@@ -918,7 +1014,6 @@ function initLongPress(container){
 function render(){
   $fab.style.display='none';
   $headerAction.style.display='none';
-  document.getElementById('homeFab').style.display = (ui.page==='home' || ui.page==='ai') ? 'none' : 'flex';
   updateNotifBadge();
   const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, cards:renderCards, kmh:renderKmh,
     bills:renderBills, debts:renderDebts, monthly:renderMonthly, ai:renderAI };
@@ -926,6 +1021,14 @@ function render(){
   const titles = { home:'Ana Sayfa', loans:'Krediler', loanDetail:'Kredi Detayı', cards:'Kredi Kartları', kmh:'KMH Durumu',
     bills:'Faturalar', debts:'Elden Borçlar', monthly:'Aylık', ai:'Akıllı Finans Asistanı' };
   $title.textContent = titles[ui.page] || 'Finansçım';
+  const $topbarDate = document.getElementById('topbarDate');
+  if($topbarDate) $topbarDate.textContent = new Date().toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric', weekday:'long' });
+  const $dayQuote = document.getElementById('dayQuote');
+  if($dayQuote) $dayQuote.textContent = '“' + getDayQuote() + '”';
+  const $navAiBtn = document.getElementById('navAiBtn');
+  const $navHomeBtn = document.getElementById('navHomeBtn');
+  if($navAiBtn) $navAiBtn.classList.toggle('active', ui.page==='ai');
+  if($navHomeBtn) $navHomeBtn.classList.toggle('active', ui.page==='home');
   $content.innerHTML = fn();
   if(ui.page==='ai'){
     const el = document.getElementById('aiMessages');
@@ -970,11 +1073,11 @@ function renderHome(){
           <span class="fr-value editable" data-action="edit-income">${formatTL(income)}</span>
         </div>
       </div>
-      <div class="fin-row" style="background:var(--purple);">
+      <div class="fin-row" style="background:var(--purple);cursor:pointer;" data-action="nav" data-page="monthly">
         <div class="fr-icon">${FIN_ICONS.up}</div>
         <div class="fr-text">
           <div class="fr-label">Aylık Borç</div>
-          <div class="fr-sub">Bu ay ödenecek toplam tutar</div>
+          <div class="fr-sub">Bu ay ödenecek toplam tutar — detaylar için dokun</div>
         </div>
         <div class="fr-value-wrap"><span class="fr-value">${formatTL(aylikBorc)}</span></div>
       </div>
@@ -1022,7 +1125,14 @@ function renderLoans(){
       <span class="dashed-add-icon">+</span>
       <div><div class="dashed-add-title">Yeni kredi eklemek için dokun</div><div class="dashed-add-sub">Yeni bir kredi kaydı ekleyin.</div></div>
     </button>`;
-  return state.loans.map(l=>{
+  const loansTotalRemaining = state.loans.reduce((s,l)=> s + loanRemaining(l), 0);
+  const loansSummary = `
+    <div class="hero-card" style="margin-bottom:14px;">
+      <p class="hero-label">Toplam Kalan Kredi Borcu</p>
+      <p class="hero-number" style="cursor:default;">${formatTL(loansTotalRemaining)}</p>
+      <p style="font-size:12px;opacity:.85;margin:2px 0 0;">${state.loans.length} kredi kaydı</p>
+    </div>`;
+  return loansSummary + state.loans.map(l=>{
       const insts = loanInstallments(l);
       const paidCount = insts.filter(i=>i.status==='odendi').length;
       const remaining = l.count - paidCount;
@@ -1078,6 +1188,7 @@ function renderLoanDetail(){
       <div class="summary-grid">
         <div class="summary-cell"><div class="l">Aylık Taksit</div><div class="v">${formatTL(l.amount)}</div></div>
         <div class="summary-cell"><div class="l">Kalan Taksit</div><div class="v">${insts.filter(i=>i.status!=='odendi').length} / ${l.count}</div></div>
+        ${l.infoInterestRate!=null ? `<div class="summary-cell"><div class="l">Faiz Oranı (bilgi)</div><div class="v">%${String(l.infoInterestRate).replace('.',',')}</div></div>` : ''}
       </div>
     </div>
     <div class="section-title">Taksit Planı (otomatik oluşturuldu)</div>
@@ -1150,13 +1261,16 @@ function renderKmh(){
       const debt = k.debt||0;
       const planned = k.plannedPayment||0;
       const remainingLimit = (k.limit||0) - debt;
-      // Bu dönem ödenecek bir tutar (Ödenecek Borç) ayrılmamışsa kutu tamamen BOŞ kalır, yeşil
-      // arka plan gösterilir — Toplam Borç'ta bakiye kalmış olsa bile henüz "bu ay ödenecek"
-      // bir şey yoktur. Sadece Ödenecek Borç > 0 iken durum (BEKLİYOR/GECİKTİ) hesaplanır.
+      // Bu dönem ödenecek bir tutar (Ödenecek Miktar) ayrılmamışsa kutu tamamen BOŞ kalır, yeşil
+      // arka plan gösterilir — Güncel Kullanım'da bakiye kalmış olsa bile henüz "bu ay ödenecek"
+      // bir şey yoktur. Sadece Ödenecek Miktar > 0 iken durum (BEKLİYOR/GECİKTİ) hesaplanır.
       const hasCharge = planned > 0;
       const statusKey = hasCharge ? periodStatus(false, currentYm(), k.dueDay) : 'odendi';
       const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'));
-      const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
+      const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
+      const dailyInterest = Math.round(debt * (bankRate/30));
+      const estTotal = calculateKmhInterest(k.transactions||[], todayStr(), bankRate);
+      const dueDateStr = k.dueDay ? formatDMY(currentYm(), k.dueDay) : '—';
       return `<div class="record-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}">
         <div class="record-top">
           <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
@@ -1169,11 +1283,17 @@ function renderKmh(){
         </div>
         <div class="record-stats">
           <div class="record-stat"><div class="l">Toplam Limit</div><div class="v">${formatTL(k.limit||0)}</div></div>
-          <div class="record-stat"><div class="l">Toplam Borç</div><div class="v">${formatTL(debt)}</div></div>
-          <div class="record-stat"><div class="l">Ödenecek Borç</div><div class="v">${formatTL(planned)}</div></div>
+          <div class="record-stat"><div class="l">Güncel Kullanım</div><div class="v">${formatTL(debt)}</div></div>
+          <div class="record-stat"><div class="l">Ödenecek Miktar</div><div class="v">${formatTL(planned)}</div></div>
           <div class="record-stat"><div class="l">Kalan Limit</div><div class="v">${formatTL(remainingLimit)}</div></div>
         </div>
-        <div class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</div>
+        <div class="record-stats" style="margin-top:6px;">
+          <div class="record-stat"><div class="l">Banka Faiz Oranı</div><div class="v" style="font-size:13px;">~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})}</div></div>
+          <div class="record-stat"><div class="l">Tah. Günlük Faiz</div><div class="v" style="font-size:13px;">${formatTL(dailyInterest)}</div></div>
+          <div class="record-stat"><div class="l">Tah. Toplam Faiz</div><div class="v" style="font-size:13px;">${formatTL(estTotal.total)}</div></div>
+          <div class="record-stat"><div class="l">Son Ödeme Tarihi</div><div class="v" style="font-size:12px;">${dueDateStr}</div></div>
+        </div>
+        <div class="kmh-interest-note">Faiz oranı ve tutarlar yaklaşıktır (BDDK tavan oranı esas alınır).</div>
       </div>`;
     }).join('') + `
     <button class="dashed-add-card" data-action="open-modal" data-modal="addKmh">
@@ -1204,7 +1324,10 @@ function renderBills(){
             <span class="cat-icon" style="background:${ic.bg};color:${ic.color}">${ic.icon}</span>
             <div><p class="item-title">${esc(b.name)}</p><p class="item-sub">${esc(b.category)}</p></div>
           </div>
-          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="record-status-pill ${statusKey}">${pillLabel}</span>
+            <span class="record-chevron">›</span>
+          </div>
         </div>
         <div class="item-meta-row">
           <span>${r.amount>0?formatTL(r.amount):'Tutar bekleniyor'}</span>
@@ -1323,6 +1446,8 @@ const modalTemplates = {
       <div class="field"><label>Toplam Taksit Sayısı</label><input id="f_count" type="number" placeholder="Örn: 60"></div>
     </div>
     <div class="field"><label>İlk Taksit Tarihi</label>${loanDateWheel('loanDateWheel', state.selectedMonth, 15)}</div>
+    <div class="field"><label>Faiz Oranı (Aylık %, opsiyonel — sadece bilgi amaçlı)</label><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" placeholder="Örn: 3,5"></div>
+    <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 12px;">Bu alan sadece bilgi içindir; taksit ve borç hesaplamalarına hiçbir zaman dahil edilmez.</p>
     <button class="save-btn" data-action="save-loan">Kaydet ve Taksitleri Oluştur</button>
     <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
   `; },
@@ -1341,6 +1466,8 @@ const modalTemplates = {
       <div class="field"><label>Kalan Taksit Sayısı</label><input id="f_remaining" type="number" value="${loanInstallments(l).filter(i=>i.status!=='odendi').length}" placeholder="Örn: 48"></div>
     </div>
     <div class="field"><label>İlk Taksit Tarihi</label>${loanDateWheel('loanDateWheel', l.startMonth, l.dueDay)}</div>
+    <div class="field"><label>Faiz Oranı (Aylık %, opsiyonel — sadece bilgi amaçlı)</label><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" value="${l.infoInterestRate!=null ? String(l.infoInterestRate).replace('.',',') : ''}" placeholder="Örn: 3,5"></div>
+    <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 12px;">Bu alan sadece bilgi içindir; taksit ve borç hesaplamalarına hiçbir zaman dahil edilmez.</p>
     <button class="save-btn" data-action="save-loan-edit" data-id="${id}">Kaydet</button>
     <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
     <button class="danger-btn" data-action="delete-loan" data-id="${id}">Krediyi Sil</button>
@@ -1381,13 +1508,15 @@ const modalTemplates = {
     const bank = bankByCode(k.bankCode);
     const debt = k.debt||0;
     const planned = k.plannedPayment||0;
-    const dailyInterest = Math.round(debt * (KMH_MONTHLY_INTEREST_RATE/30));
+    const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
+    const dailyInterest = Math.round(debt * (bankRate/30));
     return `
     <h3>${bank.name} — KMH Ayarları</h3>
     <div class="field"><label>KMH Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${k.limit?k.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
     <div class="field"><label>Toplam Borç (TL)</label><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${debt?debt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
     <div class="field"><label>Ödenecek Borç (TL)</label><input id="f_planned" type="text" inputmode="numeric" class="tl-input" value="${planned?planned.toLocaleString('tr-TR'):''}" placeholder="0"></div>
     <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 12px;">Bu dönem ödemek üzere ayırdığınız tutar — toplam borcunuzun tamamı olmak zorunda değildir.</p>
+    <div class="field"><label>Faiz Oranı (Aylık %, opsiyonel)</label><input id="f_kmhRate" type="text" inputmode="decimal" class="tl-input" value="${k.customMonthlyRate!=null ? (k.customMonthlyRate*100).toLocaleString('tr-TR') : ''}" placeholder="Yaklaşık ~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})} (girilmezse bu kullanılır)"></div>
     <div class="field"><label>Son Ödeme Günü</label>${dayWheel('kmhDayChoice', k.dueDay)}</div>
     <p class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
     <button class="save-btn" data-action="save-kmh-settings" data-id="${id}">Kaydet</button>
@@ -1555,7 +1684,8 @@ const modalTemplates = {
 };
 
 // ---------- EVENT DELEGATION ----------
-document.getElementById('homeFab').addEventListener('click', ()=> navigate('home'));
+document.getElementById('navHomeBtn').addEventListener('click', ()=> navigate('home'));
+document.getElementById('navAiBtn').addEventListener('click', ()=> navigate('ai'));
 document.getElementById('notifBell').addEventListener('click', ()=> openModal('notifications'));
 document.getElementById('downloadBtn').addEventListener('click', async ()=>{
   try{
@@ -1691,7 +1821,12 @@ document.body.addEventListener('click', function(e){
       start=wheelValue('loanDateWheel_m')||state.selectedMonth, day=parseInt(wheelValue('loanDateWheel_d'))||15;
     if(!amount||!count){ alert('Aylık taksit ve taksit sayısı zorunlu.'); return; }
     const name = nameInput || loanType;
-    state.loans.push({ id:uid(), bankCode, loanType, name, total:amount*count, amount, count, startMonth:start, dueDay:day });
+    const infoRateEl = document.getElementById('f_infoRate');
+    const infoRateRaw = infoRateEl ? infoRateEl.value.trim().replace(',','.') : '';
+    const infoRateNum = infoRateRaw ? parseFloat(infoRateRaw) : NaN;
+    // infoInterestRate SADECE bilgi amaçlıdır — hiçbir hesaplamada (taksit, kalan borç vb.) kullanılmaz.
+    state.loans.push({ id:uid(), bankCode, loanType, name, total:amount*count, amount, count, startMonth:start, dueDay:day,
+      infoInterestRate: (!isNaN(infoRateNum) && infoRateNum>0) ? infoRateNum : null });
     save(); closeModal(); navigate('loans'); return;
   }
   if(action==='save-loan-edit'){
@@ -1707,6 +1842,10 @@ document.body.addEventListener('click', function(e){
     if(!amount||!count){ alert('Aylık taksit ve taksit sayısı zorunlu.'); return; }
     loan.bankCode=bankCode; loan.loanType=loanType; loan.name=nameInput||loanType;
     loan.amount=amount; loan.count=count; loan.total=amount*count; loan.startMonth=start; loan.dueDay=day;
+    const infoRateEl = document.getElementById('f_infoRate');
+    const infoRateRaw = infoRateEl ? infoRateEl.value.trim().replace(',','.') : '';
+    const infoRateNum = infoRateRaw ? parseFloat(infoRateRaw) : NaN;
+    loan.infoInterestRate = (!isNaN(infoRateNum) && infoRateNum>0) ? infoRateNum : null; // Sadece bilgi amaçlı, hesaplamaya dahil edilmez.
     if(remainingInput){
       let remaining = parseInt(remainingInput.value);
       if(!isNaN(remaining)){
@@ -1788,11 +1927,15 @@ document.body.addEventListener('click', function(e){
     const id=t.dataset.id, limit=tlVal('f_limit'), totalDebtInput=tlVal('f_totalDebt'), plannedInput=tlVal('f_planned');
     if(!limit){ alert('KMH limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
+    const rateEl = document.getElementById('f_kmhRate');
+    const rateRaw = rateEl ? rateEl.value.trim().replace(',','.') : '';
+    const rateNum = rateRaw ? parseFloat(rateRaw) : NaN;
     const k = state.kmhAccounts.find(x=>x.id===id);
     if(k){
       k.limit = limit; k.dueDay = day;
       k.debt = totalDebtInput;
       k.plannedPayment = Math.min(plannedInput, totalDebtInput);
+      k.customMonthlyRate = (!isNaN(rateNum) && rateNum>0) ? (rateNum/100) : null; // Kullanıcı kendi bankasının gerçek oranını girdiyse esas alınır.
     }
     save(); closeModal(); render(); return;
   }
@@ -2071,13 +2214,14 @@ function startInlineEdit(entityId, field, spanEl){
 state.visitCount = (state.visitCount||0) + 1;
 save();
 render();
+fetchLiveRates();
 const vcEl = document.getElementById('visitCountLabel');
 if(vcEl) vcEl.textContent = '🔢 Bu, ' + state.visitCount + '. açılışın (kalıcılık testi)';
 if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
 // ---------- YAPAY ZEKA (Google Gemini — Function/Tool Calling) — Akıllı Finans Asistanı ----------
-const AI_MODEL = 'gemini-2.0-flash';
+const AI_MODEL = 'gemini-3.6-flash';
 // Endpoint TAM OLARAK şu formatta kurulur:
 // https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=API_ANAHTARI
 function geminiUrlFor(model){ return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'; }
@@ -2117,8 +2261,11 @@ function get_cash_debt_data(){
 }
 function get_kmh_data(){
   return state.kmhAccounts.map(k=>{ const debt = k.debt||0; const planned = k.plannedPayment||0;
+    const rate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
     return { banka:bankByCode(k.bankCode).name, limit:k.limit||0, toplam_borc:debt, odenecek_borc:planned,
-      kalan_limit:(k.limit||0)-debt, gunluk_yaklasik_faiz: Math.round(debt*(KMH_MONTHLY_INTEREST_RATE/30)) }; });
+      kalan_limit:(k.limit||0)-debt, aylik_faiz_orani_yaklasik: rate,
+      gunluk_yaklasik_faiz: Math.round(debt*(rate/30)),
+      tahmini_toplam_faiz_yaklasik: calculateKmhInterest(k.transactions||[], todayStr(), rate).total }; });
 }
 function get_monthly_payments(month){ return monthlyRows(month||state.selectedMonth); }
 function get_upcoming_payments(){
@@ -2211,14 +2358,17 @@ KURALLAR:
 6) Cevapların kısa, net ve samimi bir Türkçeyle olsun — gereksiz uzatma.`;
 }
 
-// Gemini'nin "düşünme seviyesi" alanı için tek bir yerden hem yeni (thinkingLevel enum)
-// hem eski (thinkingBudget sayısal) API sözleşmesini üretiyoruz; hangisi kabul edilmiyorsa
-// aşağıdaki callGemini() otomatik olarak generationConfig'siz bir yedek deneme yapıyor,
-// böylece API'nin tam olarak hangi alanı beklediğinden bağımsız olarak asistan çalışmaya devam eder.
+// DÜZELTME: "thinkingLevel" diye bir alan Gemini'nin generationConfig.thinkingConfig şemasında
+// HİÇBİR ZAMAN var olmadı (resmi REST şemasında sadece "thinkingBudget" ve "includeThoughts" var) —
+// bu yüzden her istekte gönderilen bu geçersiz alan, "Unknown name \"thinkingLevel\": Cannot find
+// field." tipi 400 Bad Request hatasına yol açıyordu. Ayrıca "thinking" özelliği zaten sadece
+// Gemini 2.5 serisi modellerde var; AI_MODEL 2.0/1.5 gibi bu özelliği hiç desteklemeyen bir modele
+// ayarlıysa thinkingConfig alanının kendisi bile (geçerli alanlarla gönderilse dahi) reddedilebilir.
+// Asistanın hangi model seçili olursa olsun (2.0-flash, 1.5-flash, 2.5-flash, …) çalışmaya devam
+// etmesi için bu isteğe bağlı alanı artık HİÇ göndermiyoruz — model, düşünme adımını kendi
+// varsayılanına göre yönetir; bu basit soru-cevap/fonksiyon-çağırma akışı için bir kayıp yaratmaz.
 function buildGenerationConfig(thinkingLevel){
-  const level = thinkingLevel || 'low';
-  const budget = level==='medium' ? 1024 : 0; // basit komut: düşünmeyi kapat (en hızlı), karmaşık: sınırlı bütçe
-  return { thinkingConfig: { thinkingLevel: level, thinkingBudget: budget } };
+  return null;
 }
 
 // İstek en az 15 saniye yanıt bekler (zaman aşımı) — bu süre dolmadan "modele ulaşılamadı" gibi
@@ -2303,8 +2453,11 @@ async function callGemini(contents, thinkingLevel){
     systemInstruction: { parts:[{ text: buildAiSystemPrompt() }] },
     contents,
     tools: [{ functionDeclarations: sanitizeToolDeclarations(AI_READ_TOOLS.concat(AI_ACTION_TOOLS)) }],
-    generationConfig: buildGenerationConfig(thinkingLevel),
   };
+  // generationConfig, sadece geçerli/desteklenen bir değer üretildiğinde eklenir — geçersiz veya
+  // boş bir alanın isteğe hiç girmemesi, "Unknown name" tipi 400 hatalarının önüne geçer.
+  const genConfig = buildGenerationConfig(thinkingLevel);
+  if(genConfig) body.generationConfig = genConfig;
   try{
     return await geminiRequest(geminiUrlFor(AI_MODEL), key, body);
   }catch(err){
@@ -2527,23 +2680,46 @@ async function sendAiMessage(text){
     let pendingCmd = null;
     for(let round=0; round<5 && finalText===null && !pendingCmd; round++){
       const parts = await callGemini(geminiHistory, thinkingLevel);
-      const funcCallPart = parts.find(p=>p.functionCall);
-      if(funcCallPart){
-        const { name, args } = funcCallPart.functionCall;
-        if(AI_WRITE_ACTION_NAMES.includes(name)){
-          // Yazma (veri değiştiren) aracı — HİÇBİR ZAMAN otomatik çalıştırılmaz. Sadece
-          // kullanıcı arayüzde ONAYLA'ya basınca executeAiAction() ile gerçekleşir.
-          pendingCmd = { action:name, params:args||{}, summary:(args&&args.summary) || 'Bu işlemi yapmak istiyor musun?' };
-          // Konuşma geçmişini tutarlı tutmak için modelin çağrısını ve bekleme durumunu kaydet;
-          // gerçek sonucu değil, sadece onaya sunulduğunu yazıyoruz.
-          geminiHistory.push({ role:'model', parts:[{ functionCall:{ name, args:args||{} } }] });
-          geminiHistory.push({ role:'user', parts:[{ functionResponse:{ name, response:{ durum:'kullanıcı_onayı_bekleniyor' } } }] });
-        } else {
-          // Okuma aracı — hemen çalıştır, sonucu modele geri ver ki cevabı tamamlasın.
-          const result = dispatchAiReadTool(name, args||{});
-          geminiHistory.push({ role:'model', parts:[{ functionCall:{ name, args:args||{} } }] });
-          geminiHistory.push({ role:'user', parts:[{ functionResponse:{ name, response: result==null?{}:{ sonuc: result } } }] });
+      // Gemini 3 modelleri (gemini-3.6-flash dahil) fonksiyon çağrılarında bir "thoughtSignature"
+      // döner ve bir SONRAKİ istekte bunu AYNEN geri göndermezsen "... is missing a
+      // thoughtSignature" mesajıyla 400 Bad Request verir. Bu yüzden fonksiyon çağrısı
+      // parçalarını (varsa thoughtSignature'ı da içinde tutarak) OLDUĞU GİBİ geri yazıyoruz —
+      // sadece {name,args} çıkarıp yeniden kurmuyoruz. Ayrıca Gemini bir turda BİRDEN FAZLA
+      // (paralel) fonksiyon çağrısı da dönebilir; hepsini işliyoruz, sadece ilkini değil.
+      const funcCallParts = parts.filter(p=>p.functionCall);
+      if(funcCallParts.length){
+        geminiHistory.push({ role:'model', parts: funcCallParts });
+        const responseParts = [];
+        for(const fcPart of funcCallParts){
+          const { name, args, id } = fcPart.functionCall;
+          if(AI_WRITE_ACTION_NAMES.includes(name)){
+            if(!pendingCmd){
+              // Yazma (veri değiştiren) aracı — HİÇBİR ZAMAN otomatik çalıştırılmaz. Sadece
+              // kullanıcı arayüzde ONAYLA'ya basınca executeAiAction() ile gerçekleşir.
+              const respPart = { functionResponse:{ name, response:{ durum:'kullanıcı_onayı_bekleniyor' } } };
+              if(id) respPart.functionResponse.id = id;
+              // _historyResponsePart: bu nesneye doğrudan referansı saklıyoruz ki kullanıcı
+              // ONAYLA/VAZGEÇ'e bastığında, geçmişteki bu yer tutucu yanıtı GERÇEK sonuçla
+              // güncelleyebilelim (confirmPendingAction/cancelPendingAction içinde).
+              pendingCmd = { action:name, params:args||{}, summary:(args&&args.summary) || 'Bu işlemi yapmak istiyor musun?', _historyResponsePart: respPart };
+              responseParts.push(respPart);
+            } else {
+              // Aynı turda ikinci bir yazma isteği daha gelirse: arayüz tek seferde tek
+              // ONAYLA/VAZGEÇ gösterdiği için sadece ilki onaya sunulur, veri asla otomatik
+              // değişmez — diğeri açıkça "atlandı" sonucuyla geçiştirilir.
+              const respPart = { functionResponse:{ name, response:{ durum:'atlandı_aynı_turda_baska_islem_onay_bekliyor' } } };
+              if(id) respPart.functionResponse.id = id;
+              responseParts.push(respPart);
+            }
+          } else {
+            // Okuma aracı — hemen çalıştır, sonucu modele geri ver ki cevabı tamamlasın.
+            const result = dispatchAiReadTool(name, args||{});
+            const respPart = { functionResponse:{ name, response: result==null?{}:{ sonuc: result } } };
+            if(id) respPart.functionResponse.id = id;
+            responseParts.push(respPart);
+          }
         }
+        geminiHistory.push({ role:'user', parts: responseParts });
       } else {
         const textPart = parts.find(p=>p.text);
         finalText = (textPart && textPart.text) || 'Cevabı anlayamadım, tekrar sorar mısın?';
@@ -2579,18 +2755,30 @@ async function sendAiMessage(text){
 function confirmPendingAction(msgIndex){
   const msg = aiMessages[msgIndex];
   if(!msg || !msg.pendingAction) return;
-  const resultText = executeAiAction(msg.pendingAction);
+  const pendingAction = msg.pendingAction;
+  const resultText = executeAiAction(pendingAction);
   msg.pendingAction = null;
   msg.confirmed = true;
   aiMessages.push({ role:'assistant', text: '✅ ' + resultText });
+  // Gemini'ye gönderilen konuşma geçmişindeki "kullanıcı_onayı_bekleniyor" yer tutucusunu,
+  // kullanıcının GERÇEKTEN ONAYLA'ya bastığını ve işlemin sonucunu yansıtacak şekilde
+  // güncelliyoruz — böylece kullanıcı hemen ardından yeni bir soru sorarsa model bu işlemin
+  // gerçekten uygulandığını (ya da uygulanmadığını) bilir, geçmiş tutarsız kalmaz.
+  if(pendingAction._historyResponsePart){
+    pendingAction._historyResponsePart.functionResponse.response = { durum:'kullanıcı_onayladı_ve_islem_uygulandı', sonuc: resultText };
+  }
   render();
 }
 function cancelPendingAction(msgIndex){
   const msg = aiMessages[msgIndex];
   if(!msg) return;
+  const pendingAction = msg.pendingAction;
   msg.pendingAction = null;
   msg.cancelled = true;
   aiMessages.push({ role:'assistant', text: 'İşlem iptal edildi, kayıt değiştirilmedi.' });
+  if(pendingAction && pendingAction._historyResponsePart){
+    pendingAction._historyResponsePart.functionResponse.response = { durum:'kullanıcı_vazgeçti_islem_uygulanmadı' };
+  }
   render();
 }
 
