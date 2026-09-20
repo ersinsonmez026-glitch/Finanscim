@@ -69,11 +69,11 @@ button{font-family:var(--font-body);}
 .title p{font-size:9.5px;color:#61759b;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bell{font-size:27px;text-align:right;position:relative;background:none;border:none;cursor:pointer;padding:2px;justify-self:end;transform-origin:50% 0%;}
 .badge{position:absolute;right:-5px;top:-6px;background:#ef2846;color:#fff;border-radius:50%;font-size:10px;width:18px;height:18px;display:grid;place-items:center;align-items:center;justify-content:center;line-height:1;text-align:center;}
-.bell.bell-active{animation:bellShake 2.6s ease-in-out infinite;}
+.bell.bell-active{animation:bellShake 3.6s ease-in-out infinite;}
 @keyframes bellShake{
-  0%,92%,100%{transform:rotate(0);}
-  93%{transform:rotate(-26deg);} 94%{transform:rotate(24deg);} 95%{transform:rotate(-20deg);}
-  96%{transform:rotate(16deg);} 97%{transform:rotate(-8deg);} 98%{transform:rotate(0);}
+  0%,78%,100%{transform:rotate(0);}
+  80%{transform:rotate(-15deg);} 83%{transform:rotate(13deg);} 86%{transform:rotate(-10deg);}
+  89%{transform:rotate(7deg);} 92%{transform:rotate(-4deg);} 95%{transform:rotate(2deg);} 98%{transform:rotate(0);}
 }
 
 /* ---- Krediler sayfası (Finanscim_Krediler_Claude_Paket'ten birebir) ---- */
@@ -176,6 +176,7 @@ button.mainCard{cursor:pointer;}
 .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;height:100dvh;overflow:hidden;}
 .content{flex:1;overflow-y:auto;padding:6px 14px 108px;}
 .content.home-fit{overflow:hidden;padding-top:1px;}
+.content.ai-fit{overflow:hidden;}
 
 .bottombar-wrap{position:fixed;left:0;right:0;bottom:0;z-index:6;max-width:520px;margin:0 auto;
   background:var(--bg);padding:3px 14px 2px;}
@@ -339,7 +340,7 @@ button.mainCard{cursor:pointer;}
 .fab{position:fixed;left:18px;bottom:122px;width:54px;height:54px;border-radius:50%;background:var(--accent);
   color:#fff;border:none;font-size:26px;box-shadow:0 6px 18px rgba(0,0,0,.2);cursor:pointer;z-index:6;
   display:flex;align-items:center;justify-content:center;}
-.ai-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px);}
+.ai-chat-wrap{display:flex;flex-direction:column;height:100%;}
 .ai-messages{flex:1;overflow-y:auto;padding:6px 2px;display:flex;flex-direction:column;gap:8px;}
 .ai-bubble{max-width:82%;padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.45;}
 .ai-bubble.ai-user{align-self:flex-end;background:var(--accent);color:#fff;border-radius:14px 14px 3px 14px;}
@@ -728,6 +729,45 @@ function addDaysStr(dateStr, days){
   return d.toISOString().slice(0,10);
 }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+// ---- KREDİ KARTI FAİZ TAHMİNİ ----
+// KMH'nin aksine kredi kartlarında uygulamada işlem bazlı (transaction) bir geçmiş tutulmuyor —
+// sadece "Güncel Borç" (card.totalDebt) ve "Bu Ay Ödenecek" (cardStatement) tutuluyor. Bu yüzden
+// KMH'deki gibi gün-gün kesin bir faiz hesabı yapılamaz; bunun yerine YAKLAŞIK (≈) bir tahmin
+// üretilir: bu ayki ödenecek tutarın dışında kalan, bir sonraki döneme "taşınan" bakiye
+// (card.totalDebt - bu ayki tutar) üzerinden, yaklaşık bir aylık dönem için faiz hesaplanır.
+// Böylece banka tarafından zaten borca yansıtılmış olan kısım (bu ayki statement tutarı) ikinci
+// kez faize tabi tutulmaz — ÇİFTE HESAPLAMA yapılmaz.
+// KMH ile kredi kartı faizi KARIŞTIRILMAZ: ayrı sabitler, ayrı fonksiyon kullanılır.
+// Oranlar BDDK'nın kredi kartlarına uyguladığı azami (tavan) aylık oranlara yakın YAKLAŞIK
+// değerlerdir; banka/döneme göre değişebilir, bu yüzden kesin değil tahmini olarak sunulur.
+// Güncel/kesin oran gerektiğinde Finans Asistanı (AI) güncel web bilgisini kullanabilir.
+const CARD_MONTHLY_INTEREST_RATE = 0.0350;      // Yaklaşık — normal (akdi) azami aylık faiz oranı.
+const CARD_LATE_MONTHLY_INTEREST_RATE = 0.0380; // Yaklaşık — gecikme (temerrüt) azami aylık faiz oranı.
+// Kredi kartı faizinde (KMH'nin aksine) yalnızca BSMV (%15) uygulanır; KKDF normal kart
+// borcuna (nakit avans hariç) uygulanmaz. Nakit avans işlemleri uygulamada ayrıca
+// izlenmediği için otomatik hesaba dahil edilmez.
+const CARD_BSMV_RATE = 0.15;
+
+/**
+ * Bir kredi kartının, mevcut güncel borcundan bu ayki ödenecek tutar düşüldükten sonra
+ * "taşınan" (bir sonraki döneme devreden) bakiyesi üzerinden YAKLAŞIK bir aylık faiz + BSMV
+ * tahmini üretir. Taşınan bakiye yoksa (borcun tamamı bu ayki tutara eşit veya azsa) faiz ≈ 0
+ * döner — yani kart tam ödeniyorsa (grace period varsayımı) faiz hesaplanmaz.
+ */
+function calculateCardInterest(card, ym){
+  const debt = card.totalDebt||0;
+  if(debt<=0) return { carried:0, interest:0, bsmv:0, total:0, late:false };
+  const st = cardStatement(card.id, ym);
+  const thisMonthDue = st ? (st.amount||0) : 0;
+  const carried = Math.max(0, debt - thisMonthDue);
+  if(carried<=0) return { carried:0, interest:0, bsmv:0, total:0, late:false };
+  const late = !!(st && periodStatus(st.status==='odendi', ym, card.dueDay)==='gecikti');
+  const rate = late ? CARD_LATE_MONTHLY_INTEREST_RATE : CARD_MONTHLY_INTEREST_RATE;
+  const interest = carried * rate;
+  const bsmv = interest * CARD_BSMV_RATE;
+  return { carried: Math.round(carried), interest: Math.round(interest), bsmv: Math.round(bsmv), total: Math.round(interest+bsmv), late };
+}
 const INVEST_TYPES = ['Hisse Senedi','Fon','Mevduat','Döviz Hesabı','Altın Hesabı','Kripto','Diğer'];
 const INVEST_ICONS = { 'Hisse Senedi':'📈','Fon':'📊','Mevduat':'🏦','Döviz Hesabı':'💱','Altın Hesabı':'🪙','Kripto':'🌐','Diğer':'💼' };
 // Abonelik/Fatura kategori grupları — "Kategori Seç" tam sayfasında gösterilir. Marka renkli
@@ -1355,6 +1395,7 @@ function render(){
   const $bottomBar = document.querySelector('.bottom');
   if($bottomBar) $bottomBar.classList.toggle('home-active', ui.page==='home');
   $content.classList.toggle('home-fit', ui.page==='home');
+  $content.classList.toggle('ai-fit', ui.page==='ai');
   $content.innerHTML = fn();
   if(ui.page==='ai'){
     const el = document.getElementById('aiMessages');
@@ -2088,6 +2129,7 @@ const modalTemplates = {
     const c = state.cards.find(x=>x.id===id);
     const bank = bankByCode(c.bankCode);
     const st = cardStatement(id, state.selectedMonth);
+    const fi = calculateCardInterest(c, state.selectedMonth);
     return `
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>${bank.name} — Kart Ayarları</h3>
@@ -2103,6 +2145,12 @@ const modalTemplates = {
     <div class="toggle-row"><span>Bu ay ödendi olarak işaretle</span><div class="switch ${st&&st.status==='odendi'?'on':''}" id="f_paid" data-action="toggle-switch"><div class="knob"></div></div></div>
     <div class="section-title">Son Ödeme Tarihi</div>
     <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('cardDayChoice', c.dueDay)}</div>
+    ${fi.total>0 ? `
+    <p style="font-size:13px;color:var(--ink-soft);margin:8px 0 2px;line-height:1.5;">
+      <b style="color:var(--ink);">TOPLAM FAİZ ≈ ${formatTL(fi.total)}</b><br>
+      <span style="font-size:11px;">Bir sonraki döneme taşınan ≈ ${formatTL(fi.carried)} bakiye üzerinden, ${fi.late?'gecikme faizi oranıyla':'yaklaşık aylık faiz oranıyla'} hesaplanan tahmini tutardır (BSMV dahil). Kesin tutar için banka ekstrenizi kontrol edin.<br>
+      Tahmini faiz sonrası kullanılabilir limit ≈ ${formatTL(Math.max(0,(c.limit||0)-(c.totalDebt||0)-fi.total))}</span>
+    </p>` : ''}
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-card-settings" data-id="${id}">Kaydet</button>
@@ -2881,12 +2929,16 @@ if(vcEl) vcEl.textContent = '🔢 Bu, ' + state.visitCount + '. açılışın (k
 if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
-// ---------- YAPAY ZEKA (OpenRouter Free Router) — Finans Asistanım ----------
+// ---------- YAPAY ZEKA (OpenRouter) — Finans Asistanım ----------
 // SADECE OKUMA: Yapay zeka uygulamadaki hiçbir veriyi değiştiremez, hiçbir state-mutasyon
 // fonksiyonunu çağıramaz. Her mesajda uygulamanın GERÇEK güncel finansal özeti system prompt
-// içine gömülerek gönderilir; model bunun dışında bir veri "uydurmaz". Tool/function calling
-// Uygulama içi finans verileri için tool calling kullanılmaz; güncel dış bilgi gerektiğinde OpenRouter'ın web eklentisi kullanılır.
-const AI_MODEL = 'openrouter/free';
+// içine gömülerek gönderilir; model bunun dışında bir veri "uydurmaz". Uygulama içi finans
+// verileri için tool calling kullanılmaz; güncel dış bilgi gerektiğinde OpenRouter'ın web
+// eklentisi (plugins:[{id:'web'}]) kullanılır.
+// NOT: "openrouter/free" diye bir model OpenRouter'da GEÇERLİ/erişilebilir bir model kimliği
+// DEĞİLDİR (böyle bir "router" modeli yok) — bu değer isteklerin tamamının 400/404 ile
+// başarısız olmasına yol açardı. Bilinen, erişilebilir bir modelle değiştirildi.
+const AI_MODEL = 'google/gemini-3.8-flash';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 let aiMessages = []; // {role:'user'|'assistant', text} — sadece bu oturumda tutulur.
 
@@ -2909,8 +2961,14 @@ function get_credit_data(){
     kalan_borc: loanRemaining(l) }));
 }
 function get_credit_card_data(){
-  return state.cards.map(c=>({ banka:bankByCode(c.bankCode).name, limit:c.limit||0, toplam_borc:c.totalDebt||0,
-    odenecek_miktar:(cardStatement(c.id,state.selectedMonth)||{}).amount||0, kalan_limit:(c.limit||0)-(c.totalDebt||0) }));
+  return state.cards.map(c=>{
+    const fi = calculateCardInterest(c, state.selectedMonth);
+    const kalanLimit = (c.limit||0)-(c.totalDebt||0);
+    return { banka:bankByCode(c.bankCode).name, limit:c.limit||0, toplam_borc:c.totalDebt||0,
+      odenecek_miktar:(cardStatement(c.id,state.selectedMonth)||{}).amount||0, kalan_limit:kalanLimit,
+      tahmini_devreden_bakiye: fi.carried, tahmini_aylik_faiz_bsmv_dahil: fi.total, faiz_gecikmeli_mi: fi.late,
+      tahmini_faiz_sonrasi_kullanilabilir_limit: Math.max(0, kalanLimit-fi.total) };
+  });
 }
 function get_bill_data(){
   return state.bills.map(b=>{ const r=billRecord(b,state.selectedMonth); return { ad:b.name, kategori:b.category,
@@ -2973,7 +3031,7 @@ function buildAiDataSummary(){
 
   lines.push(`\nKREDİ KARTLARI (${cards.length} adet):`);
   if(!cards.length) lines.push('  (kayıt yok)');
-  cards.forEach(c=>lines.push(`  - ${c.banka}: limit ${c.limit} TL, toplam borç ${c.toplam_borc} TL, bu ay ödenecek ${c.odenecek_miktar} TL, kalan limit ${c.kalan_limit} TL`));
+  cards.forEach(c=>lines.push(`  - ${c.banka}: limit ${c.limit} TL, toplam borç ${c.toplam_borc} TL, bu ay ödenecek ${c.odenecek_miktar} TL, kalan limit ${c.kalan_limit} TL, bir sonraki döneme taşınan tahmini bakiye ${c.tahmini_devreden_bakiye} TL, bu bakiye üzerinden tahmini aylık faiz(BSMV dahil) ≈ ${c.tahmini_aylik_faiz_bsmv_dahil} TL${c.faiz_gecikmeli_mi?' (gecikme faizi oranıyla)':''}, tahmini faiz sonrası kullanılabilir limit ≈ ${c.tahmini_faiz_sonrasi_kullanilabilir_limit} TL`));
 
   lines.push(`\nKMH HESAPLARI (${kmh.length} adet):`);
   if(!kmh.length) lines.push('  (kayıt yok)');
@@ -3014,7 +3072,9 @@ Kullanıcının doğal, günlük Türkçesini anlamaya çalış (yazım hatalar�
 GÜNCEL FİNANSAL VERİLER:
 ${buildAiDataSummary()}
 
-GÜNCEL İNTERNET BİLGİSİ: Kullanıcı güncel fiyat, faiz, kur, oran, piyasa veya benzeri zamana duyarlı bir bilgi sorarsa web araması etkinleştirilmiş olabilir. Web arama sonuçlarını uygulamadaki kişisel finans verileriyle karıştırma. Uygulamadaki kullanıcının kendi borç/gelir verileri her zaman yukarıdaki gerçek uygulama verilerinden alınır; güncel piyasa bilgileri ise web kaynaklarından alınır. Web sonucu yoksa güncel rakam uydurma. Mümkün olduğunda cevabın sonunda kısa bir "Kaynak:" ifadesiyle kaynak alan adını belirt.`;
+GÜNCEL İNTERNET BİLGİSİ: Kullanıcı güncel fiyat, faiz, kur, oran, piyasa veya benzeri zamana duyarlı bir bilgi sorarsa web araması etkinleştirilmiş olabilir. Web arama sonuçlarını uygulamadaki kişisel finans verileriyle karıştırma. Uygulamadaki kullanıcının kendi borç/gelir verileri her zaman yukarıdaki gerçek uygulama verilerinden alınır; güncel piyasa bilgileri ise web kaynaklarından alınır. Web sonucu yoksa güncel rakam uydurma. Mümkün olduğunda cevabın sonunda kısa bir "Kaynak:" ifadesiyle kaynak alan adını belirt.
+
+KREDİ KARTI VE KMH FAİZİ HAKKINDA: Kredi kartlarındaki "tahmini aylık faiz" ile KMH hesaplarındaki "faiz" birbirinden FARKLI ürünlerdir ve oranları farklıdır — birini diğerinin yerine kullanma, karıştırma. Kredi kartı için verilen "tahmini devreden bakiye" ve "tahmini aylık faiz" değerleri, uygulamanın kendi YAKLAŞIK hesaplamasıdır (gerçek banka ekstresiyle birebir aynı olmayabilir); bu tutarları TOPLAM BORÇ rakamının üzerine tekrar EKLEME — toplam borç zaten güncel borcu içeriyor, faiz tahmini sadece ek/ayrı bir bilgi olarak sun. Kullanıcı "kredi kartı faizim ne kadar" gibi bir soru sorarsa bu tahmini faiz verisini kullan ve yaklaşık olduğunu belirt; kesin/güncel resmi oran istenirse (ör. "bankamın güncel faiz oranı ne") web aramasını kullan.`;
 }
 
 // AI_REQUEST_TIMEOUT_MS kaldırıldı: OpenRouter yanıtı için 20 saniyelik otomatik kesme yok.
@@ -3050,8 +3110,12 @@ async function callOpenRouter(messages, userText=''){
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + key,
-        'HTTP-Referer': location.origin || 'https://github.com',
-        'X-OpenRouter-Title': 'Finanscim',
+        'HTTP-Referer': (location.origin && location.origin!=='null') ? location.origin : 'https://finanscim.app',
+        // NOT: HTTP başlık DEĞERLERİ yalnızca ISO-8859-1 karakter kümesini destekler — Türkçe
+        // özel karakterler (ör. noktasız "ı") burada KULLANILAMAZ; kullanılırsa fetch() isteğin
+        // TAMAMINI (her mesajda) "Failed to read the 'headers' property... non ISO-8859-1 code
+        // point" hatasıyla başarısız kılar. Bu yüzden başlık değeri ASCII güvenli tutulur.
+        'X-Title': 'Finanscim',
       },
       body: JSON.stringify(body),
     });
@@ -3095,13 +3159,20 @@ async function callAi(messages, userText=''){
       throw e;
     }
     if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. ⚙ API Ayarı üzerinden anahtarını kontrol et.');
-    if(err.status===400) throw new Error('OpenRouter isteği geçersiz. Model veya istek yapısı reddedildi.');
+    if(err.status===400){
+      // Web araması etkinken 400 alınırsa (bazı modeller/planlar web eklentisini desteklemeyebilir)
+      // kullanıcıya bunun güncel bilgiyle ilgili olabileceğini belirten ayrı bir mesaj gösterilir.
+      const detail = String(err.detail||'').toLocaleLowerCase('tr-TR');
+      if(detail.includes('plugin') || detail.includes('web')) throw new Error('Güncel internet bilgisine şu anda ulaşılamadı. Lütfen tekrar dener misin?');
+      throw new Error('Yapay zeka isteği işlenemedi. Lütfen tekrar dener misin?');
+    }
     if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
     if(err.status===429){
       const e = new Error('Çok hızlı mesaj gönderdiniz, lütfen 10 saniye bekleyin.');
       e.kind = 'rate_limit';
       throw e;
     }
+    if(err.status>=500 && err.status<600) throw new Error('OpenRouter şu anda yanıt veremiyor (sunucu hatası). Lütfen birazdan tekrar dener misin?');
     if(err.kind==='parse' || err.kind==='empty') throw err;
     throw new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
   }
