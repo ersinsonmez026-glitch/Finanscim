@@ -145,7 +145,7 @@ button.mainCard{cursor:pointer;}
 
 .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;height:100dvh;overflow:hidden;}
 .content{flex:1;overflow-y:auto;padding:10px 14px 150px;}
-.content.home-fit{overflow:hidden;padding-top:6px;}
+.content.home-fit{overflow:hidden;padding-top:1px;}
 
 .bottombar-wrap{position:fixed;left:0;right:0;bottom:0;z-index:6;max-width:520px;margin:0 auto;
   background:var(--bg);padding:6px 14px 8px;}
@@ -1249,7 +1249,7 @@ function renderMarketSection(){
       <div class="head"><h2>Piyasa</h2><span>Son güncelleme: ${updLabel}<button class="refresh-btn" data-action="refresh-market" title="Yenile">↻</button></span></div>
       <div class="market">
         <div class="mcard gold">
-          <div class="mi">🪙</div><h3>Altın</h3><b>${Math.round(GOLD_RATE).toLocaleString('tr-TR')} TL</b><small>gram</small>
+          <div class="mi"><svg width="20" height="20" viewBox="0 0 20 20"><defs><radialGradient id="mktGoldGrad" cx="35%" cy="32%"><stop offset="0%" stop-color="#FFF2C4"/><stop offset="55%" stop-color="#E8C34A"/><stop offset="100%" stop-color="#B8860B"/></radialGradient></defs><circle cx="10" cy="10" r="9" fill="url(#mktGoldGrad)" stroke="#8A6100" stroke-width="0.8"/><text x="10" y="14" text-anchor="middle" font-size="9" font-weight="800" fill="#7a5a05">₺</text></svg></div><h3>Altın</h3><b>${Math.round(GOLD_RATE).toLocaleString('tr-TR')} TL</b><small>gram</small>
           ${marketChangeHtml(chg.gold)}
         </div>
         <div class="mcard usd">
