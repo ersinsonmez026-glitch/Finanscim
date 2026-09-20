@@ -104,6 +104,15 @@ button{font-family:var(--font-body);}
 .kr-add small{display:block;font-size:9.5px;margin-top:2px;color:#526b96;}
 .kr-info{display:flex;gap:7px;background:#e9f5ff;border:1px solid #cfe4f8;border-radius:13px;padding:8px 11px;
   font-size:9.5px;line-height:1.4;color:#45628e;margin-top:8px;flex-shrink:0;}
+.kr-summary.cols3{grid-template-columns:1fr 1fr 1fr;padding:6px 8px;gap:4px;}
+.kr-summary.cols3>div+div{padding-left:8px;}
+.kr-summary.cols3 b{font-size:8.7px;}
+.kr-summary.cols3 strong{font-size:12px;}
+.kr-meta.cols4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.kr-meta.cols4 div{padding:0 3px;font-size:8.3px;}
+.kr-meta.cols4 strong{font-size:10px;}
+.kr-title-row{display:grid;grid-template-columns:1fr 1fr;align-items:baseline;gap:4px;}
+.kr-duedate{font-size:9px;color:var(--ink-soft);white-space:nowrap;justify-self:start;}
 
 .stack{display:grid;gap:6px;margin-bottom:6px;}
 .mainCard{height:54px;border-radius:16px;display:flex;align-items:center;padding:7px 12px;position:relative;
@@ -1414,45 +1423,63 @@ function renderLoanDetail(){
 // ---------- CARDS ----------
 function renderCards(){
   $fab.style.display='none';
-  if(state.cards.length===0) return `
-    <button class="dashed-add-card" data-action="open-modal" data-modal="addCard">
-      <span class="dashed-add-icon">+</span>
-      <div><div class="dashed-add-title">Yeni kart eklemek için dokun</div><div class="dashed-add-sub">Yeni bir kredi kartı kaydı ekleyin.</div></div>
+  const addBtn = `<button class="kr-add" data-action="open-modal" data-modal="addCard">
+      <span>＋</span>
+      <div><strong>Yeni Kart Eklemek İçin Dokunun</strong><small>Farklı bankalardaki kredi kartlarınızı buradan ekleyebilirsiniz.</small></div>
     </button>`;
-  return state.cards.map(c=>{
+  if(state.cards.length===0) return addBtn;
+  const totalDebt = state.cards.reduce((s,c)=>s+(c.totalDebt||0),0);
+  const totalLimit = state.cards.reduce((s,c)=>s+(c.limit||0),0);
+  const monthlyDue = state.cards.reduce((s,c)=>{
+    const st = cardStatement(c.id, state.selectedMonth);
+    return s + (st && st.status!=='odendi' ? (st.amount||0) : 0);
+  }, 0);
+  const summary = `
+    <div class="kr-summary cols3">
+      <div><b>Toplam Kart Borcu</b><strong>${formatTL(totalDebt)}</strong></div>
+      <div><b>Bu Ay Ödenecek</b><strong>${formatTL(monthlyDue)}</strong></div>
+      <div><b>Kullanılabilir Limit</b><strong>${formatTL(totalLimit-totalDebt)}</strong></div>
+    </div>`;
+  const listHead = `
+    <div class="kr-list-head">
+      <h2>Kart Listesi</h2>
+    </div>`;
+  const cards = state.cards.map(c=>{
       const st = cardStatement(c.id, state.selectedMonth);
       const bank = bankByCode(c.bankCode);
       const debt = c.totalDebt||0;
       const remainingLimit = (c.limit||0) - debt;
       // Kredi kartında her ay borç olmak zorunda değildir: bu ay için hiç ödenecek bir tutar
-      // (statement) yoksa kutu tamamen BOŞ kalır, yeşil arka plan gösterilir — ÖDENDİ/BEKLİYOR/
-      // GECİKTİ yazılmaz. Sadece bu ay gerçekten ödenecek bir miktar VARSA durum hesaplanır.
+      // (statement) yoksa kutu tamamen BOŞ kalır — ÖDENDİ/BEKLİYOR/GECİKTİ yazılmaz. Sadece bu ay
+      // gerçekten ödenecek bir miktar VARSA durum hesaplanır.
       const hasCharge = !!(st && (st.amount||0) > 0);
       const paid = !!(st && st.status==='odendi');
       const statusKey = hasCharge ? periodStatus(paid, state.selectedMonth, c.dueDay) : 'odendi';
-      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'));
-      return `<div class="record-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}">
-        <div class="record-top">
-          ${bankAvatarHtml(bank,'record-avatar')}
-          <div style="flex:1;min-width:0;">
-            <div class="record-title">${bank.name}</div>
-            <div class="record-sub">Kredi Kartı · Her ayın ${c.dueDay||'-'}'i</div>
-          </div>
-          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
-          <span class="record-chevron">›</span>
+      const statusCls = statusKey==='odendi' ? 'paid' : (statusKey==='gecikti' ? 'late' : 'waiting');
+      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'));
+      return `<article class="kr-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}">
+        <div class="kr-main">
+          ${bankLogoHtml(bank, 'kr-bank-logo')}
+          <div><div class="kr-title-row"><h2>${bank.name}</h2><span class="kr-duedate">Son Ödeme: ${c.dueDay||'-'}'i</span></div><p>${c.name?esc(c.name):'Kredi Kartı'}</p></div>
+          <span class="kr-status ${statusCls}">${pillLabel}</span>
         </div>
-        <div class="record-stats">
-          <div class="record-stat"><div class="l">Toplam Limit</div><div class="v">${formatTL(c.limit||0)}</div></div>
-          <div class="record-stat"><div class="l">Toplam Borç</div><div class="v">${formatTL(debt)}</div></div>
-          <div class="record-stat"><div class="l">Ödenecek Miktar</div><div class="v">${st?formatTL(st.amount):'—'}</div></div>
-          <div class="record-stat"><div class="l">Kalan Limit</div><div class="v">${formatTL(remainingLimit)}</div></div>
+        <div class="kr-meta cols4">
+          <div>Kart Limiti<strong>${formatTL(c.limit||0)}</strong></div>
+          <div>Güncel Borç<strong>${formatTL(debt)}</strong></div>
+          <div>Bu Ay Ödenecek<strong>${st?formatTL(st.amount):'—'}</strong></div>
+          <div class="${statusKey==='gecikti'?'kr-late':''}">Kalan Limit<strong>${formatTL(remainingLimit)}</strong></div>
         </div>
-      </div>`;
-    }).join('') + `
-    <button class="dashed-add-card" data-action="open-modal" data-modal="addCard">
-      <span class="dashed-add-icon">+</span>
-      <div><div class="dashed-add-title">Yeni kart eklemek için dokun</div><div class="dashed-add-sub">Yeni bir kredi kartı kaydı ekleyin.</div></div>
-    </button>`;
+      </article>`;
+    }).join('');
+  return `
+    ${summary}
+    ${listHead}
+    <div class="kr-scroll">
+      ${cards}
+      ${addBtn}
+    </div>
+    <div class="kr-info">ⓘ <span>Kayda dokunarak kart ayarlarını görüntüleyin.<br>Uzun basarak <b>Düzenle</b> veya <b>Sil</b> seçeneklerini açın.</span></div>
+  `;
 }
 
 // ---------- KMH (Kredili Mevduat Hesabı) ----------
@@ -1698,27 +1725,50 @@ const modalTemplates = {
     <button class="danger-btn" data-action="delete-loan" data-id="${id}" style="margin-top:8px;">Krediyi Sil</button>
   `; },
   addCard(){ return `
+    <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>Kredi Kartı Ekle</h3>
-    <div class="field"><label>Banka</label>${bankChipRow('cardBankChoice')}</div>
-    <div class="field"><label>Kart Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-    <div class="field"><label>Son Ödeme Günü</label>${dayWheel('cardDayChoice')}</div>
-    <button class="save-btn" data-action="save-card">Kaydet</button>
-    <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+    <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
+    <div class="field">${bankChipRow('cardBankChoice')}</div>
+    <div class="section-title">2. Kart Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Kredi Kartı Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Güncel Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Bu Ay Ödenecek (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" placeholder="Örn: Alışveriş Kartım"></div>
+    </div>
+    <div class="section-title">3. Tarihler</div>
+    <div class="field"><label>Son Ödeme Tarihi</label>${dayWheel('cardDayChoice')}</div>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+      <button class="save-btn" data-action="save-card">Kaydet</button>
+    </div>
   `; },
   cardStatement(id){
     const c = state.cards.find(x=>x.id===id);
     const bank = bankByCode(c.bankCode);
     const st = cardStatement(id, state.selectedMonth);
     return `
+    <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>${bank.name} — Kart Ayarları</h3>
-    <div class="field"><label>Kart Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${c.limit?c.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-    <div class="field"><label>Toplam Borç (TL)</label><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${c.totalDebt?c.totalDebt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-    <div class="field"><label>Ödenecek Miktar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" value="${st?st.amount.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+    <div class="section-title">Kart Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Kredi Kartı Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${c.limit?c.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+      <div class="field icon-field"><label>Güncel Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${c.totalDebt?c.totalDebt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Bu Ay Ödenecek (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" value="${st?st.amount.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" value="${esc(c.name||'')}" placeholder="Örn: Alışveriş Kartım"></div>
+    </div>
     <div class="toggle-row"><span>Bu ay ödendi olarak işaretle</span><div class="switch ${st&&st.status==='odendi'?'on':''}" id="f_paid" data-action="toggle-switch"><div class="knob"></div></div></div>
-    <div class="field"><label>Son Ödeme Günü</label>${dayWheel('cardDayChoice', c.dueDay)}</div>
-    <button class="save-btn" data-action="save-card-settings" data-id="${id}">Kaydet</button>
-    <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
-    <button class="danger-btn" data-action="delete-card" data-id="${id}">Kartı Sil</button>
+    <div class="section-title">Son Ödeme Tarihi</div>
+    <div class="field">${dayWheel('cardDayChoice', c.dueDay)}</div>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+      <button class="save-btn" data-action="save-card-settings" data-id="${id}">Kaydet</button>
+    </div>
+    <button class="danger-btn" data-action="delete-card" data-id="${id}" style="margin-top:8px;">Kartı Sil</button>
   `; },
   addKmh(){ return `
     <h3>KMH Hesabı Ekle</h3>
@@ -2113,13 +2163,19 @@ document.body.addEventListener('click', function(e){
     const day = parseInt(wheelValue('cardDayChoice'))||15;
     const limit=tlVal('f_limit');
     if(!limit){ alert('Kart limiti girmeden kart eklenemez.'); return; }
-    state.cards.push({ id:uid(), bankCode, limit, dueDay:day, totalDebt:0 });
+    const totalDebt = tlVal('f_totalDebt');
+    const amount = tlVal('f_amount');
+    const name = val('f_name');
+    const id = uid();
+    state.cards.push({ id, bankCode, limit, dueDay:day, totalDebt, name });
+    if(amount>0) state.cardStatements.push({ id:uid(), cardId:id, ym:state.selectedMonth, amount, status:'bekliyor' });
     save(); closeModal(); navigate('cards'); return;
   }
   if(action==='save-card-settings'){
     const id=t.dataset.id, limit=tlVal('f_limit'), totalDebt=tlVal('f_totalDebt'), amount=tlVal('f_amount');
     if(!limit){ alert('Kart limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('cardDayChoice'))||15;
+    const name = val('f_name');
     const paidOn = document.getElementById('f_paid').classList.contains('on');
     const card = state.cards.find(c=>c.id===id);
     const existing = cardStatement(id, state.selectedMonth);
@@ -2127,7 +2183,7 @@ document.body.addEventListener('click', function(e){
     let newTotalDebt = totalDebt;
     if(!wasPaid && paidOn){ newTotalDebt = Math.max(0, newTotalDebt - amount); }
     else if(wasPaid && !paidOn){ newTotalDebt = newTotalDebt + (existing.amount||0); }
-    if(card){ card.limit = limit; card.dueDay = day; card.totalDebt = newTotalDebt; }
+    if(card){ card.limit = limit; card.dueDay = day; card.totalDebt = newTotalDebt; card.name = name; }
     if(existing){ existing.amount = amount; existing.status = paidOn?'odendi':'bekliyor'; }
     else if(amount>0 || paidOn) state.cardStatements.push({ id:uid(), cardId:id, ym:state.selectedMonth, amount, status:paidOn?'odendi':'bekliyor' });
     save(); closeModal(); render(); return;
