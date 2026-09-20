@@ -2938,7 +2938,7 @@ if(storageBroken) showStorageWarning();
 // NOT: "openrouter/free" diye bir model OpenRouter'da GEÇERLİ/erişilebilir bir model kimliği
 // DEĞİLDİR (böyle bir "router" modeli yok) — bu değer isteklerin tamamının 400/404 ile
 // başarısız olmasına yol açardı. Bilinen, erişilebilir bir modelle değiştirildi.
-const AI_MODEL = 'google/gemini-3.8-flash';
+const AI_MODEL = 'openrouter/free';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 let aiMessages = []; // {role:'user'|'assistant', text} — sadece bu oturumda tutulur.
 
@@ -3091,70 +3091,58 @@ function needsCurrentWebSearch(text){
 
 async function callOpenRouter(messages, userText=''){
   const key = getORKey();
-  if(!key){
-    const e = new Error('API anahtarı ayarlanmamış. Lütfen önce ⚙ API Ayarı üzerinden anahtarını gir.');
-    e.kind='no_key';
-    throw e;
-  }
-
+  if(!key){ const e = new Error('API anahtarı ayarlanmamış. Lütfen önce ⚙ API Ayarı üzerinden anahtarını gir.'); e.kind='no_key'; throw e; }
   const body = { model: AI_MODEL, messages };
-
-  // Güncel kur/faiz/fiyat vb. gerektiğinde OpenRouter'ın güncel web aramasını kullan.
-  // OpenRouter'ın güncel server-tool biçimi kullanılıyor; normal sorularda hiç eklenmiyor.
+  // Güncel fiyat/faiz/kur vb. gerektiğinde OpenRouter'ın web aramasını aç.
+  // Normal Finansçım sorularında gereksiz web araması yapılmaz.
   if(needsCurrentWebSearch(userText)){
-    body.tools = [{
-      type: 'openrouter:web_search',
-      parameters: { max_results: 5 }
+    body.plugins = [{
+      id: 'web',
+      max_results: 5,
+      search_prompt: 'Güncel bilgi isteniyor. Güvenilir ve mümkünse resmi/kurumsal kaynakları tercih et. Sonuçların tarihini dikkate al ve cevabında kullandığın kaynakları alan adıyla belirt.'
     }];
   }
-
   let resp;
+  // 20 saniyelik timeout kaldırıldı; OpenRouter yanıtı gelene kadar fetch bekler.
   try{
-    // HTTP-Referer ve X-Title zorunlu değil. Tarayıcı tarafında gereksiz preflight
-    // ihtimalini azaltmak için yalnızca gerekli başlıklar gönderiliyor.
     resp = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
-      mode: 'cors',
-      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + key,
+        'HTTP-Referer': (location.origin && location.origin!=='null') ? location.origin : 'https://finanscim.app',
+        // NOT: HTTP başlık DEĞERLERİ yalnızca ISO-8859-1 karakter kümesini destekler — Türkçe
+        // özel karakterler (ör. noktasız "ı") burada KULLANILAMAZ; kullanılırsa fetch() isteğin
+        // TAMAMINI (her mesajda) "Failed to read the 'headers' property... non ISO-8859-1 code
+        // point" hatasıyla başarısız kılar. Bu yüzden başlık değeri ASCII güvenli tutulur.
+        'X-Title': 'Finanscim',
       },
       body: JSON.stringify(body),
     });
   }catch(networkErr){
-    console.error('[OpenRouter] Tarayıcı/ağ hatası:', networkErr);
-    const e = new Error('OpenRouter bağlantısı kurulamadı: ' + (networkErr?.message || 'Tarayıcı isteği engelledi.'));
+    console.log('[OpenRouter] Ağ hatası:', networkErr);
+    const e = new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
     e.kind='network';
-    e.detail = networkErr?.message || String(networkErr);
     throw e;
   }
-
-  let detail = '';
   if(!resp.ok){
+    let detail = '';
     try{ detail = await resp.text(); }catch(_e){}
-    console.error('[OpenRouter] HTTP', resp.status, resp.statusText, detail);
+    console.log('[OpenRouter] İstek başarısız — HTTP durum kodu:', resp.status, resp.statusText);
+    console.log('[OpenRouter] Ham hata yanıtı:', detail || '(gövde boş)');
     const e = new Error('http_'+resp.status);
     e.status = resp.status;
     e.detail = detail;
     throw e;
   }
-
   let data;
-  try{
-    data = await resp.json();
-  }catch(e2){
-    console.error('[OpenRouter] JSON ayrıştırma hatası:', e2);
-    const e = new Error('Yapay zekadan beklenmeyen bir cevap geldi.');
-    e.kind='parse';
-    throw e;
-  }
-
-  const content = data?.choices?.[0]?.message?.content;
+  try{ data = await resp.json(); }
+  catch(e2){ console.log('[OpenRouter] Cevap JSON olarak ayrıştırılamadı:', e2); const e = new Error('Yapay zekadan beklenmeyen bir cevap geldi, lütfen tekrar dener misin?'); e.kind='parse'; throw e; }
+  const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
   if(!content || !String(content).trim()){
-    console.error('[OpenRouter] Boş cevap:', data);
-    const e = new Error('Yapay zekadan boş bir cevap geldi.');
-    e.kind='empty';
+    console.log('[OpenRouter] Cevap gövdesinde metin bulunamadı:', JSON.stringify(data));
+    const e = new Error('Yapay zekadan boş bir cevap geldi, lütfen tekrar dener misin?');
+    e.kind = 'empty';
     throw e;
   }
   return String(content).trim();
@@ -3165,39 +3153,28 @@ async function callAi(messages, userText=''){
     return await callOpenRouter(messages, userText);
   }catch(err){
     if(err.kind==='no_key') throw err;
-
-    // Artık gerçek tarayıcı/ağ hatası kullanıcıya gizlenmiyor.
-    if(err.kind==='network'){
-      throw new Error('OpenRouter bağlantısı kurulamadı: ' + (err.detail || err.message || 'Tarayıcı isteği engelledi.'));
+    if(err.kind==='network' || err.kind==='timeout'){
+      const e = new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
+      e.kind = err.kind;
+      throw e;
     }
-
-    if(err.status===401 || err.status===403){
-      throw new Error('API anahtarı geçersiz veya yetkisiz. ⚙ OpenRouter Ayarı üzerinden anahtarı kontrol et.');
-    }
-    if(err.status===402){
-      throw new Error('OpenRouter hesabında bu istek için yeterli kredi/bakiye bulunmuyor.');
-    }
+    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. ⚙ API Ayarı üzerinden anahtarını kontrol et.');
     if(err.status===400){
-      const raw = String(err.detail||'');
-      const detail = raw.toLocaleLowerCase('tr-TR');
-      console.error('[OpenRouter] 400 ayrıntısı:', raw);
-      if(detail.includes('tool') || detail.includes('web')){
-        throw new Error('Güncel internet araması bu model/istek için kullanılamadı. Normal cevaplar çalışır; güncel bilgi sorusunu daha sonra tekrar deneyin.');
-      }
-      throw new Error('OpenRouter isteği reddetti (400): ' + (raw.slice(0,220) || 'İstek biçimi kabul edilmedi.'));
+      // Web araması etkinken 400 alınırsa (bazı modeller/planlar web eklentisini desteklemeyebilir)
+      // kullanıcıya bunun güncel bilgiyle ilgili olabileceğini belirten ayrı bir mesaj gösterilir.
+      const detail = String(err.detail||'').toLocaleLowerCase('tr-TR');
+      if(detail.includes('plugin') || detail.includes('web')) throw new Error('Güncel internet bilgisine şu anda ulaşılamadı. Lütfen tekrar dener misin?');
+      throw new Error('Yapay zeka isteği işlenemedi. Lütfen tekrar dener misin?');
     }
-    if(err.status===404) throw new Error('Yapay zeka modeli bulunamadı veya şu anda kullanılamıyor (404).');
-    if(err.status===408) throw new Error('OpenRouter isteği zaman aşımına uğradı.');
+    if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
     if(err.status===429){
       const e = new Error('Çok hızlı mesaj gönderdiniz, lütfen 10 saniye bekleyin.');
       e.kind = 'rate_limit';
       throw e;
     }
-    if(err.status>=500 && err.status<600){
-      throw new Error('OpenRouter sunucu hatası (' + err.status + '). Lütfen birazdan tekrar deneyin.');
-    }
+    if(err.status>=500 && err.status<600) throw new Error('OpenRouter şu anda yanıt veremiyor (sunucu hatası). Lütfen birazdan tekrar dener misin?');
     if(err.kind==='parse' || err.kind==='empty') throw err;
-    throw new Error('OpenRouter bağlantısı kurulamadı: ' + (err.message || 'Bilinmeyen hata.'));
+    throw new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
   }
 }
 
