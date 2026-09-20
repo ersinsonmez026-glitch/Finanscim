@@ -339,6 +339,7 @@ button.mainCard{cursor:pointer;}
 .modal-backdrop.open{display:flex;}
 .modal-sheet{background:var(--surface);width:100%;max-width:520px;border-radius:18px 18px 0 0;padding:6px 18px calc(6px + env(safe-area-inset-bottom));
   max-height:100vh;max-height:100dvh;overflow-y:auto;}
+.modal-sheet.sheet-compact{border-radius:18px;margin-bottom:16vh;padding-bottom:14px;}
 .modal-sheet h3{font-family:var(--font-display);font-weight:500;font-size:18px;margin:0 0 6px;}
 .field{margin-bottom:3px;}
 .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:3px;}
@@ -1632,7 +1633,11 @@ function openModal(kind, id){
   $modalSheet.innerHTML = modalTemplates[kind](id);
   $modalBackdrop.classList.add('open');
   const firstChoice = $modalSheet.querySelector('.choice-row');
-  if(firstChoice) firstChoice.dataset.value = firstChoice.querySelector('button')?.dataset.val || '';
+  if(firstChoice){
+    const activeBtn = firstChoice.querySelector('button.active') || firstChoice.querySelector('button');
+    firstChoice.dataset.value = activeBtn?.dataset.val || '';
+  }
+  $modalSheet.classList.toggle('sheet-compact', kind==='itemActions');
   if($modalSheet.querySelector('.wheel-col')) initWheelPickers($modalSheet);
   $modalSheet.querySelectorAll('.tl-input').forEach(formatTLInputLive);
   if($modalSheet.querySelector('.notif-wrap')) initSwipeDelete($modalSheet);
