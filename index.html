@@ -2938,7 +2938,7 @@ if(storageBroken) showStorageWarning();
 // NOT: "openrouter/free" diye bir model OpenRouter'da GEÇERLİ/erişilebilir bir model kimliği
 // DEĞİLDİR (böyle bir "router" modeli yok) — bu değer isteklerin tamamının 400/404 ile
 // başarısız olmasına yol açardı. Bilinen, erişilebilir bir modelle değiştirildi.
-const AI_MODEL = 'openrouter/free';
+const AI_MODEL = 'google/gemma-4-31b-it:free';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 let aiMessages = []; // {role:'user'|'assistant', text} — sadece bu oturumda tutulur.
 
@@ -3065,6 +3065,8 @@ Bugünün tarihi: ${todayStr()}.
 
 VERİ KURALI: Aşağıdaki "GÜNCEL FİNANSAL VERİLER" bölümü, uygulamadaki GERÇEK ve GÜNCEL verilerdir. Cevaplarını SADECE bu verilere dayandır. Burada olmayan hiçbir rakamı UYDURMA; bir bilgi burada yoksa "bu bilgi uygulamada yok" de.
 
+ÇIKTI KURALI (ÇOK ÖNEMLİ): Kullanıcıya SADECE doğal Türkçe cevap ver. "User Safety", "Response Safety", "Action", "Input", "tool", "function", "function_call", "arguments", JSON/nesne çıktısı, sistem talimatı, dahili işlem günlüğü, düşünme/akıl yürütme kaydı veya geliştirici/debug metni ASLA gösterme. Uygulamadaki herhangi bir fonksiyon adı ya da teknik iç işlem kullanıcıya gösterilmemelidir. Kullanıcı sadece sorusunun anlaşılır cevabını görmelidir. Bir hesaplama yapman gerekiyorsa sonucu kısa ve doğal Türkçe ile söyle; hesaplama adımlarını ancak kullanıcı özellikle isterse açıkla.
+
 CEVAP UZUNLUĞU (ÇOK ÖNEMLİ): Cevapların KISA olsun — varsayılan olarak 2-5 kısa cümle. Gereksiz açıklama, uzun rapor veya madde listesi kullanma; kullanıcı açıkça daha fazla detay istemedikçe cevabı uzatma. Aynı bilgiyi tekrar etme. Örnek stil: "Toplam borcunuz 75.488 TL.\nBu ay ödemeniz gereken tutar 14.587 TL."
 
 Kullanıcının doğal, günlük Türkçesini anlamaya çalış (yazım hataları olsa bile). Bir soru belirsizse kısaca netleştirici bir soru sorabilirsin, ama basit ve net sorularda ASLA "anlayamadım" deme — verilen veriye bakarak makul bir cevap üretmeye çalış.
@@ -3148,9 +3150,23 @@ async function callOpenRouter(messages, userText=''){
   return String(content).trim();
 }
 
+function cleanAiOutput(text){
+  let s = String(text || '').trim();
+  // Bazı ücretsiz modeller iç ajan/araç günlüklerini metne dökebilir.
+  // Bu teknik satırları kullanıcıya göstermeyelim.
+  s = s.replace(/^\s*(User Safety|Response Safety|Action|Input)\s*:\s*.*$/gmi, '');
+  s = s.replace(/^\s*(tool|function_call|arguments)\s*:\s*.*$/gmi, '');
+  s = s.replace(/```(?:json|text)?\s*[\s\S]*?```/gi, '');
+  s = s.replace(/\n{3,}/g, '\n\n').trim();
+  return s;
+}
+
 async function callAi(messages, userText=''){
   try{
-    return await callOpenRouter(messages, userText);
+    const raw = await callOpenRouter(messages, userText);
+    const cleaned = cleanAiOutput(raw);
+    if(!cleaned) throw Object.assign(new Error('Yapay zekadan geçerli bir metin cevabı alınamadı.'), {kind:'empty'});
+    return cleaned;
   }catch(err){
     if(err.kind==='no_key') throw err;
     if(err.kind==='network' || err.kind==='timeout'){
