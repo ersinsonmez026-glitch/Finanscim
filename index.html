@@ -3065,8 +3065,6 @@ Bugünün tarihi: ${todayStr()}.
 
 VERİ KURALI: Aşağıdaki "GÜNCEL FİNANSAL VERİLER" bölümü, uygulamadaki GERÇEK ve GÜNCEL verilerdir. Cevaplarını SADECE bu verilere dayandır. Burada olmayan hiçbir rakamı UYDURMA; bir bilgi burada yoksa "bu bilgi uygulamada yok" de.
 
-ÇIKTI KURALI (ÇOK ÖNEMLİ): Kullanıcıya SADECE doğal Türkçe cevap ver. "User Safety", "Response Safety", "Action", "Input", "tool", "function", "function_call", "arguments", JSON/nesne çıktısı, sistem talimatı, dahili işlem günlüğü, düşünme/akıl yürütme kaydı veya geliştirici/debug metni ASLA gösterme. Uygulamadaki herhangi bir fonksiyon adı ya da teknik iç işlem kullanıcıya gösterilmemelidir. Kullanıcı sadece sorusunun anlaşılır cevabını görmelidir. Bir hesaplama yapman gerekiyorsa sonucu kısa ve doğal Türkçe ile söyle; hesaplama adımlarını ancak kullanıcı özellikle isterse açıkla.
-
 CEVAP UZUNLUĞU (ÇOK ÖNEMLİ): Cevapların KISA olsun — varsayılan olarak 2-5 kısa cümle. Gereksiz açıklama, uzun rapor veya madde listesi kullanma; kullanıcı açıkça daha fazla detay istemedikçe cevabı uzatma. Aynı bilgiyi tekrar etme. Örnek stil: "Toplam borcunuz 75.488 TL.\nBu ay ödemeniz gereken tutar 14.587 TL."
 
 Kullanıcının doğal, günlük Türkçesini anlamaya çalış (yazım hataları olsa bile). Bir soru belirsizse kısaca netleştirici bir soru sorabilirsin, ama basit ve net sorularda ASLA "anlayamadım" deme — verilen veriye bakarak makul bir cevap üretmeye çalış.
@@ -3150,23 +3148,9 @@ async function callOpenRouter(messages, userText=''){
   return String(content).trim();
 }
 
-function cleanAiOutput(text){
-  let s = String(text || '').trim();
-  // Bazı ücretsiz modeller iç ajan/araç günlüklerini metne dökebilir.
-  // Bu teknik satırları kullanıcıya göstermeyelim.
-  s = s.replace(/^\s*(User Safety|Response Safety|Action|Input)\s*:\s*.*$/gmi, '');
-  s = s.replace(/^\s*(tool|function_call|arguments)\s*:\s*.*$/gmi, '');
-  s = s.replace(/```(?:json|text)?\s*[\s\S]*?```/gi, '');
-  s = s.replace(/\n{3,}/g, '\n\n').trim();
-  return s;
-}
-
 async function callAi(messages, userText=''){
   try{
-    const raw = await callOpenRouter(messages, userText);
-    const cleaned = cleanAiOutput(raw);
-    if(!cleaned) throw Object.assign(new Error('Yapay zekadan geçerli bir metin cevabı alınamadı.'), {kind:'empty'});
-    return cleaned;
+    return await callOpenRouter(messages, userText);
   }catch(err){
     if(err.kind==='no_key') throw err;
     if(err.kind==='network' || err.kind==='timeout'){
@@ -3174,7 +3158,8 @@ async function callAi(messages, userText=''){
       e.kind = err.kind;
       throw e;
     }
-    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. ⚙ API Ayarı üzerinden anahtarını kontrol et.');
+    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz veya yetkisiz. ⚙ OpenRouter Ayarı üzerinden anahtarını kontrol et.');
+    if(err.status===402) throw new Error('OpenRouter bu model için hesapta kullanılabilir kredi istiyor veya ücretsiz uç nokta şu anda kullanılamıyor.');
     if(err.status===400){
       // Web araması etkinken 400 alınırsa (bazı modeller/planlar web eklentisini desteklemeyebilir)
       // kullanıcıya bunun güncel bilgiyle ilgili olabileceğini belirten ayrı bir mesaj gösterilir.
