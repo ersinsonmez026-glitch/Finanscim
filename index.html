@@ -46,7 +46,7 @@ button{font-family:var(--font-body);}
 .app{display:flex;height:100vh;height:100dvh;max-width:520px;margin:0 auto;position:relative;}
 
 /* ---- Finansçım mockup kodundan birebir alınan bileşenler (header, özet grid, panel/liste, piyasa, alt bar) ---- */
-.header{height:70px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px;padding:3px 10px;position:sticky;top:0;z-index:5;background:var(--bg);}
+.header{height:70px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:5px;padding:3px 10px;position:sticky;top:0;z-index:5;background:var(--bg);}
 .brand{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;}
 .brand>div:last-child{min-width:0;overflow:hidden;}
 .wallet{width:32px;height:26px;border-radius:8px;background:#07526a;position:relative;flex-shrink:0;}
@@ -104,10 +104,25 @@ button{font-family:var(--font-body);}
 .kr-add small{display:block;font-size:9.5px;margin-top:2px;color:#526b96;}
 .kr-info{display:flex;gap:7px;background:#e9f5ff;border:1px solid #cfe4f8;border-radius:13px;padding:8px 11px;
   font-size:9.5px;line-height:1.4;color:#45628e;margin-top:8px;flex-shrink:0;}
+/* ---- Fatura/Abonelik arama kutusu (liste sayfası) ---- */
+.cat-search-wrap{position:relative;margin-bottom:10px;}
+.cat-search-wrap .cat-search-ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;opacity:.55;}
+.cat-search-wrap input{width:100%;border:1px solid var(--border);border-radius:999px;padding:10px 12px 10px 34px;
+  font-size:13px;font-family:var(--font-body);background:var(--surface);color:var(--ink);}
+/* ---- Fatura/Abonelik filtre sekmeleri ---- */
+.filter-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:10px;scrollbar-width:none;-ms-overflow-style:none;}
+.filter-tabs::-webkit-scrollbar{display:none;}
+.filter-tabs button{flex-shrink:0;border:1px solid var(--border);background:var(--surface);color:var(--ink-soft);
+  border-radius:999px;padding:7px 13px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+.filter-tabs button.active{background:var(--accent);border-color:var(--accent);color:#fff;}
 .kr-summary.cols3{grid-template-columns:1fr 1fr 1fr;padding:6px 8px;gap:4px;}
 .kr-summary.cols3>div+div{padding-left:8px;}
 .kr-summary.cols3 b{font-size:8.7px;}
 .kr-summary.cols3 strong{font-size:12px;}
+.kr-summary.cols4{grid-template-columns:1fr 1fr 1fr 1fr;padding:6px 6px;gap:3px;}
+.kr-summary.cols4>div+div{padding-left:6px;}
+.kr-summary.cols4 b{font-size:8px;}
+.kr-summary.cols4 strong{font-size:10.5px;}
 .kr-meta.cols4{grid-template-columns:1fr 1fr 1fr 1fr;}
 .kr-meta.cols4 div{padding:0 3px;font-size:8.3px;}
 .kr-meta.cols4 strong{font-size:10px;}
@@ -353,10 +368,13 @@ button.mainCard{cursor:pointer;}
 .field{margin-bottom:3px;}
 .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:3px;}
 .field-row.aligned-row{align-items:flex-end;}
+.wheel-field{display:flex;align-items:center;justify-content:center;gap:4px;}
+.wheel-note{font-size:14px;font-weight:700;font-family:var(--font-display);color:var(--ink);white-space:nowrap;}
 .field-row.aligned-row .field{flex:1;min-width:0;}
 .field-row.aligned-row .field label{display:flex;align-items:flex-end;min-height:18px;line-height:1.2;margin-bottom:3px;}
 .field input,.field select{width:100%;padding:7px 12px;border:1px solid var(--border);border-radius:10px;
-  background:var(--bg);color:var(--ink);font-size:16px;font-family:var(--font-body);}
+  background:var(--accent-soft);color:var(--ink);font-size:16px;font-family:var(--font-body);}
+.field input::placeholder{color:var(--ink-soft);opacity:.75;}
 .field-row{display:flex;gap:10px;}
 .field-row .field{flex:1;}
 .choice-row{display:flex;gap:7px;flex-wrap:wrap;}
@@ -364,6 +382,8 @@ button.mainCard{cursor:pointer;}
   display:inline-flex;align-items:center;gap:4px;
   color:var(--ink-soft);font-size:12.5px;cursor:pointer;}
 .choice-row button.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+#loanTypeChoice{flex-wrap:nowrap;}
+#loanTypeChoice button{flex:1;justify-content:center;padding:8px 4px;text-align:center;white-space:nowrap;}
 .save-btn{width:100%;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;
   font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;}
 .cancel-btn{width:100%;padding:6px;border:none;background:none;color:var(--ink-soft);font-size:13.5px;cursor:pointer;}
@@ -384,7 +404,7 @@ button.mainCard{cursor:pointer;}
 .info-box p{font-size:9.5px;color:var(--ink-soft);margin:1px 0 0;line-height:1.3;}
 .btn-row{display:flex;gap:8px;align-items:center;}
 .btn-row .cancel-btn{flex:1;border:1px solid var(--border);border-radius:10px;margin:0;padding:9px;}
-.btn-row .save-btn{flex:1.5;margin:0;}
+.btn-row .save-btn{flex:1;margin:0;}
 .danger-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--debt);background:none;color:var(--debt);
   font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
 .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 2px;}
@@ -419,7 +439,13 @@ button.mainCard{cursor:pointer;}
 .bank-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
   font-size:10px;font-weight:700;flex-shrink:0;}
 .bank-avatar.sm{width:34px;height:34px;font-size:12px;}
+.bank-avatar.sq, .cat-icon.sq{border-radius:8px;}
 .item-title-row{display:flex;align-items:center;gap:8px;}
+
+.kind-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:14px;}
+.kind-toggle button{flex:1;border:none;background:none;padding:9px 4px;border-radius:9px;font-size:13px;font-weight:600;
+  color:var(--ink-soft);cursor:pointer;}
+.kind-toggle button.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08);}
 
 .cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
 .cat-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 4px;
@@ -465,15 +491,15 @@ button.mainCard{cursor:pointer;}
 .day-cell:hover{background:var(--accent-soft);}
 .day-cell.active{background:var(--accent);color:#fff;font-weight:600;}
 
-.wheel-picker{position:relative;display:flex;height:96px;background:var(--bg);border:1px solid var(--border);
-  border-radius:12px;overflow:hidden;}
+.wheel-picker{position:relative;display:flex;height:80px;background:var(--accent-soft);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;width:fit-content;margin:0 auto;max-width:100%;}
 .wheel-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-ms-overflow-style:none;}
 .wheel-col::-webkit-scrollbar{display:none;}
-.wheel-item{height:34px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;
-  font-size:13px;color:var(--ink-soft);cursor:pointer;font-family:var(--font-body);}
-.wheel-item.selected{color:var(--ink);font-weight:700;font-family:var(--font-display);font-size:15px;}
-.wheel-spacer{height:31px;flex-shrink:0;}
-.wheel-highlight{position:absolute;top:31px;left:0;right:0;height:34px;border-top:1px solid var(--border);
+.wheel-item{height:28px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;
+  font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:var(--font-body);}
+.wheel-item.selected{color:var(--ink);font-weight:700;font-family:var(--font-display);font-size:14px;}
+.wheel-spacer{height:26px;flex-shrink:0;}
+.wheel-highlight{position:absolute;top:26px;left:0;right:0;height:28px;border-top:1px solid var(--border);
   border-bottom:1px solid var(--border);pointer-events:none;}
 .cat-icon-row{display:flex;align-items:center;gap:10px;}
 .cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
@@ -655,20 +681,41 @@ function addDaysStr(dateStr, days){
   return d.toISOString().slice(0,10);
 }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
-const BILL_CATS = ['Elektrik','Su','Doğalgaz','Telefon','İnternet','Kira','Aidat','Abonelikler'];
 const INVEST_TYPES = ['Hisse Senedi','Fon','Mevduat','Döviz Hesabı','Altın Hesabı','Kripto','Diğer'];
 const INVEST_ICONS = { 'Hisse Senedi':'📈','Fon':'📊','Mevduat':'🏦','Döviz Hesabı':'💱','Altın Hesabı':'🪙','Kripto':'🌐','Diğer':'💼' };
-const BILL_ICONS = {
-  'Elektrik': {icon:'⚡', bg:'#F6ECDA', color:'#B8791F'},
-  'Su': {icon:'💧', bg:'#DDF0F6', color:'#1D7A9C'},
-  'Doğalgaz': {icon:'🔥', bg:'#F7E9E7', color:'#B3483C'},
-  'Telefon': {icon:'📱', bg:'#EDE9F5', color:'#6B5B95'},
-  'İnternet': {icon:'🌐', bg:'#DEF0EF', color:'#0E7C86'},
-  'Kira': {icon:'🏠', bg:'#E1F2E9', color:'#2F8F6F'},
-  'Aidat': {icon:'🏢', bg:'#E4ECF5', color:'#3B6B95'},
-  'Abonelikler': {icon:'📺', bg:'#FBE9F0', color:'#B5406B'},
-};
-const SUBSCRIPTIONS = ['Netflix','YouTube Premium','TV+','Gain','Exxen','BluTV','Disney+','Amazon Prime Video','Spotify','Diğer'];
+// Abonelik/Fatura kategori grupları — "Kategori Seç" tam sayfasında gösterilir. Marka renkli
+// kutucuklar (gerçek logo görseli değil — banka logoları gibi kullanıcı bir logo sayfası
+// gönderirse gerçek logolarla değiştirilebilir).
+// Fatura Ekle / Abonelik Ekle sayfasındaki "Kurum/Hizmet Sağlayıcı" seçimi — sade, standart 9+1 listeler.
+const FATURA_KURUMLAR = [
+  {name:'Elektrik', icon:'⚡', bg:'#F6ECDA', color:'#B8791F'},
+  {name:'Su', icon:'💧', bg:'#DDF0F6', color:'#1D7A9C'},
+  {name:'Doğalgaz', icon:'🔥', bg:'#F7E9E7', color:'#B3483C'},
+  {name:'Telefon', icon:'📱', bg:'#EDE9F5', color:'#6B5B95'},
+  {name:'İnternet', icon:'🌐', bg:'#DEF0EF', color:'#0E7C86'},
+  {name:'Uydu TV', icon:'📡', bg:'#F7E2E2', color:'#B3413C'},
+  {name:'Sabit Telefon', icon:'☎️', bg:'#F7E2E2', color:'#B3413C'},
+  {name:'Kira', icon:'🏠', bg:'#F7E2E2', color:'#B3413C'},
+  {name:'Aidat', icon:'🏢', bg:'#E4ECF5', color:'#3B6B95'},
+  {name:'Diğer', icon:'⋯', bg:'#EAEDF0', color:'#4A5568'},
+];
+// Gerçek marka logosu görsel dosyası olarak eklenmediği için (bu ortamda internetten indirilemiyor),
+// tanınabilirlik için markanın kendi rengi + wordmark/kısa metin kullanılıyor (bankalardaki "initials" mantığıyla aynı).
+const ABONELIK_KURUMLAR = [
+  {name:'Netflix', wordmark:'N', fontSize:'16px', bg:'#E50914', color:'#ffffff'},
+  {name:'Spotify', icon:'🎵', bg:'#1DB954', color:'#ffffff'},
+  {name:'YouTube', icon:'▶️', bg:'#FF0000', color:'#ffffff'},
+  {name:'Disney+', wordmark:'D+', fontSize:'13px', bg:'#113CCF', color:'#ffffff'},
+  {name:'Prime Video', wordmark:'prime', fontSize:'8.5px', bg:'#00A8E1', color:'#ffffff'},
+  {name:'Apple TV+', wordmark:'tv+', fontSize:'9.5px', bg:'#000000', color:'#ffffff'},
+  {name:'BluTV', wordmark:'bluTV', fontSize:'8px', bg:'#0B1F63', color:'#ffffff'},
+  {name:'Exxen', wordmark:'EXXEN', fontSize:'7.5px', bg:'#FFB400', color:'#111111'},
+  {name:'iCloud', icon:'☁️', bg:'#3693F3', color:'#ffffff'},
+  {name:'Diğer Abonelik', icon:'⋯', bg:'#EAEDF0', color:'#4A5568'},
+];
+const BILL_ICONS = {};
+FATURA_KURUMLAR.forEach(it=>{ BILL_ICONS[it.name] = {icon:it.icon, bg:it.bg, color:it.color}; });
+ABONELIK_KURUMLAR.forEach(it=>{ BILL_ICONS[it.name] = it.wordmark ? {wordmark:it.wordmark, fontSize:it.fontSize, bg:it.bg, color:it.color} : {icon:it.icon, bg:it.bg, color:it.color}; });
 const BANKS = [
   {code:'ziraat', name:'Ziraat Bankası', short:'Ziraat', color:'#ED1C24', initials:'ZB', domain:'ziraatbank.com.tr', logo:'data:image/png;base64,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'},
   {code:'garanti', name:'Garanti BBVA', short:'Garanti', color:'#00A19C', initials:'GB', domain:'garantibbva.com.tr', logo:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAHgAAAB4CAIAAAC2BqGFAABEMElEQVR42rW9ecBdVXU3vNba+5x77zNneDIRQhLCYIAwaxgDOFAElVZQ1Gq1Wq3Wqaiv1qFa26pV+/n2dUTF2irOA04ICoIoyAwBwhgSCIHMyTPe4Zy913r/2MPZ5z7p9/31BQjJ89zn3nP22XsNv/Vbv4VdaxERRAQAEUEAAETA/wpfAf+N8Af3Ev9DQgiEhIiIgO4lGH7/H3/9v33v/89fAtL36XLQVwgAM4sAA7AAIvkFwvgiDHcifrEQ3EoCIgAC+ndCQI1xveL6Sv1D/ZoBAAgKgCCAiAXAjJQiAgQj3LHdtmn3uBARBIUAAMLVkxEBYWBhcF9kAAF2V8XinwkmNwkAImJFBPy3Wbjg0gorQAAEEQARAgDy944AggiAiAhE7o/gHj8SEgEiIAESIgKGF4B7AQAQEQIgACE1SLd0a0A1MyQAsBYMG0FBQEAU/xNujRAFEMNqi1/dcEcgIDrsVP9M6n9zz88vlPsaMxNIU+dA0DadvTMHtnV2PDn59Lbpp5+Z3TFVzACjJgWCQCIADAICIiLAVtgKs4BbYbfQ7FbTHxARd2Xu6kSs+1ERAhCBHhhmICS3nUSEwwMStw8E3ClDAUEid/mI6HaSXw1/9vx/gIgECO6RERCCKKThfGjpwKI18w47YuzQVUNLlg4sHMkHQKBnCotCqBBQpFrh1AwgAIYVcw8Ee5b9MiIAoEh1qFIDgMDMbEVaOieCnZ19Dx145L69D27ev2VXZ0/HFErphmpkKsPqUWO4c7+K1i0lCwBiWH+/xO6cYLiwYKjcZo4GCfx2CZuegd2TAPSPBtwj9P8I+xUQgfDsIDm64n8XFAAQ5rCnhMWC7dnSMDcoX9RauHZ8zWnLjjtl/Mg1w4cSQLvXAUKiTIBSa+gOJSL2mSfsWevvp89sSbpcaLhUSI0se7az+5add9+2884tE1tLME3VyKhBoBFQmNndi9tsAgzsNqS7OQYRAWZxK4vALCjIfnv61XSrgOER1I1JOFph1wsHmxsXOh5IZ5XcX/1hCYvef6/hhPsD4e6bkIgUERB0pZgxXcX6sAWHnLH0xJetXH/8vCNLYzpcZir3phgI435wG0bCnkPArrHRoEvc7gAg4k6WiBgum9QoNN/0zM3XPvmbrbNPC+CQGlGgWKxzGAgkwOF9AFgsMAIKi98u3mAgsN9m7h8GcV5D4jK77R52NXu34ldBmAHRvRsCWHcMwkL5jey3DoMgC7s3AQ62JZzf+EziXQuHAxbfEQEFFCmtNSia5e5M2T50cPFFh294/XEXLs3nT/dmM8qRSEB56yvBPmN8hoBdw/2uNxw+F4xYMUN5c3t3z38/ctXt++8qrR3JxtCiZRax/tkJuleHN/BGlsHbpWoJwv7yHxO/k+wxcSc+uaTkldVSxndOzUG0CZUPjWcq+Bn/CMI5C3seAIElPUFSfYwFAEFUuc5UTtOm27XtdQtWvWf9mzYsPqFT9IAIkaJ9rq7bOzrEjmX3h3AV8apAWFC40czv2bfp6w9/c3vvmQE1TExsmMW6hUXnf8G7+yoGZAwWM27VeGMQvyJQnSFJrk7SXRaccG3pwzKwJEcBnLH2NgPqlic6J7+RwpcSC+VOGKbLLFxtu/h/nWfU0BO9qVwa713/V39z9IW9srTAykU0LiwRH49449E1nG4cAACw3kGwtBr5zbvu/PLGr3UaRQsHpQdWyur60UeM3mKkxpTTVRBJllAk3U0x8ExObi1WBx+6JAe6tjdFuL5howWXxG/Wdj3XXpxeOXN8Weo0o8MOzwAFSWWNvBAzM9P5u1Nf8f6TXmMtMNjKTgNJjEgAsGNsOGDx3iwKAHArb/x+5z1f2vgVk1uNuZQ2hAfV9TnrGX1JegfMybmubGdcvsoMQvKDzGlUER5GXOvk/d125BBHVavszXN0blKZL39Sa+/Tf0Q4ff9alubNngu8CRCQtMqa+bPP7n77qa/4yGlvtEYE2QfWQi6ud25ex5AbEITZr7TwUKNx++5NX7jnShhCXbZYCiRvH2rPPDwjqe24cFGVq6/b2f7fk0XEviWuwlFJ7Jo3flKlWVW2E/7GKPUrCCbLPZqapZPqkSOkAaffWBISKpf7ugSDwApLr1i+cvkX7vz+SD7w7pNfVZSMhCyA3hf666XKvbuwC9EKN7L88dntX7zvqzJQUqnFGnIeDypLLz5BcllJ8EvgY2OOUbKIuCjLm2RwSYpINNESIytBFAyBFrpkEgRFMLzchYnifhfrTVT43PBo2X2FKy8hDLWPDD7SfZnDLXAV5rl4NDmpODeXB0G0LN2p9iHLDvn0Tf/5yyf/kGeZ4fT5+7jaJaXuySGICDMRFVh+9YFvTtCExkysJQpZZx8SIrXwM8aQbmU5NSaJmRYf89bsRrK707X2m8htq2TXuSuNSxnfVvzqiFgOL8fknQXTT3dXyNXHYbQwMalL4QypPHXIC5hRwDIX3e7I4vnv/83nt3X2ZkpbdzLRQgjyKTnsgohWbDPLfrr1149OPjqUD9nSEvlXuCQ+MW0Ykj9vuhJfF7d2fafHY5p+3RsFCNvZJdMetPCoAkTQQ8Qn5uH5VR+TbtXw0rh/q7wxLGXwWrULg5itYlx9v8ronw2HI+VTMivAXJYFIk6W0x+9/vNAwmwFrDvb7h4JquQFjLUDWbZ59plrN/92sDnKBesYG4pzR97qCXt/w5hubxAQZmfYnPVgdugRV5EJYgyTwrZCYPTJNGNEo+K6MKPLAkVYmF22F0EbZG9PJFwYRMfOLh312zY5K3UAUgA5ye8loCiMIMDejvm3ZwZmFnZ2x7Iws2URsd1ea2jw+s23X7vttkGdFcawN0oiIOTyJkT/tqjUrzb/ahZmySBUFpadEWf/YIVBWIDZpxYhMAgLysAMKA478Mafxf2UxGgkbC32D118qMCAAMCC7ipZgJ2dds82eGEWFBZmcR8HjOGDfFztLYOg+1AO5pvdI2NgAPYGp8Jd3BOMGAkjMAoDuAWKIKGw+yVsLRvLpZiSpWDTpK/d+tNZNCxgGJiRBVmAnI8jEBEz0Mgfmdh6354HM9Ii1ifGLCAema1Fn+HqmEWY2Z8SCKeFYwIUraj/CkYfyAwsKOAuBgUwvjhBiKLX8vuRIPVdtV/e67K4zZi+m3vIEpMUrpxymseJkHA0yvEWML5PTGf83nF3z8aysaZbNkBv2r35xi33DOWNrhUbfAZF+wyCCvFPz9w2bacVaSvWXVkVRQSYRmogmN+nIRmu/B8nMVN03A5WdDCK/z2sLtfXOPX0tXynWv3UBNQcA0dXEV9QuQSogEBIfGlAAaokPtiZmkkBsRBgSBAWK1aE2Ypla42xxDKDsz978PeGCN2ZtywA2gOYLAOqsb27Z+P+TQ6uq5xLvMEKaoAEwZB6VoZSu6V6flNFRWnOFkOC+K7YF2ujQF8Y1/fBkqQ2EgoLad7RH+b3JThY4cJJ4CF1ZEDSHCgcVPCgJAszgAhbAaS7d296aN/Wo0cPmy56DdIgSP4xipDGR/ds3jm7M6PMWsPgspe4OeKpFP97kri4bCmAAsG3UojtMQnUohOPDwMr158YcmeRxIfMsSjhSyL9a1o/OhjRj1pBITFMMWBO4GCPL6ZQYIJoJTmADyYDUue/5yFoYzgHvb29+87tD7U0IVgCQ8DarzJgAfLw/sc6ZXtIDxuxAdtMMDmop3pQAx0kMXMB0nOnT+rVMenfa1LtRxSft/mvoMjcHAFisgbOj3uzgAB9MJ5I7SRJ/zX3nTOIQe//AHXInB932VT4IPQVKKFZ235g75YuSIbeZGrnkBuU7ens2zK9FRWyRL+WLmnYLYB1f1jZUu9MAOamNQCYZuehcoNuOa0wAZGIBWZBECRCFDCWPX5JSb0qvjkCB/i7jpEmOGwffJoCHHN/KhY/pM8WVV+Zc2NSIUW+GoQAqAiemNy+pzuxMBs01gCCducly3D35N5d7T1KaesLJTE5q2UoyQapI2oIFbzbf5bT6lENRWIXa4BMFZO9XgGixIKgAEGW54NqUKywMIGvQPoPEgyFCuAE303x2OQICvSj2zIXS+rPUaW+0BXW6AGWJM507l0A0RUpGCVT2c6ZfXun9y9bOFraEhE1gpAIIOzs7ps2s7nOLbBIUrmb41W4rxaEtYQ8pCEcIqF6SgMVMu+OTWF6B2Yn5jXHTli0dtXQoUPZwL7exOMHnto09eSO9p5FQ/NJiJnJuxNXWgx5E4Z4KC3QANaBWUyy8P5Cv/SdORauqqfV2ZFQ70pdE4vPRiLTABQAoEXOqTHZnd7XmVAOngbQIkxIFmR7Z0fBRROa1rLHXT3CEKFQj1XW94XD/yEAYgm0n8DwieGJGSQIQM/0yrJ8+eEXvOSoF61dvGYEGu6Ve7oTd+98+KcP/fZ3T982MDqcZ7mx1qWxIafgKg2UWEaoMVBi2C7hGETonSsIBDzI4wKIELD6urJ/d0wDxLlwNQCIS0gcCwFBZ3qmN7unOw0ABEiO10FEPVvuau+1MZkACpX7antwtGsVqwbd5hd2pZZQUJZoUqVuoN1RB1fyM2CKXu/y5/3tK484Pxdq97pTMCMihDSqBi5YedrZy0/60h3f+8Km74+OjmZKGWECFnSrDALoskwX/CGg+18oEbq4DR1az4mndH6e60SKWq0FgIURkH2+yik4U19oz2zwiVSIrEipQsxkMQ0ACkkAtFsII2W7nBVnHQEPhhrLnBMXnjkDYKjU14r4aWU9mh0WADBCGR6YnHjLia9+7REvLkxvlq0i1UBCD/7xTNFuqsZ7Tn9dSebzD/1w6bxxLJABHPJRJYOM4stNUNUWot/A1KYFfCQ+iPRqo1GoapucRERSe9uI7oWMX6pSii/8CkpPTLwIDYEE5KrZcwlSHseoh3HVKvfFPnUvnyCD3p76fUY41ZlZPbzqdUddbMWyQK5yAEDy9A4EUUoZsQ2m9zz3tY9OPf2bnXccMrSw7JU1tI4lACr9u0AAgDy8mMJ1IWblJGesh3NSwYs1W5SSH2qbrypWpAE+omNC+S9SON5swcb8OoV+MRQFg1tDn/kDMierLN7yVnVPDjwwTrBNBhBUGR3ozLzsqPPnN0aEJVOaiBQpBZpAE5IiIlIZ6ZJNg/K/XXfJYhqb6bS1kBixhtmyGPagkiSVFUC3qZxFdnCrB10RgZDRWW0MQBbUCiws/dQQqcGBFQiTgAVzuHvCIgioScdroiQKsBWQC3OhoFrK4nM5xNr+qiAgiXFFmlR5F05gxQ7krZMWPyceEnI0LUREJCSFSgUiV9cU65cc+8Llz53ozJYCbIQts2EOnBLv7CJyQsgaWSEoAkQGEEJBEEJOkvX6rQJU+Z/UouYYJCdOV/puOCSHHlsP2zwg0Oxu0AHEIMJpMtJPdIyZtLdAvvyFWNkvqaAcYRuQ4Hj8CIBAlAABg2Q6G85bFediDrvUMSAYwLJFgD8/asNiGZnutCHgcMLsTEdFUiEAzV3oTvemp9sz052ZnhjUJABCtdguWt6kmiAJJ0L6qCdpTC2IsTQRiaMC6Yr7g4tJuZEieMD1XCMt2YDfmpAG8o7vI5xatARnRhdfiK/4IYgCzEjnGjVmeT5ti5t33Y+IyC4qECvBS9TCdiHCTtk9benxpyxe2+60PSTiCgzo9wojiBZLMNmZXSiDL1t2+tuPufTSQ58/3KFOp0OoQ3FQmGMBs29jemQ3BaHS2lA4n30VnIPhtOxgvRRh9FVwFAbLDIAs9RwjFJr9ceBaViLV6v8PDCsf7gApRA3TRbvo9ESEcj00OvDFTd8/bmz1+vG11tgSSgDUSlEIexzhUwMJYCElCL7oiOf9dsufukWZkZKQeTsoR4iZYHZq5sUrzvzgmW9aM7rEXcBNW+9+5zWf3iOzTZ1b50A4hN99pD4fIwYoJi0exsgV+qv4yc36ENhdlVVpYiECQPHHbFxNSYrZIgd5bhxh6sp2JafB05bdv4xCmnpc7J08sBDmrx9dd8boiUt44fSB6ZnezNtv+vS1225TWhEoBEBB2w9tIwAqVIUtzzvslEMGlsyWvapwqhAUWRLIsgMTk5cc+fyvXvjhNSOLe6bolN3ZXuecVSd/aMMb7WzRMyUbsaWw8SUxsR6ElMSt2MrXgYAwimAozWBSrY/HgMMbcCgeueIWWxbBWFOO4V2A9hEqsFiqDEqwIsy5SNglKRDAM0lZJggkGBwDZThbzGQme+NRrzh/5VlHL1iBjI/tf+rnj93w/Sdv3GMn3/7Hz31o3avecOzFDkUHQAvs+fLhnlCw5HJ8YOEph6x99NHttiXk2O4aGICyfHJq/4alJ3zi3HeIKWe5dER0pagwxaXHPP/KB665bfeDw/kgB46tRCwVa7FaqKT71Iw9gCHo87UK6ZZYsQ7fZgxpkKu5hODaxT9uRyNjrDeyK6+xq1e6eh2wK/1yKOhVEX/Kw3K1fBIgYEJBUoq6RdEwrX9a/+7LT37dMQtWEZOAHL1w1f86/U2fOu0dR+dLulx+7O5vf/qu/yzJIhKz8Y+TGcQSWwWWAAiJLZ97+ElKyJCIRtEgRJhRweV4NvIvG942TE0rjKQiWU0AEejcNSebboetBStiXLmQXaHR2W63Lr6KhOjSy7idwfkRdGlnPLcuPGB2hb7ovNizla1E/CQ0JjjOmXXmm1O6SUVY8TXScMo4PXAxB4wsHkRBRAJR2GuX/7D+rS9acZqxprRlKaYU2y173bJ44ar1n9vwnrOGjzAon9109cdv+UpJpUYlll30zcwElsQiMhEZkfUrjpvXHC3AggYhFALK1NTUzBtPefnaBauFJVNKISkiRURIrty+aGAMjAURNpYtW+NKTK7U6cqdfpk50MlisSKB1JH7KVQigIF2I1XRz1eTY21MQtThS9w2pqDR23Kovib8T064RZD0tiAkeQEKqpz2Tu196ZrzLlpxZmELd88KUaNSShFR1xRrx9d85px3vXDkKJbyiw/96BO3fLEkI0gGrKAIokW0SAwoAFbMkoHxI+avKE2JCoVAMpzqdVaOjl+08vRwP0ohus6lyJ5sm8Iq6XFPiBjFsrWhHOrK2yFydb6Ka0CYwMGLjUnkmxR0qvUWAUpQNoKKjh9LxNETQj2mEUmr2liFblWpwflABNRYcDEEjcuOeLFjDhr32aQ0KQVECIqoa3rLR5d9/Oy/O2/kGNH4vzf9+LO3fdMSI5IFYQSLyqKygTdJQEeNryzLUjQxIiqaaE9tOPTElcNLETzxUKFC8N0FLj9/ZnqXmG7Whc7EZM8UkFHwhVArk2O1nRICVBoIJMRmgeT7MCdrg2pLYyhdAIKgRJRZEu5yrQZVi2+w9uKEkO9+EhVNtGdOWHLCiuGlIEBIhOgrKkk+hUidsrti3iH/vOHtp88/xub0qfu+/c2NP82QlCABERK6Hirw4MVxyw4XYy0gKrSGhyU7a+mJGWY9U7g8MXYGMTAQ9sDevf+h5yw/4o63fecrL/3wIA52ygI1JTV6vxyOO58yCNMoOyFtYs11BtA3TR8d4aXq20KhACqJjeQsrG1hkNioFn0FJmm+pOw7SUrQ3aJ33MKjhvNBx+cjJIjEkyo3Z0ScKdtHzD/0M2f9/Vmjx7DGj97xtWu3/KGRNaTOLHSrfez4ai2qECtI7W57eXPB0WMrAKAUa8Ry5VuAmTNQD8xu2bh308vWPv+w4UWvOfFFHznnDd122yI7SotjQCR0NuzDEipCZm3lI26KzNJnSZ3NxtDTEirVCIDIIjb03Uhf+QyTBp6qnyfuh4pQyglZv7SMQsuGFvsoHv3zYfFJU8T0UECjape9tfMO/+yG95wyf+00lB+59YpH9z/ZUHnJxrLj3fkSy6qRJYN6uLClEM72uocOL1k0tMBRybxDYQEWEkAArfUvnvxj1hx6zXEXt01RGvPS55x17qqTJqYnVKaZXHwFsVTCtap5SvpOOGpcW/3+SlMsJwASUYLexfKdrQhG0gceVU5S6v0jwWhUHEMX94s1IiUpUQBgwUqCvMdr84VMQQLMULXL7rHzj/j0We8+evSwxzu7PnDT56bMdIY6mA4f847lQwsbo0XPiOVe0Vs+tGSsMVxa40ixVtg9GMOcYfZkufdHW/74N+suPayxUIS7XBwyMH/D8hOQxSJLcIPVwcekNU7SauxBUSSpPZJwaxh6KijBb8gheCLMYj32xEnKFNAH373s4RJJa/ipCxYGtmKZQaQoy6nurABY9lmYY5e5bAJRebvtWpsJcp0Vpnzeoud8dP1fj4yM3bhr06du/y+lKCPSqATECgOAAj2/OcK9UozFEhcPLdSojHA0aBbYAhthnemvPvTLlaNL3nTUS0IQBwJw2MiSRtYwXAKpGL0B1HAMhsr6ehtsQWp1llgnTsxsgmwLVw2IGHe0Wx/Ptkw6q8KO9piS/9Dgc7mel8e4lD1r2D4x8VTXFogYjrR4Ki6GFmFC8r8UIihShTUXrzz38hNeabT9r4euvfqJ3ylUpTVW2AizMCIMqAZ3S1MYbWm8OebYFAmfCwo2w1nr97s3/XHHvX9/7CWLsmFjjQdjAZpZIydlXcyV0ADjfUSSmzB4jJDD/TJIzXxECmBCQmN0GUosJ4OrDSJCSM6JK2K2VMwgAcccCg0zFSWbQ086AzKD57BakVKaWX7f7of3dSY0keOjQmwZQNfEDnGdXbXYCluxhTXvPPovXnnEC/eZiX+781uPTmzNlC5sKQLWMgAopbmwpjBa9LBuJaixo6FyQ+W7y6mvPfTjV6zacN78EwpTEvnQRUC6puyKRY3suKbsOO2OmCqBJOpWmMUTPLmKbz23EaJbh2hFq4o2ACIl9HMKTBRXjkxKZIFR67diPzclKfG4nJH99Ti3WPbK0ebwXdsf2jyxnUi5d+TY8CxIAAgUWnl9L3zkfWeU/+v6tz132Qn3Hnj8M3f/t6FiIGtmpBBRmEGIWcqCNVIzyxOegQuqSGv1uQe/oxvq9YdfwNYqIPTd14iA2w7sLMpCUWZdAu1J0AICVvrzk/6+3RQ4j3vuIMIJAgJIiY2GUBLkWNFLLD3UeWeSej0JwaArWdmAh7nAwhiNWc92f/Twr9qmE1QD3G9ecgKw6kn3V0OkUClSIrKkOfbx09/SGBr53pbrv/fo9S3dUEiEYJktW2Cx1makch0X2p/vVt741pbrbtm56f3H/9WQbrGIRiJEEG7qfF9v+s5n7ncFbk4I//64JnWWPqwsWYV6KAJJbJt8FaHS1EgXmo31n8i1rogYFs8huabNDdF5euxRCLHsFcvmLfn+/b+5Y8f9uW74XmnHY4BqI6fhkQJSqESAxRprzhk/7oMnv3a2PXnFvd97bP/WXGWFMc6dCDNbm6Fq6syX+kTY2oG89ftd93/67qsuX/fqtQPLu7YgInHpIiIpumP7Izds39gaHjVsK+gmge3rRdAaDSztYQlkR8F0q9R6UavibLXQwmId8yatKFTPuZaAJrsb6/sdqtIPAjArpMHB1gdv+D+7exNN3ZBadxH2ccVQXAwCgFAKF1wKy1+vvvCiI1942+bbv/HgL0owImBFCrHuVjWSJor1p6F8cNP09jf97pMvXX3OxYee3jU9BOTAkBlQjQnufPXuH80W06rRYsv9V+73JcbwtUqx6/WttDU6KdliutaIQCHxTnY0RopsEuaGZp5EQCMwoCN/l+uHKSBeAAzExhRjg0NPTW975/X/PMO9XGWlMYarjqmY79UTQCQkRarLxaLm2OUnvHre+NKv3HvVLc/c32o0jNj9vbarAZLPz5EQhvPW08XEJb/5h9WjCz928huMNS7lt2wtWxJBRT+47/qrH/rt4PjCslckiV99K7oaeeBtStqCGHkAKc2zL5yuzmcgsYmvgvt2UXY6BJIUhfuaq5JcKGJ7VR9s2g8cckVAMJbnjy28/ok/vfnaj+7uHRjImyRo2Vpgm2ZYUerCyaAIKEAF2C17Zy898a3rXj01sevz939/fzHDlnfPTAgqy0Iq05SJ8IBq7DYTl/7qfWpm5opzP9RkVVrjowArYiTL8luf2vT+a7+QDY+WFsQy2NA9B7XVDBzGdPsERLSCKj1RpE5cquntJMTr1HQIW8sAcx1hxbuWtM26v5wcFTMCVQx9IYAFhHHp/MXXPX7LK3/2gbt2PZhneUPnvbIsTM+wSWFJRge6WDKGSqMMg7Vg4bVHX3DSqtN/svHaW3Y+QJpmyjZkmhGYVMmMiFPQefPPP/LMUw9/86JPrGwtKaUEwlKYRZpZ3mo2//TUQ6/67oemZUapQemWYAQMg2HwbWrQL7tQK8tjkl8LHpQmIKkfA0eg8n3hvqEzJCyc0kOgr6zdb4rnEINlTjE/FXgQa+2S8fGH9jz2yqs/8B93f/up6R2DebOVNdmyYWOYLVsXwFofT4K45n+k6aJ99PyVl617Sda2X7njx4+195huAaCsoBUZzBqz3Lv8V5+8eeMdV7z0M6cseE5hCmuZrUWRgazBgt+/73d/cdUHnuG92cAI9wo0ANZWlYxaMFU1gyRAKdQAzaSVCZKNW2vuDUc0WhodG+RZGH3LcVXOxlg9i8RtxGgoWCQS7utU6lCTC13XAlSWduHChbNl90O3XPGzR3//iqNfeP6aM1aNHAIA1tqeKSxb56l94ghgRaxYKzzZmbn0qPO+u+y6G+66FfWQ1RZJoRHD/Hi55+obrrvq+l98/vWfePHhp++Z3W9ZhrLWUHMAAO58ZvM37/zZ1zf+AlrQ1KOmMA6pdSIpDqlKvJGrg0idetQnfZT0/6cxs292RGAA8gRTn7A4eCvycVlEhYplPwXQcxmxtohVK5j3YU4Shqv9LlUbJwAQdHu9Zp6tWLL0wQNb7731i9956JoNh5569vJT1i07alFrzMnWGGbLnrMhCATUIMXChzUWv/cFf/2Wr374V3f9tjFvSAAoy2a49/HffXnHpocvv+Atbz35ZQAwPjjfpeA3btt43ebbrn7i5kf3PTE4bx5YMqaMts9LeaFnaNb4ETG2d3gxRjATKwkXSZfaEVhrqmEgTqKuSsH9jnbeSYFijkcH53YpQI34XKc1pC3HUTwhHiFEQCEkYyyAmT8yz4h9YHrbXfds+fb9v141b/mR44etXbjq8HkrVowuWdgabWaNDBAESradspgs2vv2bNl0YDstGs1NV0AhMioqM/v4k5vPPuGM17/4lQ9NPLW/M3tgeuLBnVtu23nf/fs3P9ndpxv5yILFZcdYMQjiaM8RDKpK/YmqUp3L6fFTrPfQVzxPqfOxxcvNuGiVQmQncUcXbIw1ueShZJhKGASw92ASfIiVPpWka4/hCh2a7k2ff1XXdBFoweA82+R2u337/kdu3ftQS2hIDY6o1mA20FANhUqQelx0ud0uTIeLPe0JmxNRBmBBAaIVJjU2b8v03td+473T3anCmk7ZnYBuoU2mB4dH57GFXq8AYESuePuJVpfv0+hncR+0o6FOQ4ylllqaXmmfYcoaBvC6d0ZMraOtr8ku0lznNCUw1KL6Wu+mBKYaio+EwIO/iCQspSmEYUC3WmrQsjHGtE051e0Ys4eNWBFfNlWiHPakiBgZOObvzAwZbp99ZnvZg0ZOBNRSWueD2bBYZQojFdcU42+1jZTKJ6Z1uoSgjDVSb79IYK1QUq2Xy/vJe1eJzhCkT0imXwWnr4epQlMryslcyZYI14UmDQREZPL0EER0i2WZAHLMtM4EpdCmNCzWGGBRLOTYOMS+sGcBCNinOkigGzlnSmUN0ojaW/oIb/n6XepVCPr1qQ7KCa9aQTBt45JampWkd1G+0FMGHWjjX6MjLRiSVCWVZ0mYeij1bplUiqeuwBOkBHxFDirxQEAhASYvZahIQIyUhTGmNNYyGtGMTdCKNGkFGixaU1pbmm6nZ5sZKAJgUIgIJIACKmsOGOlNTpa2KLSWhlKtXOmcSHkCWN0KhNvDvkZEkLnmAgH6JMP61FpjgwUkEpkAAo5eEo2Udt+31sv+1Rpg6gRvSYQPa+6iptaYJoeJ3leVaDsOCKHG0nK31+v1Cm1kjAYOmb98zdiK1QsOWzN/+YqRhfNbQwOUKSIGmCk7vbL4/e57P/Hr/zzQ7aksFytAggpsp0Dovu9V7zp38dr7tz780I4d923dtHnv5l0002lRlrdUltnCAjCQlzVDwSqGS1rZEPr7R7G+9FI1a0Vf71svA5ZZMRGUA5XC8uuIdfiWDal3acxVShKBGmYNfc3gVbu6d8L9ll0pbVmm2m0p7cLGyNHLnrPhkJPPWHHCUeOHjdKAs7y+Q9lTrGC+8GA2sPHAltn9B0qdkc5B0LLNmA5fsmLr449999ffu/B1n33j8ZfA8QAAG3du/snGP9zw6M337n+inXcGBkcMo1gLVAnFBoBcqtbOoKUbJZeCOtdBAi+c09kptbQRXTVDgiygrhQM5SBGKtL9al2oMUPHmpQPO+ZCtPUIfX21SKCUmmrPSNseO7by+Uedeu6a565fcpwCYrFdU86YNvqiIgZhPzFsmqrxRPuZf73mayh07LI1m/dtB91AFjbF209/+fYjd3/iJ//PZT/44A9f9alVjSUF8/GL1xx//pp/eMFrvv6na66656e37XkknzeqdGa4ACRXCsGYj0V1OqmF0UFfsq/RbY6ZCSx4xFqfKKFSIfFOdrRbLazFkgffsNLnJyHFGDm2EiS9Cw6DVkoxy76JA6uHlr7i5Be84jkvWjmyzKeFXACIQsqUxkq81tGKmRBbeeNb91z9+La733/h5WcfceolV3xYxohASU8WmtZfnv5Xu2YOXHn7D991/f/+8Z//GxQy1Z1FwIbO3n7mxX9x3FmfvP4bX7zv6nysRVnOpkQVukIpQF9YySrCXMVDbzPCivYZmGQXV4IDIK72HBdNYwD+vWgPiyBjOE0MVQkoVjCjLrBjySfNySHG4QDBcmBna+oUpWn3LjvyBW9Zd8nx40eAQLvoECmFlGnt1A8xaeL37CSWZta6Z+9j3/jj94ZHR/7y1IsPUU3FmRECEAVZz9rhfOCfN/zNYUuXfPL33/76pl++65i/2NedbGJeWFPYYsnQ2Odf/r5VSw99/3VfUIOoteaiFIVCKHW9D0lCqNCo7kHOulOCuphwZLskolsiioCIYquErnlXjmI7tXzPdVEGUTyEypOLZ77G5mH/DRZAscKALnBvz7QbrP7prL979TF/NoCNbtFDgkxlDtYQiIKe6HvxwJEEQZGa4vZXbvv2088+8OaL3rtmdMXM5J7WQGMGBBAYUVODRfIsf/fJr14xf8XVG2+4aM3pC2lk1vYyyhBgojubob789Mu0ar77l//eGG6IIierETGkhEOQQs2I9U63Spa7b9UP1rJNqMhLBWKy0CCOUC192gnhgbM9uBhDyAKwD7+OzD9W2J3tjrD68ks+8sLDTittOWvbucoVKYzCncHwh0I1WC/XRFrp6x679arbf7Ju7dnvOPUvmyqTwdGRgYFpMwWaBMQiEKIREVNesuq8RQMLNu564tzlJxsjbI1Ti2cu7Ay/83kX75vZ//HffiFfNM6WkLmWpoSyiFRtf1LpiWCqpS9wUOX4xGu5hlnnDL3wY5WAEPTJQ0g9pqx0TBBCO1BNn6YWqYiAFRAuCyOzxRcu+PALDzutNKUFznQeBwLUu7Bi8IqKSKHKdb51etdHf/dlarY+dN67jxleKSJ51hzKBhiNkFhyqmKgATVjt2yvX3zM6nkrnpndB0QMbMQaYUvY46LdnX3HGS9/0Zozyz37MlCqJ1QIGAEbNfCjX0yE+KNTx7nFoL5tjSmfQhFppLgmVUNyKhqXyIhLFKKLvFMfczqeFqbobQLGuoCRaHLv7o9teOufHX5mr+gJgkblWgr7a+tJ0xSCKKBcZ10p/+XmKx7e8cBfb3jNpavPE2MdzyrLSIiBhME6K0eMipEYTVke0pqvmLplEblLRpg1TfQ6C5ujrzv1ImBtux0yiD0BEwm8EQdJtbwxlRd0Ng7/v6dAoJf5Dq0V1TZ2fQYANbEFqYd5VZ8hYuBEJ+At1p2wCGVqz8Te5x99+mvWXVjYkrHq0OHQbZaygx3py7CNjWNXPXztN277zlnHbnjniZcB2w4XXrCf/LAEr80IQEDuywSEQmPNIWd/IrwtAkI41Z05a/WJZy9fV05OIlEsFKeCeBE1iNMR6lrK/9P8Dez7glJERDKnlFWTEoW0ru4Jz7Vm04qgi9UzkFS+lKgEq1m9+eRXjjSHS2sqggIgJ9pMHDhnkSRkjVFKPTz19D9c93+Wzj/0Q2f/7eEDSya6s45IFKVu3EQFd7lEfjYCCaJgjllL5YadfjgiOhUGnC17K4bHz159MhhgMRKnffQ1FFbjAPr0CCUC+cm/OEfyxafgsYAl4FMlsEF/bw4HtU+sJah6Jj3jjCmXwRt/auiJzvT6w9adtPgoEXZpEkH0dj4vc9JmFtiyMda6fZ6hmjHd997wmb1Tu/52w+vPX3bybHeGkBidiLa4OqFCdGIBbtiE27sKMUNSiAO6kZFiFkVEgApRoUMe4PB5S7TOCzFeApd9VF0TI0kJSf2rgv08/L4FAgFhTUojxSRIBx/AlXgFQl3cKUaSdWGcyl1jnIECIVRDjYUU61ccOz44jy1TRF0AJSkaePH9QJt0yj/SUP9445euufs3F5x6weUnXlKYws9HAQGAQrgwJQkoQbDcLYuoDOAq/ALO2eNg3pjudFBr16JFBGx8duzJWnE4j9RUrLAKryrFCOxTQ+kXyOjXVtaoiRQHNK6y0QIonMr/VpLWfeoJkvA9kr4hN8gEgVAUGBKt9ZHzDstRC4ACxDmid65F0rWeWRFrbWmLZrP573d+//O///qRS9d86qy3N1gXbDRqdxIJqWOK2aJDIkoImCc6U9FdORUUhaAVEUKDMq1V1/QUoiZC8bWliW67tEYBCXNNxwNrbRM1nfAUkqgTxfoBvzBORVOmSMeCbVho9ubP6YtyoDfGVgsRb1jdswj/AieCIIGJB06pOqNsXmss3ADF41ZhCEFkFwCF0RgzNjjyrY3X/csvPp03mx+94L3HzT98pihAtIlvDTDZnpntzhKTYgLg/TMHAEAFvhKFyq5Tnx5qtPbOTpfARMDMGSkW3rJzG5SFRk22riMhKbybkOWT51DvXPF8sDigKLW5WqEijCluxb2r0di5zm2EtF5VEaajamikK0X36Rtqmec6ijlYO4KgtWZscOTGJ+794C//baaYfP8L3nXp6nMOdNrCVLIYAQNghAFg29TubncamcAIAOye2te1pQoiYv6ShAXAsskoE5Ld7f2AJAyDurFtYs9t2x6ALFNMGOvNWEUEvvkyIBzosci0Bx9qD2FOK6Av+6OKTU6YEmjmqP0lmHIfe7I2Uaa/xc6FaSTYMd393Sl3XCqCBHpwDuPhZDa2HB0Y3LT/6cuv/bdnDzz6NxvecvkJlxRdh+RVTFWXnG7c84SxXWISKxr1tqlnd7cnlFKuru0asq3rsRCx1sxrDW7ft9OwReZms3nNw7fcs2NTY3SkFCM6GZXVp4eW3ini3IC3hm30WxkEBE2KUEkIiSva7kH16lJaq9SGWdWppNGsWBAjYgWELPNjk0+VYl0ZVbw0rY+ofJetiLAZbQ5undz9jms+fd/2P138vMv+5Zy3NJjYskJAEkBgYTdoCwDue/YxSwIi1nBDNzZNbt82vQsRmcFJpRTWlsYaZivQKbrzGiNP79m+r3dg0eiCG566/6PXf9UOatHKkrD2Ep5pKaXeMNin5DhnAENNmhDTCEVrrSikN1INUxBJnUBUR+yXUqr8MNYLMpJeCgOKaarmTdtu3XX8JUua411bEiIIIXJwJ76Tf7g5tK29742/+tebNl931toXfeZF71vUHJ3pdkhpGyRZiEBYFGEX5PEdW0UpYGYudFPvm9xx/44nzlx2LHtODPiESBgBS2NGGwOP73x8U3fLqvGj//XqL+4t9+mBUWsZMkzdvKRlK6z3zfYXwqqClggcbJyggIBCpUiD5cDrqHWDUvJ5cyoLdTFBSaiAifQhO35jURZDzaFbn3j4xqfuee3aC7hgUKF0iehq6ijQyls7OxNv/OVHb3r0+vVHnnHFS/5xzeiS2aKLpNmrCjisSVh4QGdPT+98YvcWURkzCFsBDaa88ZFbX3PcixSqjjWVVItjx5dMgo/tf/bnv/mZGl9gMVONMcsGXRxYAUEJ2w4T0YNK60wSKCZOJDn4fEb3s8pXwZ0WTbTRWLXT1pLi0HACyeSJ0ErhmUjioeogO+5tiEEDrbz52Zu+snn/0yOtQWO5YNNj0zOltTZDauWNx6affflPLr/hwevOXPXcKy742HNGD50tZtErUMYWAT+Yr5Xld+3YtG9mNyhtgS1KUVoanH/Npls2PvtYs9GwYoMID1jx3Z1W7N5yBoYGMzWWwxAwuysOAkshuUyOfj1D8SGH1HZ1zUrU5535FyrSCjBWb3wRIFA++kxzZbI5vk293S66eYl9W67CD2h7Zmhg7OGd2//+5598fP8zY62h4azZJDWg9HBzgIl+8vjNL/7O22596g/PPfzUL77sY+sWrGx3u4Ta+r4osOK4tU7h2iLhn554oGsKJGVQLImwyXSzMzX5Hzd/u4tFTkGFwpHkDWRAnbK948A+wAHVASwDDJWQmpPWXwlDyGqNLFhDyzGxmsnQPJE+kFojKdecjiklbM5DCjyNSsunpiIUJB5j60h/szIAINrCjC1ZdM1Td+z7wYfedfbrT1hyxPzmcM+WT+7a/N0Hf/1fm342W+w8aemJ//FnH1k3f/VMr6NIWxabyM376J4ZEadteffmB0BniGgdMZgBumVzyaKf3Pub5605+X+dftne6cluUQqSMBadcun4/F9tvW3XvmcoazBXNPr+ylMYFVeRM/rbaxIxGcR6+breMxu8nyLlaVoIUckxQA+M6aiiZKaAp63JXP6GpNwIqeS0fZKobMkLli69+8Djr7v6Y8cvXrNkaF7H9jbufWJP91mwxbnLz/n3Cz504sKVU702girCeMpKOE8EAUpbjuStB/Y8sXXnZlDa6x75gFWsQD428o8/+WwO6h2nXwrGTnQ6peUl88emuPe5G7/dJptrbQ0LYSoOLFJfJiexWeHQgukSVpOvar0KkpYEwgBQQNC+NCmCQAAaERnAMofWOQlhV6WxFseO+acey1eR1QBVC5BEY+8dDpmiHJ033wLfN/loeaAAltbgYIPycxY/90sv+fjqkcX72jOIyo8Tcd0aCFUnAENpzNDIwA1337u3O0WDQ047Rpz0KqEA02DDAP/9Dz/54NZHXrv+pUePr2rk+oF9Oz5x/RU3P/knGhyxTJL5HSvs1MUCoOtJjnX/V82hDcWrdOhmMr4ConI9BUojekQlwjnsSI4C0rNlnNMDQUQ1hhPsuwnro+mkVi6oKxOhVAOBABGNLYFobGSeU7spbWF6sx89752rhxfvmZ4mrUrf4seJHJkbz8HCMqDzvWbyhvtvKhU1SFvLQAnzTYmUhoZapNSVd//ot4/8YfX4Cp03t0w8s2VqmxoaBSGfrDoMgBMSNAocHMqXqu0V50RwyaZC7CeHY31Qktu02plCY8sgXCv988Kkmj8Hc3kzc9Sv/UcSxmcRfAgXpicAgsqYXjMbHG0Md3oCogtrmdgNPYE5kuqlMcvnLbrqsZvu2r4paw0SO41mXzESX+1E6JWos3zx+LaZmW07NwJYyFQ2NMZuJIvyZSEQBtUvFFvJVaX9S2mJEOeMtw5H2M+oDgUYR+oM5OowqUFAO9gtx0yCIDBSIh7pNZW4XpaFSug44WP3abVziEElEIzRk/xY6WyymJ6ynayB1jATB9W5xHc7krG1o43WAWl/99Yfz8JMa2AxFwU7s+dWwDEgDCCClIYR87yFqgkALK41Okh0RV/HEgxeenDrhPNk52JQSJ4jpF/J2sUxT0DAJIDQ1BlBwEsAybWrL2zOz0Sx0whIZamCnayP0gvl+D5dhSQs5Cr1k77xZWytoox70/fteBBUojESOMWxckFCytL48MgP77v+N1vuyObNMyQ2V5KTECaAoAsAHX2U2Za2KI0p2ZbAnI578I+R0ugN66TvOAkC6ngPSN84Lknn4PqDIAii0KAFpZYOL1QAhpkRnV4HE8BhQ4uGKDfWQKoFVg2T7mMtpbpglYXhmmqYr+bFkWPxGKFb69bAlXf9fKI7M5BpZovRAbkOcYc+Gl4+Nv+uXZs/d+N/8WCOzRYrFgVOOSDpaaxFpFV1mCvRLuinCaTcfpzTYlVLhms6ohBVzzFFn0OghayxBG5lgyvmLYqdl+LMhLUw3hoZy0cLUyBgLNP2T8OQVAFY0rnH/SJEtf7EGgzoa4Y90xgcu2vrfVfe+ePBVqNF2rARYTe6CljEsLawdHTek+19H/jV5x5vP90aHbNso+Jb1LLFNIWr9YUF1jBD0jlW72lL+wbDQHYJte6qgi1zRGkSADlkz4msj9gFg/OXjywSL5WI4iQljLULh+avGDuksIYyBeQ1l6HiftU/K1XVrZ9BSbU+sDZHqa4si2K5MTbysd9d+a37rhkeGlw8MDZIWQagrDRBjzeGF46O3bN36xt+/LEbnr2ztWBJacq0Rl2hDrWBRckKQ0Ksl6hzlPC/azsxfVuMk5sgyIscRIdUEsGGmBKL0zMyy0eWrp63vGuMdnpoABpBFcbOHxhbu2D1H3fegwrBVB1V/pmlYXxf8VDmUliTES61mQCJtjsCMFCWs9i3/uyTj+3ecumJFyyft3SQBhRS15rHpnb/4v5brrjle0+1t7fmj5dF6YiqUZ8TK+Hx+uHHxMlJIj/vM4MYJySqtQhzsTeYwyxAn+TVSJ7ec4YCAhCIYhC9bulRS1vDU7PdTCsCJIWakAzYDOmk8SMHqOk6RPoGJDnT6c0d1BPXtD6blnHDkfGematM1rlmcINZB3JoZp/841U/eOR3Jy47cvHwIq0bu6f2373jkcf2PwZ5ozm6uCx64Q4ru8XVE6Y0KK1px/UhzeiyPd9g6FlJtZnzUGV50t8VKxikHCPFMUy3ABZiAhDRZEoznI2dseo4JcAgGSlCcbLBIAzGyAnLjj5i+NBH2ltz1WDDoYDjR8sIe1pBoJh6+VcOO4hDqVYqHXBBD5smU5F8yTwkZcJIqrV44ZapfU/c/1vX9geA0MybgwstYNntOuJjxBWFIaY1vglJauhm+nyr6DKBLCRKYUn/NkZIRqTXUnSE2iDZML+LRQCJAS2joJBAaVaOLztrxXGdotREBECIDusgIpjqFatGlpy19OQHHnm8MdCUUrwob2SZ1puFuIqOQ3dboHfLQbqUpQr7g5IWewuAYk1ZlHneoHxAWRZmQDBIpltKxcGS6piz9H9GLPrWmh/Qly/iVozT0CXy+uvhBUraguhnv2LY/Sz9jGiJ9WxwQgFWWFk8c82JqwZG90zPNPPMbXtCJHe/pWVj8PwjTltKC7tFF5i8ykm/ZHGd5AhRftgZKkm67wUP4iSj0CEnExcAAKwpyqJdlN2yLIqysEVX2CIzWkFrXWs8hPGSIDWKRV9dooa51f6Gc+d+YcpMTD0jRv0ChLkgvyTJYBjkxCSl8OjA/MtOOH+mZ9yglTiKmdxaklL72u0Tlh19ziGn9GYLBraG0QgYECsSpQOxpgSOcaRvEENM27Q4naAA6ZTooKjjJ8K6CJxEkAEtudbLMEpX4njXMPCBayPoAulSosZ1IvMAlfB9IsQfRFVTOZK0/yyAICmbMDH41XQjQWQkIQBkgjIT6RQXnXjeKeNrDnR6pJXhYOSCrLFLDqDdNW943itWNhd1oIMMbMPYaZ4juB6zC78jsG/MoMQ+SOibAAEVPzWdqA6VbG0fcglJPSEdYVxtwLSbsW+CYi14C3zc/kJqjZMRgX9IKiHgyqxUJSbBTgFZh1IhW7NwwbJ3n/GX7U7PFYsljMMO8+sEhEFrPdnpHjF26JtPeY2eAsjIy/+w7ySq4frJVKyk27viAkpdtq+qzkOdJRl5j5XEUkXnBJH6LI+6xqJIJKAFNCdKK1eqTSGYwypprOkFB4wmbO20AV+qRAaEEBCdaHXcW0FZTkBp6NoPn/+WI4cXzXQLIgp20mch5GIeIEGQXGe7p2deceJFf/6cF7fbXdXMmBkYiBP+RqJVWh/NUg1DrSs5VSbVASTpRIq+LRf3mdR+TEJXTG0HH7Qs6p86YU3PBKMxkBg9iNR5m3PE1rw2HLlg1P0BgRCIgAgI0f1ZATVz25l+2ZkXX3bC+XtnuqRUnGwYAREC/z4ACESokWZn2x8+/y3PW3rilOnqwYYVTqJPSWfBV8IH6YQdCdr0VeLkp/nEelB9HnMckxpo/xg3FFaJWnA+MS3uMwyIFSQV/o5YS/gS6jPUKoM+hxbEVFMq2EbPsEYEQlDkmalOP1iDHmj0ujOnHHPmJy98pymtYOhdwKrLVsQrojvCKxGA1sTMLZt9/qL3nTRyxARPZyNNh985WWKspBjBDw/oE2OPpKeKypbMGvLLzEnsmmgZHbSCT7EILQw1dbi0dS8mMxhe4L0iSfKsJR38mFLA61TZhPlF4KYSgQJRUdIdNaBW2Bpstu3kulXHX/nnHx6nIVOWmUJNTrk2PFYRL2uMFCfEIQJkSneKYmljwZdf+o+njB59oJhojAyIIhHruyGDxLwQIKFDLAVFCNMqJiYCRVyXmKvJicfzEAIYwKpSnHaFSi0bjYa3qlXHrVTpMHuWKVRbzE1VQYyYbIjUk24SrhR4vEAD+YTWiawhIOU6H2hOT08cuXTt1171T6uGF85227nKNBIRUmiswNAnjtOFEQHDHHajn5hXlHbe0MDO3p4PXP8f1z71h+GRMSyx1+2S8iKBft9iJIZiZBykTROe/oxSGwNMcehIKlCRMNo5Gckc6Ia18pIrpMaSNFYAk1SMVYGkmulVuFORuTpO44uHzns5LURn7slHHQRKsRAAZTmj6U1PnH34WZ+56PJjhg+ZnJ1VWUYARJ5iQG7SAfqWA5wpbZC3FubKsYlIaexIq9nGzpdu/8GVm37QycrBbKTX7llrXFUUAGxKCbMOhvChNydaV319+lK7y+ReGRNP2dcnHakAUcMJMfi9KvVOjUIYXFjjyXGNZxXxs5o+RsUNRM9uR0QXdmilm1m7M9PA/G3rX/7uM16zSI1MzM7meeb7azyUjiheG9SfttnSuJZYDjp2NmmBK03ZzBqNPLv5mTv+/bb/vuvAw42hBkGj6HTYcNA9CSY2DPF2aQWzJGzfGodeUlyq8kAOeESZ26MTYKkkgwbXoNK/0MkPJ6chCe/DtJQUpE7GUKXMcsQw35QYtdaYaUO27JXrDln7kee/4cWHP9d2bIeLPMuqhkv/gNB1CpGX3hacdTtagF19LZzkiFSU1iqgwYHmRDH948dvuvLBn23tPqmbWnNmTNQATskhjmLEYsH1YVUxw9zRfzXJkbr2S98I47nyJWmRv4/LhXNgz1Rs1LHtbR9LOZ3e7qE8JhBNrBEJgC2LWrlo9RtPufCVx527tDGv2+kZgkxpwmC8qnAj7OTI9ZgpTOUDwCtSR+ai9ZabLUsrazSbemex/+db/vijR373+MTWtrQNeVV1dKowTsPWMhhHFhGxSY0rQsQx48GDSZFw0rCTBrky55XSx5UN4ZxgCKX7tPrDAJ8wJqlGGa3G/0oQV3fTAVE1Bo459MhXHvvCC49Yv6QxKqUYa0mRVgoBFKLrsfExZuyoCVggIuJMYapyAfPBdP2dxJoYy8CUZ3mrRbO2ePDAk7c/c99D+57YMv30rs6eWdO1rleD0VdK2QY6jNSHHlaqWEntoMJu/ETNSnkb03G1ILVDwDGiRkhHihL1lUwQq0J4EJSHwIaKk7ADGY2QWvnQgqEFh4+vPHbxkactX7duwYpBlRW90jITUaaVQiB0ak+QDjHx0Y8gUQWRVAsdo1+u8mTxJFLXrsLs5EiYRSkaaGStTCPipOk+2965e3b/lOmwiGU2bEuxJZuC2cYJRXG+clIXktgCEmu5bp4YoldS8svElsWItcDs5iiH1FawYhBF70l+wIyEVMxvNEIioDBMwl+OC7j8sAsUBgSkoax5yPCiQ4bGF+QjGZApbVEYECDywrPKNdUjKCJEUOQXOrZeB6MR/jpTWoiKrlCTxAypYLXZbRBFCErpTEBNrVsN3dRaqSgV54m81o13kfqUlhTfxChM684oxsAWK/oVpn3YlaUVry7OzHPyHMFIl41IeN2GS4126yAQDFMlwDKXxhalKa1xA5EU+SGbrjtMhVE8hE5f3MdxhLXGdozd+nGhY/AKaRNL0KbxfWoSKfWVwq9UwskVgOqk8TkxR1CJicVooBohHiEKjJFnmpBjMvUozNH07F4nq4p1RlqAD6vuxgjmExD0LwdU9yiO3OiF45GI0P3ZSUEr8o267swB+l5SQqAg3EiREC2x1gDaV9wQwekjVpqGCbk1JK4UxL0I/Tx4ECDXIFwpZfmAKkxSq01whTq5CRKhwghmxq0RC9CICTfKQ8peaIKZOVS46uyiWgkgIqqokJIgrG7evZ1MuAXObjvCoheqDr3ofigFVZ1PTs0InCC8IzdRqCDrWPFxtAKKhFBXd2QkB3AzEyJ7XqWI+HG5HiUNA24RK9+GXk0eUwpEVCAKuzqZN4ASJsT4+3F7KSUaEgh7jSnyEbFC5ADr13vtsE7wwogURbwofhbMIduJ1JTWBMKEZwiqDn7eLbn0r/LmSF7OAKs3cHF02v6MNcnqOMkMq0pIrEx628tYXX/C4w4ZdEUykTkiiXVed9yHSbiAdZ3U2gwfjvNj+8msAPW1Tv4iXtDXD3WAuloVMAZ2btzSWBme0LonmEheRUwjvV6qHoZXRtIVAzgSdqDWU8Aew3JWxcMvylH3AAFVLMZDrcFUghngpPsxCi0F3d84QTuGDxjIGfVnANhH7AJvW0AqLBHriHLaboXpaUIAB98nSAkAYpgMWwf2E3se18mPzpM4C7T6g2CNKOnfW1eaXEGtpDJdkuho1mTCoilGrIR1q5EqqRMAUj5SDYYMVWgk9YcoLSMlMVE6pM4LbiKDQH0mHEVifn08Sl90EyptgaUvqR/GUJhzqAZ4oxA0OWMGKjVKi7fCqbBzqn7sfSFFEdi630CsTG0MCD3o6STDEGOhFmqvSmofSREOPRc7hpaxxATp3aY9IzUHFU4cB63gcHIDSalK7bHa0OFDOOHUpsQOAMZwcTHFCMMTHWicSpqnhMZEPXSOckoSj0rVeIQAIP8Xc2Q8I3RYp98AAAAASUVORK5CYII='},
@@ -720,17 +767,8 @@ function bankAvatarHtml(bank, boxClass){
   }
   return `<span class="${boxClass}" style="background:${bank.color}">${bank.initials}</span>`;
 }
-function billCatGrid(id, selected){
-  return `<div class="cat-grid" id="${id}" data-value="${selected||BILL_CATS[0]}">${BILL_CATS.map((c,i)=>`
-    <div class="cat-chip${(selected?selected===c:i===0)?' active':''}" data-val="${c}" data-action="pick-cat">
-      <span class="ic">${BILL_ICONS[c].icon}</span><span class="lbl">${c}</span>
-    </div>`).join('')}</div>`;
-}
 function billNameField(category, selectedName){
-  if(category==='Abonelikler'){
-    return `<select id="f_name">${SUBSCRIPTIONS.map(s=>`<option value="${s}" ${s===selectedName?'selected':''}>${s}</option>`).join('')}</select>`;
-  }
-  return `<input id="f_name" value="${selectedName?esc(selectedName):''}" placeholder="Örn: Ev Elektrik">`;
+  return `<input id="f_name" value="${selectedName?esc(selectedName):''}" placeholder="Örn: ${esc(category||'Ev Elektrik')}">`;
 }
 function shade(hex, percent){
   const n = parseInt(hex.replace('#',''),16);
@@ -744,10 +782,28 @@ function bankChipRow(id, selected){
       ${bankAvatarHtml(b,'bank-avatar')}<span>${b.short}</span>
     </div>`).join('')}</div>`;
 }
-function wheelCol(id, items, selectedValue){
+// Fatura/Abonelik "Kurum" seçimi — banka seçimiyle birebir aynı görsel/etkileşim düzeni.
+function kurumBadgeHtml(it, boxClass){
+  boxClass = (boxClass || 'bank-avatar') + ' sq';
+  if(it.wordmark){
+    // Küçük rozet (26px chip) için tanımlı font-size; daha büyük 36px kart ikonunda (cat-icon) ~1.3x büyütülür.
+    const base = parseFloat(it.fontSize||'11px');
+    const fs = boxClass.indexOf('cat-icon')>=0 ? (base*1.3).toFixed(1)+'px' : (it.fontSize||'11px');
+    return `<span class="${boxClass}" style="background:${it.bg};color:${it.color};font-size:${fs};font-weight:800;font-family:var(--font-display);letter-spacing:-.02em;">${esc(it.wordmark)}</span>`;
+  }
+  return `<span class="${boxClass}" style="background:${it.bg};color:${it.color}">${it.icon}</span>`;
+}
+function kurumChipRow(id, pool, selected){
+  return `<div class="bank-grid" id="${id}" data-value="${selected||pool[0].name}">${pool.map((it,i)=>`
+    <div class="bank-chip${(selected?selected===it.name:i===0)?' active':''}" data-val="${esc(it.name)}" data-action="pick-bank">
+      ${kurumBadgeHtml(it)}<span>${esc(it.name)}</span>
+    </div>`).join('')}</div>`;
+}
+function wheelCol(id, items, selectedValue, width){
   let idx = items.findIndex(it=>String(it.value)===String(selectedValue));
   if(idx<0) idx = 0;
-  return `<div class="wheel-col" id="${id}" data-initial="${idx}">
+  const styleAttr = width ? ` style="width:${width}px;flex:none;"` : '';
+  return `<div class="wheel-col" id="${id}" data-initial="${idx}"${styleAttr}>
     <div class="wheel-spacer"></div>
     ${items.map(it=>`<div class="wheel-item" data-val="${esc(String(it.value))}">${esc(it.label)}</div>`).join('')}
     <div class="wheel-spacer"></div>
@@ -755,15 +811,15 @@ function wheelCol(id, items, selectedValue){
 }
 function dayWheel(id, selectedDay){
   const items = []; for(let d=1;d<=31;d++) items.push({value:d, label:String(d)});
-  return `<div class="wheel-picker">${wheelCol(id, items, selectedDay||15)}<div class="wheel-highlight"></div></div>`;
+  return `<div class="wheel-picker">${wheelCol(id, items, selectedDay||15, 100)}<div class="wheel-highlight"></div></div>`;
 }
 function loanDateWheel(idPrefix, selMonth, selDay){
   const monthItems = [];
   for(let i=-3;i<=24;i++){ const ym=addMonths(monthKey(new Date()), i); monthItems.push({value:ym, label:monthLabel(ym)}); }
   const dayItems = []; for(let d=1;d<=31;d++) dayItems.push({value:d, label:String(d)});
   return `<div class="wheel-picker">
-    ${wheelCol(idPrefix+'_m', monthItems, selMonth||monthKey(new Date()))}
-    ${wheelCol(idPrefix+'_d', dayItems, selDay||15)}
+    ${wheelCol(idPrefix+'_d', dayItems, selDay||15, 70)}
+    ${wheelCol(idPrefix+'_m', monthItems, selMonth||monthKey(new Date()), 150)}
     <div class="wheel-highlight"></div>
   </div>`;
 }
@@ -775,9 +831,9 @@ function fullDateWheel(idPrefix, selectedISO){
   const curYear = new Date().getFullYear();
   const yearItems=[]; for(let y=curYear-2;y<=curYear+2;y++) yearItems.push({value:y,label:String(y)});
   return `<div class="wheel-picker">
-    ${wheelCol(idPrefix+'_d', dayItems, now.getDate())}
-    ${wheelCol(idPrefix+'_m', monthItems, now.getMonth()+1)}
-    ${wheelCol(idPrefix+'_y', yearItems, now.getFullYear())}
+    ${wheelCol(idPrefix+'_d', dayItems, now.getDate(), 64)}
+    ${wheelCol(idPrefix+'_m', monthItems, now.getMonth()+1, 100)}
+    ${wheelCol(idPrefix+'_y', yearItems, now.getFullYear(), 76)}
     <div class="wheel-highlight"></div>
   </div>`;
 }
@@ -835,7 +891,7 @@ function initSwipeDelete(root){
 function initWheelPickers(root){
   root.querySelectorAll('.wheel-col').forEach(col=>{
     const items = Array.from(col.querySelectorAll('.wheel-item'));
-    const itemH = 34;
+    const itemH = 28;
     function updateSelection(snap){
       let idx = Math.round(col.scrollTop / itemH);
       idx = Math.max(0, Math.min(items.length-1, idx));
@@ -1070,6 +1126,7 @@ function navigate(page, extra){
   ui.page = page;
   if(extra) Object.assign(ui, extra);
   render();
+  if($content) $content.scrollTop = 0;
 }
 
 // ---------- NOTIFICATIONS ----------
@@ -1192,10 +1249,10 @@ function render(){
   $headerAction.style.display='none';
   updateNotifBadge();
   const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, cards:renderCards, kmh:renderKmh,
-    bills:renderBills, debts:renderDebts, monthly:renderMonthly, ai:renderAI };
+    bills:renderBills, billAdd:renderBillAdd, debts:renderDebts, monthly:renderMonthly, ai:renderAI };
   const fn = map[ui.page] || renderHome;
   const titles = { home:'Ana Sayfa', loans:'Kredilerim', loanDetail:'Kredi Detayı', cards:'Kredi Kartlarım', kmh:'KMH Durumum',
-    bills:'Faturalarım', debts:'Elden Borçlarım', monthly:'Aylık', ai:'Akıllı Finans Asistanı' };
+    bills:'Abonelikler ve Faturalarım', billAdd:'Fatura / Abonelik Ekle', debts:'Elden Borçlarım/Alacaklarım', monthly:'Aylık', ai:'Akıllı Finans Asistanı' };
   $title.textContent = titles[ui.page] || 'Finansçım';
   const $topbarDate = document.getElementById('topbarDate');
   if($topbarDate){
@@ -1220,6 +1277,17 @@ function render(){
     const box = document.getElementById('aiInputBox');
     if(box) box.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); const v=box.value.trim(); if(v){ box.value=''; sendAiMessage(v); } } });
   }
+  if(ui.page==='bills'){
+    const bs = document.getElementById('billSearchInput');
+    if(bs) bs.addEventListener('input', ()=>{
+      ui.billSearch = bs.value;
+      const pos = bs.selectionStart;
+      render();
+      const bs2 = document.getElementById('billSearchInput');
+      if(bs2){ bs2.focus(); bs2.setSelectionRange(pos,pos); }
+    });
+  }
+  if($content.querySelector('.wheel-col')) initWheelPickers($content);
   initLongPress($content);
 }
 
@@ -1236,11 +1304,11 @@ function renderHome(){
   const aylikBorc = monthlyDue(state.selectedMonth);
   const aylikKalan = income - aylikBorc;
   const dist = [
-    { key:'loans', name:'Krediler', amt:t.loans, cat:'kredi', page:'loans' },
-    { key:'cards', name:'Kredi Kartları', amt:t.cards, cat:'kart', page:'cards' },
-    { key:'kmh', name:'KMH Durumu', amt:t.kmh, cat:'kmh', page:'kmh' },
-    { key:'bills', name:'Faturalar', amt:t.bills, cat:'fatura', page:'bills' },
-    { key:'debts', name:'Elden Borçlar', amt:t.debts, cat:'elden', page:'debts' },
+    { key:'loans', name:'Kredilerim', amt:t.loans, cat:'kredi', page:'loans' },
+    { key:'cards', name:'Kredi Kartlarım', amt:t.cards, cat:'kart', page:'cards' },
+    { key:'kmh', name:'KMH Durumum', amt:t.kmh, cat:'kmh', page:'kmh' },
+    { key:'bills', name:'Abonelikler ve Faturalarım', amt:t.bills, cat:'fatura', page:'bills' },
+    { key:'debts', name:'Elden Borçlarım/Alacaklarım', amt:t.debts, cat:'elden', page:'debts' },
   ];
   return `
     <div class="stack">
@@ -1365,7 +1433,7 @@ function renderLoans(){
       if(!thisMonthInst){ statusKey='odendi'; statusCls='paid'; pillLabel = '&nbsp;'; }
       else if(thisMonthInst.status==='odendi'){ statusKey='odendi'; statusCls='paid'; pillLabel = 'ÖDENDİ'; }
       else { statusKey = thisMonthInst.status; statusCls = statusKey==='gecikti'?'late':'waiting'; pillLabel = statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'; }
-      return `<article class="kr-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}">
+      return `<article class="kr-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
           <div><h2>${bank.name}</h2><p>${esc(l.loanType||l.name)}</p>${(l.name && l.name!==l.loanType) ? `<small>${esc(l.name)}</small>` : ''}</div>
@@ -1457,7 +1525,7 @@ function renderCards(){
       const statusKey = hasCharge ? periodStatus(paid, state.selectedMonth, c.dueDay) : 'odendi';
       const statusCls = statusKey==='odendi' ? 'paid' : (statusKey==='gecikti' ? 'late' : 'waiting');
       const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'));
-      return `<article class="kr-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}">
+      return `<article class="kr-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
           <div><div class="kr-title-row"><h2>${bank.name}</h2><span class="kr-duedate">Son Ödeme: ${c.dueDay||'-'}'i</span></div><p>${c.name?esc(c.name):'Kredi Kartı'}</p></div>
@@ -1485,68 +1553,150 @@ function renderCards(){
 // ---------- KMH (Kredili Mevduat Hesabı) ----------
 function renderKmh(){
   $fab.style.display='none';
-  if(state.kmhAccounts.length===0) return `
-    <button class="dashed-add-card" data-action="open-modal" data-modal="addKmh">
-      <span class="dashed-add-icon">+</span>
-      <div><div class="dashed-add-title">Yeni KMH hesabı eklemek için dokun</div><div class="dashed-add-sub">Yeni bir KMH kaydı ekleyin.</div></div>
+  const addBtn = `<button class="kr-add" data-action="open-modal" data-modal="addKmh">
+      <span>＋</span>
+      <div><strong>Yeni KMH Hesabı Eklemek İçin Dokunun</strong><small>Farklı bankalardaki KMH hesaplarınızı buradan ekleyebilirsiniz.</small></div>
     </button>`;
-  return state.kmhAccounts.map(k=>{
+  if(state.kmhAccounts.length===0) return addBtn;
+  const totalLimit = state.kmhAccounts.reduce((s,k)=>s+(k.limit||0),0);
+  const totalDebt = state.kmhAccounts.reduce((s,k)=>s+(k.debt||0),0);
+  const totalEstInterest = state.kmhAccounts.reduce((s,k)=>{
+    const rate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
+    return s + calculateKmhInterest(k.transactions||[], todayStr(), rate).total;
+  },0);
+  const summary = `
+    <div class="kr-summary cols4">
+      <div><b>Toplam KMH Limiti</b><strong>${formatTL(totalLimit)}</strong></div>
+      <div><b>Toplam Kullanım</b><strong>${formatTL(totalDebt)}</strong></div>
+      <div><b>Tah. Toplam Faiz</b><strong>${formatTL(totalEstInterest)}</strong></div>
+      <div><b>Kalan Limit</b><strong>${formatTL(totalLimit-totalDebt)}</strong></div>
+    </div>`;
+  const listHead = `
+    <div class="kr-list-head">
+      <h2>KMH Hesapları</h2>
+    </div>`;
+  const cards = state.kmhAccounts.map(k=>{
       const bank = bankByCode(k.bankCode);
       const debt = k.debt||0;
       const planned = k.plannedPayment||0;
       const remainingLimit = (k.limit||0) - debt;
-      // Bu dönem ödenecek bir tutar (Ödenecek Miktar) ayrılmamışsa kutu tamamen BOŞ kalır, yeşil
-      // arka plan gösterilir — Güncel Kullanım'da bakiye kalmış olsa bile henüz "bu ay ödenecek"
-      // bir şey yoktur. Sadece Ödenecek Miktar > 0 iken durum (BEKLİYOR/GECİKTİ) hesaplanır.
+      // Bu dönem ödenecek bir tutar (Ödenecek Miktar) ayrılmamışsa kutu tamamen BOŞ kalır — Güncel
+      // Kullanım'da bakiye kalmış olsa bile henüz "bu ay ödenecek" bir şey yoktur. Sadece Ödenecek
+      // Miktar > 0 iken durum (BEKLİYOR/GECİKTİ) hesaplanır.
       const hasCharge = planned > 0;
       const statusKey = hasCharge ? periodStatus(false, currentYm(), k.dueDay) : 'odendi';
-      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'));
+      const statusCls = statusKey==='odendi' ? 'paid' : (statusKey==='gecikti' ? 'late' : 'waiting');
+      const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'));
       const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
-      const dailyInterest = Math.round(debt * (bankRate/30));
+      const dailyInterest = Math.round(debt * (bankRate/30) * (1 + KMH_TAX_RATES.bsmv + KMH_TAX_RATES.kkdf));
       const estTotal = calculateKmhInterest(k.transactions||[], todayStr(), bankRate);
       const dueDateStr = k.dueDay ? formatDMY(currentYm(), k.dueDay) : '—';
-      return `<div class="record-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}">
-        <div class="record-top">
-          ${bankAvatarHtml(bank,'record-avatar')}
-          <div style="flex:1;min-width:0;">
-            <div class="record-title">${bank.name}</div>
-            <div class="record-sub">KMH · Her ayın ${k.dueDay||'-'}'i</div>
-          </div>
-          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
-          <span class="record-chevron">›</span>
+      return `<article class="kr-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}" style="background:${bank.color}17;">
+        <div class="kr-main">
+          ${bankLogoHtml(bank, 'kr-bank-logo')}
+          <div><div class="kr-title-row"><h2>${bank.name}</h2><span class="kr-duedate">Son Ödeme: ${k.dueDay||'-'}'i</span></div><p>KMH Hesabı</p></div>
+          <span class="kr-status ${statusCls}">${pillLabel}</span>
         </div>
-        <div class="record-stats">
-          <div class="record-stat"><div class="l">Toplam Limit</div><div class="v">${formatTL(k.limit||0)}</div></div>
-          <div class="record-stat"><div class="l">Güncel Kullanım</div><div class="v">${formatTL(debt)}</div></div>
-          <div class="record-stat"><div class="l">Ödenecek Miktar</div><div class="v">${formatTL(planned)}</div></div>
-          <div class="record-stat"><div class="l">Kalan Limit</div><div class="v">${formatTL(remainingLimit)}</div></div>
+        <div class="kr-meta cols4">
+          <div>Tanımlı Limit<strong>${formatTL(k.limit||0)}</strong></div>
+          <div>Güncel Kullanım<strong>${formatTL(debt)}</strong></div>
+          <div>Ödenecek Miktar<strong>${formatTL(planned)}</strong></div>
+          <div>Kalan Limit<strong>${formatTL(remainingLimit)}</strong></div>
         </div>
-        <div class="record-stats" style="margin-top:6px;">
-          <div class="record-stat"><div class="l">Banka Faiz Oranı</div><div class="v" style="font-size:13px;">~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})}</div></div>
-          <div class="record-stat"><div class="l">Tah. Günlük Faiz</div><div class="v" style="font-size:13px;">${formatTL(dailyInterest)}</div></div>
-          <div class="record-stat"><div class="l">Tah. Toplam Faiz</div><div class="v" style="font-size:13px;">${formatTL(estTotal.total)}</div></div>
-          <div class="record-stat"><div class="l">Son Ödeme Tarihi</div><div class="v" style="font-size:12px;">${dueDateStr}</div></div>
+        <div class="kr-meta cols4" style="margin-top:4px;">
+          <div>Banka Faiz Oranı<strong>~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div>
+          <div>Gün. Tah. Faiz<strong>${formatTL(dailyInterest)}</strong></div>
+          <div>Top. Tah. Faiz<strong>${formatTL(estTotal.total)}</strong></div>
+          <div>Son Ödeme<strong>${dueDateStr}</strong></div>
         </div>
-        <div class="kmh-interest-note">Faiz oranı ve tutarlar yaklaşıktır (BDDK tavan oranı esas alınır).</div>
-      </div>`;
-    }).join('') + `
-    <button class="dashed-add-card" data-action="open-modal" data-modal="addKmh">
-      <span class="dashed-add-icon">+</span>
-      <div><div class="dashed-add-title">Yeni KMH hesabı eklemek için dokun</div><div class="dashed-add-sub">Yeni bir KMH kaydı ekleyin.</div></div>
-    </button>`;
+      </article>`;
+    }).join('');
+  return `
+    ${summary}
+    ${listHead}
+    <div class="kr-scroll">
+      ${cards}
+      ${addBtn}
+    </div>
+    <div class="kr-info">ⓘ <span>Faiz oranı ve tutarlar yaklaşıktır (BDDK tavan oranı esas alınır).<br>Uzun basarak <b>Düzenle</b> veya <b>Sil</b> seçeneklerini açın.</span></div>
+  `;
 }
+// ---------- ABONELİK/FATURA KATEGORİ SEÇİMİ ----------
+function renderBillAdd(){
+  $fab.style.display='none';
+  const kind = ui.billAddKind || 'bill';
+  const pool = kind==='bill' ? FATURA_KURUMLAR : ABONELIK_KURUMLAR;
+  return `
+    <button class="back-link" data-action="nav" data-page="bills">‹ Geri</button>
+    <div class="kind-toggle">
+      <button class="${kind==='bill'?'active':''}" data-action="set-bill-kind" data-kind="bill">📄 Fatura</button>
+      <button class="${kind==='subscription'?'active':''}" data-action="set-bill-kind" data-kind="subscription">∞ Abonelik</button>
+    </div>
+    <h3>${kind==='bill' ? 'Yeni Fatura Ekle' : 'Yeni Abonelik Ekle'}</h3>
+    <div class="section-title">1. Kurum/Hizmet Sağlayıcı<small>Tıpkı banka seçer gibi seçin</small></div>
+    <div class="field">${kurumChipRow('billKurumChoice', pool)}</div>
+    <div class="section-title">2. ${kind==='bill'?'Fatura':'Abonelik'} Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Tutar (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Ad (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: ${esc(pool[0].name)}"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Sabit mi?</label>
+        <div class="toggle-row" style="margin-top:2px;"><span>Her ay aynı tutar</span><div class="switch" id="f_isFixed" data-action="toggle-switch"><div class="knob"></div></div></div>
+      </div>
+      <div class="field"><label>Otomatik Ödeme</label>
+        <div class="toggle-row" style="margin-top:2px;"><span>Talimat var mı</span><div class="switch" id="f_autoPay" data-action="toggle-switch"><div class="knob"></div></div></div>
+      </div>
+    </div>
+    <div class="section-title">Son Ödeme Tarihi</div>
+    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('billDayChoice')}</div>
+    <p style="font-size:10.5px;color:var(--ink-soft);margin:6px 0 8px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="nav" data-page="bills">Vazgeç</button>
+      <button class="save-btn" data-action="save-bill" data-kind="${kind}">Kaydet</button>
+    </div>
+  `;
+}
+const BILL_FILTER_TABS = [
+  { key:'all', label:'Tümü' },
+  { key:'bill', label:'Faturalar' },
+  { key:'subscription', label:'Abonelikler' },
+  { key:'fixed', label:'Sabit Giderler' },
+  { key:'variable', label:'Değişken Giderler' },
+];
 function renderBills(){
   $fab.style.display='none';
-  const addCard = `<button class="dashed-add-card" data-action="open-modal" data-modal="addBill">
+  const addCard = `<button class="dashed-add-card" data-action="nav" data-page="billAdd">
       <span class="dashed-add-icon">+</span>
       <div><div class="dashed-add-title">Yeni fatura eklemek için dokun</div><div class="dashed-add-sub">Yeni bir fatura/abonelik kaydı ekleyin.</div></div>
     </button>`;
   if(state.bills.length===0) return addCard;
-  const total = state.bills.reduce((s,b)=>{ if(b.autoPay) return s; const r=billRecord(b,state.selectedMonth); return s+(r.status!=='odendi'?r.amount:0); },0);
-  return `<div class="section-title">Toplam Fatura (${monthLabel(state.selectedMonth)}): ${formatTL(total)}</div>` +
-    state.bills.map(b=>{
-      const r = billRecord(b, state.selectedMonth);
-      const ic = BILL_ICONS[b.category] || BILL_ICONS['Abonelikler'];
+
+  const recs = state.bills.map(b=>({ b, r: billRecord(b, state.selectedMonth) }));
+  const toplamTutar = recs.reduce((s,x)=>s+(x.r.amount||0),0);
+  const otomatikToplam = recs.filter(x=>x.b.autoPay).reduce((s,x)=>s+(x.r.amount||0),0);
+  const sabitToplam = recs.filter(x=>x.b.isFixed).reduce((s,x)=>s+(x.r.amount||0),0);
+  const degiskenToplam = recs.filter(x=>!x.b.isFixed).reduce((s,x)=>s+(x.r.amount||0),0);
+
+  const filter = ui.billFilter || 'all';
+  const search = (ui.billSearch||'').toLocaleLowerCase('tr-TR');
+
+  const filtered = recs.filter(({b})=>{
+    const kind = b.kind || 'bill';
+    if(filter==='bill' && kind!=='bill') return false;
+    if(filter==='subscription' && kind!=='subscription') return false;
+    if(filter==='fixed' && !b.isFixed) return false;
+    if(filter==='variable' && b.isFixed) return false;
+    if(search){
+      const hay = ((b.name||'')+' '+(b.category||'')).toLocaleLowerCase('tr-TR');
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const rowsHtml = filtered.length===0 ? `<div class="empty">Bu filtreye uygun kayıt yok.</div>` :
+    filtered.map(({b,r})=>{
+      const ic = BILL_ICONS[b.category] || BILL_ICONS['Diğer'];
       // Bu ay için henüz bir tutar oluşmamışsa (r.amount<=0) kutu tamamen BOŞ kalır, yeşil
       // arka plan gösterilir — bilinmeyen bir tutar için GECİKTİ/BEKLİYOR yazılmaz.
       const hasCharge = (r.amount||0) > 0;
@@ -1555,8 +1705,8 @@ function renderBills(){
       return `<div class="item-card" data-action="open-modal" data-modal="billRecord" data-id="${b.id}" data-lp-type="bill" data-lp-id="${b.id}">
         <div class="item-top">
           <div class="cat-icon-row">
-            <span class="cat-icon" style="background:${ic.bg};color:${ic.color}">${ic.icon}</span>
-            <div><p class="item-title">${esc(b.name)}</p><p class="item-sub">${esc(b.category)}</p></div>
+            ${kurumBadgeHtml(ic, 'cat-icon')}
+            <div><p class="item-title">${esc(b.name)}</p><p class="item-sub">${esc(b.category)} · ${b.kind==='subscription'?'Abonelik':'Fatura'}</p></div>
           </div>
           <div style="display:flex;align-items:center;gap:6px;">
             <span class="record-status-pill ${statusKey}">${pillLabel}</span>
@@ -1571,8 +1721,25 @@ function renderBills(){
           <span style="font-size:12.5px;color:var(--ink-soft);">🔁 Otomatik ödeme talimatı var</span>
           <div class="switch ${b.autoPay?'on':''}" data-action="toggle-bill-autopay" data-id="${b.id}"><div class="knob"></div></div>
         </div>
+        <div class="item-meta-row" style="justify-content:space-between;align-items:center;">
+          <span style="font-size:12.5px;color:var(--ink-soft);">📌 Sabit gider (her ay aynı tutar)</span>
+          <div class="switch ${b.isFixed?'on':''}" data-action="toggle-bill-fixed" data-id="${b.id}"><div class="knob"></div></div>
+        </div>
       </div>`;
-    }).join('') + addCard;
+    }).join('');
+
+  return `
+    <div class="summary-grid">
+      <div class="summary-cell"><div class="l">Aylık Toplam Tutar</div><div class="v">${formatTL(toplamTutar)}</div></div>
+      <div class="summary-cell"><div class="l">Otomatik Ödeme</div><div class="v">${formatTL(otomatikToplam)}</div></div>
+      <div class="summary-cell"><div class="l">Sabit Gider</div><div class="v">${formatTL(sabitToplam)}</div></div>
+      <div class="summary-cell"><div class="l">Değişken Gider</div><div class="v">${formatTL(degiskenToplam)}</div></div>
+    </div>
+    <div class="cat-search-wrap"><span class="cat-search-ic">🔎</span><input id="billSearchInput" placeholder="Fatura/abonelik ara..." value="${esc(ui.billSearch||'')}"></div>
+    <div class="filter-tabs">${BILL_FILTER_TABS.map(tb=>`<button class="${filter===tb.key?'active':''}" data-action="set-bill-filter" data-filter="${tb.key}">${tb.label}</button>`).join('')}</div>
+    ${rowsHtml}
+    ${addCard}
+  `;
 }
 
 // ---------- DEBTS (Elden) ----------
@@ -1687,7 +1854,7 @@ const modalTemplates = {
     </div>
     <div class="field-row">
       <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" placeholder="Örn: 3,5"></div>
-      <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" placeholder="Örn: İhtiyaç Kredisi"></div>
+      <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: İhtiyaç Kredisi"></div>
     </div>
     <div class="section-title">3. Tarihler</div>
     <div class="field"><label>İlk Taksit Tarihi</label>${loanDateWheel('loanDateWheel', state.selectedMonth, 15)}</div>
@@ -1714,7 +1881,7 @@ const modalTemplates = {
     </div>
     <div class="field-row">
       <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" value="${l.infoInterestRate!=null ? String(l.infoInterestRate).replace('.',',') : ''}" placeholder="Örn: 3,5"></div>
-      <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" value="${esc(l.name)}" placeholder="Örn: İhtiyaç Kredisi"></div>
+      <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(l.name)}" placeholder="Örn: İhtiyaç Kredisi"></div>
     </div>
     <div class="section-title">3. Tarihler</div>
     <div class="field"><label>İlk Taksit Tarihi</label>${loanDateWheel('loanDateWheel', l.startMonth, l.dueDay)}</div>
@@ -1736,10 +1903,10 @@ const modalTemplates = {
     </div>
     <div class="field-row">
       <div class="field icon-field"><label>Bu Ay Ödenecek (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" placeholder="Örn: Alışveriş Kartım"></div>
+      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: Alışveriş Kartım"></div>
     </div>
-    <div class="section-title">3. Tarihler</div>
-    <div class="field"><label>Son Ödeme Tarihi</label>${dayWheel('cardDayChoice')}</div>
+    <div class="section-title">Son Ödeme Tarihi</div>
+    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('cardDayChoice')}</div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-card">Kaydet</button>
@@ -1759,11 +1926,11 @@ const modalTemplates = {
     </div>
     <div class="field-row">
       <div class="field icon-field"><label>Bu Ay Ödenecek (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" value="${st?st.amount.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" value="${esc(c.name||'')}" placeholder="Örn: Alışveriş Kartım"></div>
+      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(c.name||'')}" placeholder="Örn: Alışveriş Kartım"></div>
     </div>
     <div class="toggle-row"><span>Bu ay ödendi olarak işaretle</span><div class="switch ${st&&st.status==='odendi'?'on':''}" id="f_paid" data-action="toggle-switch"><div class="knob"></div></div></div>
     <div class="section-title">Son Ödeme Tarihi</div>
-    <div class="field">${dayWheel('cardDayChoice', c.dueDay)}</div>
+    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('cardDayChoice', c.dueDay)}</div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-card-settings" data-id="${id}">Kaydet</button>
@@ -1771,12 +1938,21 @@ const modalTemplates = {
     <button class="danger-btn" data-action="delete-card" data-id="${id}" style="margin-top:8px;">Kartı Sil</button>
   `; },
   addKmh(){ return `
+    <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>KMH Hesabı Ekle</h3>
-    <div class="field"><label>Banka</label>${bankChipRow('kmhBankChoice')}</div>
-    <div class="field"><label>KMH Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-    <div class="field"><label>Son Ödeme Günü</label>${dayWheel('kmhDayChoice')}</div>
-    <button class="save-btn" data-action="save-kmh">Kaydet</button>
-    <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+    <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
+    <div class="field">${bankChipRow('kmhBankChoice')}</div>
+    <div class="section-title">2. KMH Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>KMH Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Güncel Toplam Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+    </div>
+    <div class="section-title">Son Ödeme Tarihi</div>
+    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('kmhDayChoice')}</div>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+      <button class="save-btn" data-action="save-kmh">Kaydet</button>
+    </div>
   `; },
   kmhSettings(id){
     const k = state.kmhAccounts.find(x=>x.id===id);
@@ -1784,33 +1960,30 @@ const modalTemplates = {
     const debt = k.debt||0;
     const planned = k.plannedPayment||0;
     const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
-    const dailyInterest = Math.round(debt * (bankRate/30));
+    const dailyInterest = Math.round(debt * (bankRate/30) * (1 + KMH_TAX_RATES.bsmv + KMH_TAX_RATES.kkdf));
     return `
+    <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>${bank.name} — KMH Ayarları</h3>
-    <div class="field"><label>KMH Limiti (TL)</label><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${k.limit?k.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-    <div class="field"><label>Toplam Borç (TL)</label><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${debt?debt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-    <div class="field"><label>Ödenecek Borç (TL)</label><input id="f_planned" type="text" inputmode="numeric" class="tl-input" value="${planned?planned.toLocaleString('tr-TR'):''}" placeholder="0"></div>
-    <p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 12px;">Bu dönem ödemek üzere ayırdığınız tutar — toplam borcunuzun tamamı olmak zorunda değildir.</p>
-    <div class="field"><label>Faiz Oranı (Aylık %, opsiyonel)</label><input id="f_kmhRate" type="text" inputmode="decimal" class="tl-input" value="${k.customMonthlyRate!=null ? (k.customMonthlyRate*100).toLocaleString('tr-TR') : ''}" placeholder="Yaklaşık ~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})} (girilmezse bu kullanılır)"></div>
-    <div class="field"><label>Son Ödeme Günü</label>${dayWheel('kmhDayChoice', k.dueDay)}</div>
-    <p class="kmh-interest-note">Günlük faiz yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
-    <button class="save-btn" data-action="save-kmh-settings" data-id="${id}">Kaydet</button>
-    ${planned>0?`<button class="save-btn" style="background:var(--paid);margin-top:8px;" data-action="mark-kmh-paid" data-id="${id}">Ödenecek Borcu Ödendi Olarak İşaretle</button>`:''}
-    <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
-    <button class="danger-btn" data-action="delete-kmh" data-id="${id}">KMH Hesabını Sil</button>
-  `; },
-  addBill(){ return `
-    <h3>Abonelik / Fatura Ekle</h3>
-    <div class="field"><label>Tür</label>${billCatGrid('billCatChoice')}</div>
-    <div class="field"><label>Ad (opsiyonel)</label><div id="nameFieldWrap">${billNameField(BILL_CATS[0])}</div></div>
-    <div class="amount-fixed-row">
-      <div class="field"><label>Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-      <div class="fixed-toggle-mini"><span>Sabit</span><div class="switch" id="f_isFixed" data-action="toggle-switch"><div class="knob"></div></div></div>
+    <div class="section-title">KMH Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>KMH Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${k.limit?k.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+      <div class="field icon-field"><label>Toplam Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" value="${debt?debt.toLocaleString('tr-TR'):''}" placeholder="0"></div>
     </div>
-    <div class="field"><label>Son Ödeme Günü</label>${dayWheel('billDayChoice')}</div>
-    <p style="font-size:12px;color:var(--ink-soft);margin:0 0 12px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
-    <button class="save-btn" data-action="save-bill">Kaydet</button>
-    <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+    <div class="field-row">
+      <div class="field icon-field"><label>Ödenecek Borç (TL)</label><span class="fi">₺</span><input id="f_planned" type="text" inputmode="numeric" class="tl-input" value="${planned?planned.toLocaleString('tr-TR'):''}" placeholder="0"></div>
+      <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_kmhRate" type="text" inputmode="decimal" class="tl-input" value="${k.customMonthlyRate!=null ? (k.customMonthlyRate*100).toLocaleString('tr-TR') : ''}" placeholder="~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})}"></div>
+    </div>
+    <p style="font-size:10.5px;color:var(--ink-soft);margin:-4px 0 8px;">Ödenecek borç, bu dönem ayırdığınız tutardır — toplamın tamamı olmak zorunda değil. Faiz oranı boş bırakılırsa bankanın yaklaşık oranı kullanılır.</p>
+    <div class="section-title">Son Ödeme Tarihi</div>
+    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('kmhDayChoice', k.dueDay)}</div>
+    <p class="kmh-interest-note">Günlük faiz (BSMV + KKDF dahil) yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
+    ${planned>0?`<button class="save-btn" style="background:var(--paid);margin-bottom:4px;" data-action="mark-kmh-paid" data-id="${id}">Ödenecek Borcu Ödendi Olarak İşaretle</button>
+    <p style="font-size:10px;color:var(--ink-soft);margin:0 0 8px;">Ödediğin tutar önce birikmiş faize, kalanı anaparaya uygulanır — borç, ödediğin tutarın tamamı kadar azalmayabilir.</p>`:''}
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
+      <button class="save-btn" data-action="save-kmh-settings" data-id="${id}">Kaydet</button>
+    </div>
+    <button class="danger-btn" data-action="delete-kmh" data-id="${id}" style="margin-top:8px;">KMH Hesabını Sil</button>
   `; },
   billRecord(id){
     const b = state.bills.find(x=>x.id===id);
@@ -2204,7 +2377,9 @@ document.body.addEventListener('click', function(e){
     const limit=tlVal('f_limit');
     if(!limit){ alert('KMH limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
-    state.kmhAccounts.push({ id:uid(), bankCode, limit, dueDay:day, debt:0, plannedPayment:0, paymentStatus:'bekliyor', paymentStatusYm:null, transactions:[] });
+    const totalDebt = tlVal('f_totalDebt');
+    const transactions = totalDebt>0 ? [{ date: todayStr(), amount: totalDebt }] : [];
+    state.kmhAccounts.push({ id:uid(), bankCode, limit, dueDay:day, debt:totalDebt, plannedPayment:0, paymentStatus:'bekliyor', paymentStatusYm:null, transactions });
     save(); closeModal(); navigate('kmh'); return;
   }
   if(action==='save-kmh-settings'){
@@ -2212,6 +2387,8 @@ document.body.addEventListener('click', function(e){
     // Toplam Borç KMH'nin güncel toplam bakiyesi, Ödenecek Borç ise kullanıcının bu dönem
     // ödemek üzere ayırdığı (Toplam Borç'un tamamı olmak zorunda olmayan) tutardır. Burada
     // ikisi de doğrudan kullanıcının girdiği değere ayarlanır — biri diğerinden hesaplanmaz.
+    // Toplam Borç değiştiyse (artış=kullanım, azalış=ödeme), Tah. Toplam Faiz'in gerçek geçmişe
+    // göre hesaplanabilmesi için aradaki fark bir işlem (transaction) olarak da kaydedilir.
     const id=t.dataset.id, limit=tlVal('f_limit'), totalDebtInput=tlVal('f_totalDebt'), plannedInput=tlVal('f_planned');
     if(!limit){ alert('KMH limiti girmeden kaydedilemez.'); return; }
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
@@ -2220,6 +2397,11 @@ document.body.addEventListener('click', function(e){
     const rateNum = rateRaw ? parseFloat(rateRaw) : NaN;
     const k = state.kmhAccounts.find(x=>x.id===id);
     if(k){
+      const delta = totalDebtInput - (k.debt||0);
+      if(delta!==0){
+        if(!k.transactions) k.transactions=[];
+        k.transactions.push({ date: todayStr(), amount: delta });
+      }
       k.limit = limit; k.dueDay = day;
       k.debt = totalDebtInput;
       k.plannedPayment = Math.min(plannedInput, totalDebtInput);
@@ -2228,14 +2410,23 @@ document.body.addEventListener('click', function(e){
     save(); closeModal(); render(); return;
   }
   if(action==='mark-kmh-paid'){
-    // Kullanıcı, o an ayrılmış Ödenecek Borç tutarını ödendi olarak işaretler: bu tutar hem
-    // Toplam Borç'tan hem (dolayısıyla) Aylık Borç'tan aynı anda düşer, Ödenecek Borç sıfırlanır,
-    // Toplam Limit hiç değişmez.
+    // Kullanıcı, o an ayrılmış Ödenecek Borç tutarını ödendi olarak işaretler. Gerçek KMH
+    // hesaplarında yapılan ödeme ÖNCE birikmiş faize, kalan kısmı ANAPARAYA uygulanır — yani
+    // ödediğin tutarın tamamı kadar borç azalmaz. Bunu doğru yansıtmak için: önce o ana kadar
+    // birikmiş tahmini faiz anaparaya eklenir (kapitalize edilir, faiz sayacı sıfırlanır), sonra
+    // ödenen tutarın tamamı bu yeni bakiyeden düşülür. Toplam Limit hiç değişmez.
     const id=t.dataset.id;
     const k = state.kmhAccounts.find(x=>x.id===id);
     if(k){
       const planned = k.plannedPayment||0;
-      k.debt = Math.max(0, (k.debt||0) - planned);
+      if(planned>0){
+        if(!k.transactions) k.transactions=[];
+        const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
+        const accrued = calculateKmhInterest(k.transactions, todayStr(), bankRate).total;
+        if(accrued>0) k.transactions.push({ date: todayStr(), amount: accrued }); // birikmiş faiz anaparaya eklendi
+        k.transactions.push({ date: todayStr(), amount: -planned }); // ödeme
+        k.debt = Math.max(0, (k.debt||0) + accrued - planned);
+      }
       k.plannedPayment = 0;
     }
     save(); closeModal(); render(); return;
@@ -2251,14 +2442,19 @@ document.body.addEventListener('click', function(e){
   }
 
   if(action==='save-bill'){
-    const catRow = document.getElementById('billCatChoice');
-    const category = catRow ? catRow.dataset.value || catRow.querySelector('.active').dataset.val : 'Diğer';
+    const kind = t.dataset.kind || ui.billAddKind || 'bill';
+    const kurumRow = document.getElementById('billKurumChoice');
+    const category = kurumRow ? (kurumRow.dataset.value || kurumRow.querySelector('.active').dataset.val) : 'Diğer';
     const nameInput=val('f_name'), amount=tlVal('f_amount'), day=parseInt(wheelValue('billDayChoice'))||15;
     const name = nameInput || category;
     const isFixed = document.getElementById('f_isFixed') ? document.getElementById('f_isFixed').classList.contains('on') : false;
     const autoPay = document.getElementById('f_autoPay') ? document.getElementById('f_autoPay').classList.contains('on') : false;
-    state.bills.push({ id:uid(), name, category, estimatedAmount:amount, dueDay:day, isFixed, autoPay });
-    save(); closeModal(); navigate('bills'); return;
+    state.bills.push({ id:uid(), kind, name, category, estimatedAmount:amount, dueDay:day, isFixed, autoPay });
+    save(); navigate('bills'); return;
+  }
+  if(action==='set-bill-kind'){
+    ui.billAddKind = t.dataset.kind;
+    render(); return;
   }
   if(action==='ai-send'){
     if(aiBusy) return; // yanıt beklenirken aynı isteğin tekrar tekrar gönderilmesini engelle
@@ -2280,6 +2476,16 @@ document.body.addEventListener('click', function(e){
   if(action==='toggle-bill-autopay'){
     const bill = state.bills.find(b=>b.id===t.dataset.id);
     if(bill){ bill.autoPay = !bill.autoPay; save(); render(); }
+    return;
+  }
+  if(action==='toggle-bill-fixed'){
+    const bill = state.bills.find(b=>b.id===t.dataset.id);
+    if(bill){ bill.isFixed = !bill.isFixed; save(); render(); }
+    return;
+  }
+  if(action==='set-bill-filter'){
+    ui.billFilter = t.dataset.filter;
+    render();
     return;
   }
   if(action==='save-bill-record'){
@@ -2870,25 +3076,36 @@ function executeAiAction(cmd){
     }
     case 'setKmhDebt': {
       // Toplam Borç (k.debt), Ödenecek Borç'tan (k.plannedPayment) BAĞIMSIZ bir alandır.
+      // Fark, Tah. Toplam Faiz'in gerçek geçmişe göre hesaplanabilmesi için işlem olarak da kaydedilir.
       const k = findKmhByBank(p.bankName);
       if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
       const amount = Number(p.amount)||0;
+      const delta = amount - (k.debt||0);
+      if(delta!==0){ if(!k.transactions) k.transactions=[]; k.transactions.push({ date: todayStr(), amount: delta }); }
       k.debt = amount;
       if((k.plannedPayment||0) > amount) k.plannedPayment = amount;
       save(); render();
       return `${bankByCode(k.bankCode).name} KMH toplam borcu ${formatTL(amount)} olarak güncellendi.`;
     }
     case 'markKmhPaid': {
-      // Kullanıcının o an ayırdığı Ödenecek Borç tutarı ödenir: bu tutar hem Toplam Borç'tan
-      // hem Aylık Borç'tan aynı anda düşer, Ödenecek Borç sıfırlanır, Toplam Limit değişmez.
+      // Ödeme ÖNCE birikmiş faize, kalanı anaparaya uygulanır: önce tahmini faiz anaparaya
+      // kapitalize edilir (faiz sayacı sıfırlanır), sonra ödenen tutarın tamamı düşülür.
       const k = findKmhByBank(p.bankName);
       if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
       const due = k.plannedPayment||0;
       const paid = Math.min(Number(p.amount)||due, due, k.debt||0);
-      k.debt = Math.max(0, (k.debt||0) - paid);
+      let accrued = 0;
+      if(paid>0){
+        if(!k.transactions) k.transactions=[];
+        const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
+        accrued = calculateKmhInterest(k.transactions, todayStr(), bankRate).total;
+        if(accrued>0) k.transactions.push({ date: todayStr(), amount: accrued });
+        k.transactions.push({ date: todayStr(), amount: -paid });
+      }
+      k.debt = Math.max(0, (k.debt||0) + accrued - paid);
       k.plannedPayment = Math.max(0, due - paid);
       save(); render();
-      return `${bankByCode(k.bankCode).name} KMH ödemesi (${formatTL(paid)}) yapıldı; Toplam Borç ve Ödenecek Borç aynı anda düştü, kalan limit arttı.`;
+      return `${bankByCode(k.bankCode).name} KMH ödemesi (${formatTL(paid)}) yapıldı; birikmiş faiz önce anaparaya eklendi, kalan tutar borçtan düştü.`;
     }
     case 'addBill': {
       const amount = Number(p.amount)||0;
