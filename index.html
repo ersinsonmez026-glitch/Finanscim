@@ -9,7 +9,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Finansçım</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F7FAF9;--surface:#FFFFFF;--ink:#132326;--ink-soft:#5A7378;--border:#DCE8E6;
@@ -45,38 +45,124 @@ body{background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-
 button{font-family:var(--font-body);}
 .app{display:flex;height:100vh;max-width:520px;margin:0 auto;position:relative;}
 
-.topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:5;}
-.topbar-left{display:flex;align-items:center;gap:10px;z-index:1;min-width:0;}
-.topbar-logo{width:34px;height:34px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--accent),#164f46);
-  color:#fff;font-family:var(--font-display);font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;}
-.topbar-titleblock{min-width:0;}
-.topbar-title{font-family:var(--font-display);font-weight:500;font-size:17px;margin:0;line-height:1.2;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.topbar-date{font-size:11px;color:var(--ink-soft);margin:1px 0 0;line-height:1.2;}
-.topbar-right{display:flex;align-items:center;gap:4px;margin-left:auto;z-index:1;flex-shrink:0;}
-.topbar .header-action{background:none;border:none;color:var(--accent);font-size:22px;cursor:pointer;padding:4px 6px;position:relative;}
-.notif-badge{position:absolute;top:2px;right:2px;background:var(--debt);color:#fff;font-size:10px;font-weight:700;
-  min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;}
-#notifBell.bell-active{animation:bellShake 2.6s ease-in-out infinite;}
+/* ---- Finansçım mockup kodundan birebir alınan bileşenler (header, özet grid, panel/liste, piyasa, alt bar) ---- */
+.header{height:88px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:5px;padding:10px 10px;position:sticky;top:0;z-index:5;background:var(--bg);}
+.brand{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;}
+.brand>div:last-child{min-width:0;overflow:hidden;}
+.wallet{width:32px;height:26px;border-radius:8px;background:#07526a;position:relative;flex-shrink:0;}
+.wallet:after{content:"";position:absolute;right:-2px;top:8px;width:14px;height:10px;border-radius:3px;background:#09b79f;}
+.wallet .leaf{position:absolute;width:13px;height:8px;left:7px;top:-6px;border-radius:10px 2px 10px 2px;background:#19bda6;transform:rotate(-25deg);}
+.brand-name{font:700 16px "Brush Script MT","Segoe Script",cursive;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.brand-sub{font-size:6.5px;color:#60759b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title{text-align:center;min-width:0;overflow:hidden;}
+.title h1{font-size:16px;margin:0 0 3px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title p{font-size:9.5px;color:#61759b;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bell{font-size:20px;text-align:right;position:relative;background:none;border:none;cursor:pointer;padding:2px;justify-self:end;}
+.badge{position:absolute;right:-4px;top:-6px;background:#ef2846;color:#fff;border-radius:50%;font-size:10px;width:18px;height:18px;display:grid;place-items:center;}
+.bell.bell-active{animation:bellShake 2.6s ease-in-out infinite;}
 @keyframes bellShake{
   0%,92%,100%{transform:rotate(0);}
   93%{transform:rotate(-14deg);} 94%{transform:rotate(12deg);} 95%{transform:rotate(-10deg);}
   96%{transform:rotate(8deg);} 97%{transform:rotate(-4deg);} 98%{transform:rotate(0);}
 }
 
-.main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;}
-.content{flex:1;overflow-y:auto;padding:16px 16px 92px;}
+/* ---- Krediler sayfası (Finanscim_Krediler_Claude_Paket'ten birebir) ---- */
+.content.loans-fit{display:flex;flex-direction:column;overflow:hidden;}
+.kr-summary{border:1px solid #cce8f2;border-radius:20px;background:#ecfbff;display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;padding:11px 15px;gap:10px;margin-bottom:10px;flex-shrink:0;}
+.kr-summary>div+div{border-left:1px solid #aac9d8;padding-left:18px;}
+.kr-summary b{display:block;font-size:11.5px;font-weight:500;color:#071b6b;}
+.kr-summary strong{display:block;font-size:19px;margin-top:2px;color:#071b6b;font-family:var(--font-display);}
+.kr-summary small{font-size:10px;color:#526b96;}
+.kr-list-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-shrink:0;}
+.kr-list-head h2{font-size:16.5px;margin:0;color:var(--ink);}
+.kr-list-head button{border:0;background:none;color:#49618f;font-size:11.5px;cursor:pointer;padding:4px 0;}
+.kr-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.kr-card{background:var(--surface);border:1px solid #e2edf5;border-radius:16px;padding:11px;margin-bottom:9px;
+  box-shadow:0 4px 14px #173b5810;cursor:pointer;}
+.kr-main{display:grid;grid-template-columns:52px 1fr auto;gap:9px;align-items:center;}
+.kr-bank-logo{height:46px;border-radius:12px;background:#f0f6fd;display:grid;place-items:center;font-weight:900;
+  font-size:14px;color:#fff;}
+.kr-main h2{margin:0;font-size:14.5px;color:var(--ink);}
+.kr-main p{margin:2px 0;color:var(--ink-soft);font-size:11.5px;}
+.kr-main small{color:var(--ink-soft);font-size:9.5px;}
+.kr-status{padding:6px 9px;border-radius:11px;font-weight:800;font-size:9.5px;white-space:nowrap;}
+.kr-status.waiting{background:#fff0dc;color:#ed851d;}
+.kr-status.late{background:#ffe2e6;color:#ed2438;}
+.kr-status.paid{background:var(--paid-soft);color:var(--paid);}
+.kr-meta{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #e5edf4;margin-top:9px;padding-top:8px;}
+.kr-meta div{padding:0 7px;border-right:1px solid #e5edf4;font-size:9.5px;color:var(--ink-soft);}
+.kr-meta div:last-child{border:0;}
+.kr-meta strong{display:block;color:var(--ink);font-size:12.5px;margin-top:2px;font-weight:600;}
+.kr-meta .kr-late strong{color:var(--debt);}
+.kr-add{width:100%;min-height:58px;border:1.5px dashed #68a7ef;border-radius:15px;background:#edf7ff;color:#12398e;
+  display:flex;align-items:center;gap:11px;text-align:left;padding:9px 13px;margin-bottom:2px;cursor:pointer;}
+.kr-add span{font-size:22px;color:#1576e8;flex-shrink:0;}
+.kr-add strong{display:block;font-size:12px;}
+.kr-add small{display:block;font-size:9.5px;margin-top:2px;color:#526b96;}
+.kr-info{display:flex;gap:7px;background:#e9f5ff;border:1px solid #cfe4f8;border-radius:13px;padding:8px 11px;
+  font-size:9.5px;line-height:1.4;color:#45628e;margin-top:8px;flex-shrink:0;}
 
-.bottombar-wrap{position:fixed;left:0;right:0;bottom:0;display:flex;flex-direction:column;z-index:6;
-  max-width:520px;margin:0 auto;}
-.bottombar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 16px;
-  background:var(--surface);border-top:1px solid var(--border);}
-.bottombar-btn{display:flex;align-items:center;gap:7px;background:none;border:none;color:var(--ink);
-  font-size:13.5px;font-weight:600;font-family:var(--font-body);cursor:pointer;padding:8px 14px;border-radius:14px;}
-.bottombar-btn .bb-icon{font-size:18px;line-height:1;}
-.bottombar-btn.active{background:var(--accent-soft);color:var(--accent);}
-.day-quote{text-align:center;font-size:11px;color:var(--ink-soft);padding:5px 16px 8px;font-style:italic;
-  background:var(--surface);border-top:1px solid var(--border);line-height:1.35;}
+.stack{display:grid;gap:6px;margin-bottom:6px;}
+.mainCard{height:50px;border-radius:16px;display:flex;align-items:center;padding:6px 12px;position:relative;
+  border:1px solid rgba(20,70,140,.13);width:100%;text-align:left;font-family:var(--font-body);cursor:default;}
+button.mainCard{cursor:pointer;}
+.mainCard.c1{background:linear-gradient(90deg,#11a99e,#169a95);}
+.mainCard.c2{background:linear-gradient(90deg,#287fdb,#1774d3);}
+.mainCard.c3{background:linear-gradient(90deg,#2caf75,#20a66b);}
+.mainCard.c4{background:linear-gradient(90deg,#d8780c,#d56f05);}
+.mainCard .circle{width:34px;height:34px;flex:none;border-radius:50%;background:rgba(255,255,255,.20);
+  display:grid;place-items:center;color:#fff;font-size:16px;}
+.mainCard .cardText{margin-left:10px;color:#fff;line-height:1.05;min-width:0;}
+.mainCard .cardText strong{font-size:12.5px;display:block;}
+.mainCard .cardText span{font-size:8.5px;display:block;margin-top:2px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mainCard .amount{margin-left:auto;color:#fff;font-size:15px;font-weight:800;white-space:nowrap;margin-right:16px;}
+.mainCard .go{position:absolute;right:10px;color:#fff;font-size:22px;font-weight:300;}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin-bottom:6px;box-shadow:0 5px 15px #28508210;}
+.panel .head{display:flex;justify-content:space-between;align-items:center;padding:9px 12px 4px;}
+.panel .head h2{margin:0;font-size:14.5px;color:var(--ink);}
+.panel .head span{font-size:9.5px;color:#61769c;display:flex;align-items:center;gap:3px;}
+.panel .head .refresh-btn{background:none;border:none;color:#61769c;font-size:11px;cursor:pointer;}
+.panel .row{height:35px;border-top:1px solid #e2ebf5;display:flex;align-items:center;gap:8px;padding:0 11px;cursor:pointer;}
+.panel .ico{width:26px;height:26px;border-radius:8px;background:#edf5ff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.panel .rname{flex:1;font-size:12px;color:var(--ink);min-width:0;}
+.panel .rvalue{font-size:12px;font-weight:700;color:var(--ink);}
+.panel .chev{font-size:17px;color:#7b8ca7;}
+
+.market{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:0 10px 9px;}
+.market .mcard{border-radius:12px;text-align:center;padding:6px 2px;border:1px solid #dbe7f2;overflow:hidden;}
+.mcard.gold{background:#fff7e6;} .mcard.usd{background:#e9f9f2;} .mcard.eur{background:#eaf5ff;} .mcard.bist{background:#ffedf1;}
+.mcard .mi{font-size:14px;height:18px;}
+.mcard h3{font-size:8px;margin:1px;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mcard b{display:block;font-size:10.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.mcard small{font-size:7.5px;color:#50658c;}
+.mcard .mup{color:#159568;font-size:8.5px;font-weight:800;margin-top:2px;}
+.mcard .mdown{color:#e52545;font-size:8.5px;font-weight:800;margin-top:2px;}
+
+.main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;overflow:hidden;}
+.content{flex:1;overflow-y:auto;padding:10px 14px 182px;}
+.content.home-fit{overflow:hidden;padding-top:8px;}
+
+.bottombar-wrap{position:fixed;left:0;right:0;bottom:0;z-index:6;max-width:520px;margin:0 auto;
+  background:var(--bg);padding:8px 14px 10px;}
+.bottom{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.bottom.home-active .home{display:none;}
+.bottom.home-active .assistant{grid-column:1 / -1;}
+.assistant,.home{height:96px;border-radius:21px;padding:11px;border:1px solid #d8e4f5;background:none;
+  text-align:left;font-family:var(--font-body);cursor:pointer;}
+.assistant{background:#e8f0ff;display:flex;flex-direction:column;justify-content:space-between;}
+.robot{font-size:26px;}
+.at{font-size:12px;font-weight:800;margin-left:6px;color:var(--ink);}
+.chat{height:30px;border-radius:16px;background:var(--surface);border:1px solid #b9cdf6;padding:6px 9px;color:#6880a7;font-size:9.5px;
+  display:flex;align-items:center;}
+.send{margin-left:auto;color:#1675ed;font-size:15px;}
+.home{background:#e5f8f1;display:flex;align-items:center;gap:8px;}
+.homeico{width:38px;height:38px;border-radius:50%;background:#0aa89d;color:#fff;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.home strong{font-size:12.5px;color:var(--ink);}
+.home p{font-size:9px;color:#48608d;margin:2px 0 0;}
+.home .chev{margin-left:auto;font-size:18px;color:#7b8ca7;}
+.quote{text-align:center;padding:8px 4px 0;font:16px/1.15 "Brush Script MT","Segoe Script",cursive;color:var(--paid);min-height:24px;}
 .storage-warning{background:var(--debt);color:#fff;padding:10px 14px;font-size:12px;text-align:center;line-height:1.4;}
 
 .drawer-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;z-index:9;}
@@ -203,7 +289,7 @@ button{font-family:var(--font-body);}
 
 .empty{text-align:center;padding:34px 10px;color:var(--ink-soft);font-size:13.5px;}
 
-.fab{position:fixed;left:18px;bottom:96px;width:54px;height:54px;border-radius:50%;background:var(--accent);
+.fab{position:fixed;left:18px;bottom:122px;width:54px;height:54px;border-radius:50%;background:var(--accent);
   color:#fff;border:none;font-size:26px;box-shadow:0 6px 18px rgba(0,0,0,.2);cursor:pointer;z-index:6;
   display:flex;align-items:center;justify-content:center;}
 .ai-chat-wrap{display:flex;flex-direction:column;height:calc(100vh - 120px);}
@@ -361,30 +447,39 @@ button{font-family:var(--font-body);}
 
 <div class="app">
   <div class="main">
-    <header class="topbar">
-      <div class="topbar-left">
-        <div class="topbar-logo">F</div>
-        <div class="topbar-titleblock">
-          <h1 id="pageTitle" class="topbar-title">Ana Sayfa</h1>
-          <p id="topbarDate" class="topbar-date"></p>
+    <header class="header">
+      <div class="brand">
+        <div class="wallet"><i class="leaf"></i></div>
+        <div>
+          <div class="brand-name">Finansçım</div>
+          <div class="brand-sub">Mali özgürlüğe bir adım daha</div>
         </div>
       </div>
-      <div class="topbar-right">
-        <button class="header-action" id="downloadBtn" title="Dosyayı İndir">⬇️</button>
-        <button class="header-action" id="notifBell" title="Bildirimler">🔔<span id="notifBadge" class="notif-badge" style="display:none;"></span></button>
-        <button class="header-action" id="headerAction" style="display:none">+</button>
+      <div class="title">
+        <h1 id="pageTitle">Ana Sayfa</h1>
+        <p id="topbarDate"></p>
       </div>
+      <button class="bell" id="notifBell" title="Bildirimler">🔔<span id="notifBadge" class="badge" style="display:none;"></span></button>
+      <button id="downloadBtn" title="Dosyayı İndir" style="display:none;">⬇️</button>
+      <button id="headerAction" style="display:none">+</button>
     </header>
     <div id="storageWarning" class="storage-warning" style="display:none;">
       ⚠️ Bu tarayıcıda veriler kaydedilemiyor (gizli/özel sekme olabilir). Girdiklerin kalıcı olmayabilir — normal Safari/Chrome sekmesinde aç.
     </div>
     <div id="content" class="content"></div>
     <div class="bottombar-wrap">
-      <p class="day-quote" id="dayQuote"></p>
-      <nav class="bottombar">
-        <button class="bottombar-btn" id="navAiBtn"><span class="bb-icon">🤖</span>Finans Asistanı</button>
-        <button class="bottombar-btn" id="navHomeBtn"><span class="bb-icon">🏠</span>Ana Sayfa</button>
-      </nav>
+      <div class="bottom">
+        <button class="assistant" id="navAiBtn">
+          <div><span class="robot">🤖</span><span class="at">Finansçım Asistanı</span></div>
+          <div class="chat">Size nasıl yardımcı olabilirim?<span class="send">➤</span></div>
+        </button>
+        <button class="home" id="navHomeBtn">
+          <div class="homeico">⌂</div>
+          <div><strong>Ana Sayfa</strong><p>Finansal durumunuza genel bakış.</p></div>
+          <div class="chev">›</div>
+        </button>
+      </div>
+      <p class="quote" id="dayQuote"></p>
     </div>
   </div>
 </div>
@@ -423,6 +518,16 @@ async function fetchLiveRates(){
     if(xauTry){
       GOLD_RATE = xauTry / 31.1034768; // ons -> gram
     }
+    // Bir önceki başarılı çekimle karşılaştırıp yaklaşık bir değişim yüzdesi hesaplanır
+    // (gerçek "günlük açılış/kapanış" verisi değil, son kontrolden bu yana değişimdir).
+    const prev = state.marketPrev || null;
+    state.marketChange = prev ? {
+      usd: prev.usd ? ((FX.USD-prev.usd)/prev.usd*100) : null,
+      eur: prev.eur ? ((FX.EUR-prev.eur)/prev.eur*100) : null,
+      gold: prev.gold ? ((GOLD_RATE-prev.gold)/prev.gold*100) : null,
+    } : null;
+    state.marketPrev = { usd:FX.USD, eur:FX.EUR, gold:GOLD_RATE, at:Date.now() };
+    save();
     liveRatesUpdatedAt = new Date();
     render();
   }catch(err){
@@ -527,23 +632,42 @@ const BILL_ICONS = {
 };
 const SUBSCRIPTIONS = ['Netflix','YouTube Premium','TV+','Gain','Exxen','BluTV','Disney+','Amazon Prime Video','Spotify','Diğer'];
 const BANKS = [
-  {code:'ziraat', name:'Ziraat Bankası', short:'Ziraat', color:'#ED1C24', initials:'ZB'},
-  {code:'garanti', name:'Garanti BBVA', short:'Garanti', color:'#00A19C', initials:'GB'},
-  {code:'isbank', name:'İş Bankası', short:'İş Bank.', color:'#0033A0', initials:'İB'},
-  {code:'akbank', name:'Akbank', short:'Akbank', color:'#E30613', initials:'AK'},
-  {code:'yapikredi', name:'Yapı Kredi', short:'Yapı K.', color:'#003DA5', initials:'YK'},
-  {code:'vakifbank', name:'VakıfBank', short:'Vakıf', color:'#FFB300', initials:'VB'},
-  {code:'halkbank', name:'Halkbank', short:'Halk', color:'#004B93', initials:'HB'},
-  {code:'qnb', name:'QNB Finansbank', short:'QNB', color:'#7A1FA2', initials:'QNB'},
-  {code:'teb', name:'TEB', short:'TEB', color:'#6E1E78', initials:'TEB'},
-  {code:'deniz', name:'DenizBank', short:'Deniz', color:'#005BAA', initials:'DB'},
-  {code:'ing', name:'ING', short:'ING', color:'#FF6200', initials:'ING'},
-  {code:'hsbc', name:'HSBC', short:'HSBC', color:'#DB0011', initials:'HSBC'},
-  {code:'enpara', name:'Enpara', short:'Enpara', color:'#E6007E', initials:'EN'},
-  {code:'diger', name:'Diğer', short:'Diğer', color:'#5B6470', initials:'?'},
+  {code:'ziraat', name:'Ziraat Bankası', short:'Ziraat', color:'#ED1C24', initials:'ZB', domain:'ziraatbank.com.tr'},
+  {code:'garanti', name:'Garanti BBVA', short:'Garanti', color:'#00A19C', initials:'GB', domain:'garantibbva.com.tr'},
+  {code:'isbank', name:'İş Bankası', short:'İş Bank.', color:'#0033A0', initials:'İB', domain:'isbank.com.tr'},
+  {code:'akbank', name:'Akbank', short:'Akbank', color:'#E30613', initials:'AK', domain:'akbank.com'},
+  {code:'yapikredi', name:'Yapı Kredi', short:'Yapı K.', color:'#003DA5', initials:'YK', domain:'yapikredi.com.tr'},
+  {code:'vakifbank', name:'VakıfBank', short:'Vakıf', color:'#FFB300', initials:'VB', domain:'vakifbank.com.tr'},
+  {code:'halkbank', name:'Halkbank', short:'Halk', color:'#004B93', initials:'HB', domain:'halkbank.com.tr'},
+  {code:'qnb', name:'QNB Finansbank', short:'QNB', color:'#7A1FA2', initials:'QNB', domain:'qnb.com.tr'},
+  {code:'teb', name:'TEB', short:'TEB', color:'#6E1E78', initials:'TEB', domain:'teb.com.tr'},
+  {code:'deniz', name:'DenizBank', short:'Deniz', color:'#005BAA', initials:'DB', domain:'denizbank.com'},
+  {code:'ing', name:'ING', short:'ING', color:'#FF6200', initials:'ING', domain:'ing.com.tr'},
+  {code:'hsbc', name:'HSBC', short:'HSBC', color:'#DB0011', initials:'HSBC', domain:'hsbc.com.tr'},
+  {code:'enpara', name:'Enpara', short:'Enpara', color:'#E6007E', initials:'EN', domain:'enpara.com'},
+  {code:'diger', name:'Diğer', short:'Diğer', color:'#5B6470', initials:'?', domain:null},
 ];
 const LOAN_TYPES = ['İhtiyaç Kredisi','Konut Kredisi','Taşıt Kredisi'];
 function bankByCode(code){ return BANKS.find(b=>b.code===code) || BANKS[BANKS.length-1]; }
+// Banka logosu: mümkünse gerçek logo (Clearbit'in halka açık marka-logo servisinden, bankanın
+// kurumsal alan adına göre), yüklenemezse (offline, servis erişilemez vb.) otomatik olarak
+// bankanın rengi + kısaltması ile kutuya geri döner. Hiçbir zaman bozuk görsel göstermez.
+function bankLogoFallback(imgEl, code){
+  const b = bankByCode(code);
+  const box = imgEl.parentElement;
+  if(!box) return;
+  box.style.background = b.color;
+  box.innerHTML = '<span style="color:#fff;font-weight:900;">'+b.initials+'</span>';
+}
+window.bankLogoFallback = bankLogoFallback; // inline onerror="" global scope'ta çalıştığı için gerekli
+function bankLogoHtml(bank, boxClass){
+  if(!bank.domain) return `<div class="${boxClass}" style="background:${bank.color};color:#fff;">${bank.initials}</div>`;
+  return `<div class="${boxClass}" style="background:#fff;">
+    <img src="https://logo.clearbit.com/${bank.domain}?size=160" alt="${esc(bank.name)}"
+      style="width:76%;height:76%;object-fit:contain;"
+      onerror="bankLogoFallback(this,'${bank.code}')">
+  </div>`;
+}
 function billCatGrid(id, selected){
   return `<div class="cat-grid" id="${id}" data-value="${selected||BILL_CATS[0]}">${BILL_CATS.map((c,i)=>`
     <div class="cat-chip${(selected?selected===c:i===0)?' active':''}" data-val="${c}" data-action="pick-cat">
@@ -682,7 +806,7 @@ function initWheelPickers(root){
 }
 
 let state = load();
-let ui = { page:'home', loanDetailId:null };
+let ui = { page:'home', loanDetailId:null, loanSort:'date' };
 
 function load(){
   const defaults = { loans:[], loanStatus:{}, cards:[], cardStatements:[], kmhAccounts:[], bills:[], billOverrides:{}, debts:[], manualPayments:[], monthlyIncome:0, dismissedNotifs:[], visitCount:0, selectedMonth: monthKey(new Date()) };
@@ -1018,17 +1142,26 @@ function render(){
   const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, cards:renderCards, kmh:renderKmh,
     bills:renderBills, debts:renderDebts, monthly:renderMonthly, ai:renderAI };
   const fn = map[ui.page] || renderHome;
-  const titles = { home:'Ana Sayfa', loans:'Krediler', loanDetail:'Kredi Detayı', cards:'Kredi Kartları', kmh:'KMH Durumu',
-    bills:'Faturalar', debts:'Elden Borçlar', monthly:'Aylık', ai:'Akıllı Finans Asistanı' };
+  const titles = { home:'Ana Sayfa', loans:'Kredilerim', loanDetail:'Kredi Detayı', cards:'Kredi Kartlarım', kmh:'KMH Durumum',
+    bills:'Faturalarım', debts:'Elden Borçlarım', monthly:'Aylık', ai:'Akıllı Finans Asistanı' };
   $title.textContent = titles[ui.page] || 'Finansçım';
   const $topbarDate = document.getElementById('topbarDate');
-  if($topbarDate) $topbarDate.textContent = new Date().toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric', weekday:'long' });
+  if($topbarDate){
+    const _now = new Date();
+    const _datePart = _now.toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
+    const _dayPart = _now.toLocaleDateString('tr-TR', { weekday:'long' });
+    $topbarDate.textContent = _datePart + ' • ' + _dayPart;
+  }
   const $dayQuote = document.getElementById('dayQuote');
   if($dayQuote) $dayQuote.textContent = '“' + getDayQuote() + '”';
   const $navAiBtn = document.getElementById('navAiBtn');
   const $navHomeBtn = document.getElementById('navHomeBtn');
   if($navAiBtn) $navAiBtn.classList.toggle('active', ui.page==='ai');
   if($navHomeBtn) $navHomeBtn.classList.toggle('active', ui.page==='home');
+  const $bottomBar = document.querySelector('.bottom');
+  if($bottomBar) $bottomBar.classList.toggle('home-active', ui.page==='home');
+  $content.classList.toggle('home-fit', ui.page==='home');
+  $content.classList.toggle('loans-fit', ui.page==='loans');
   $content.innerHTML = fn();
   if(ui.page==='ai'){
     const el = document.getElementById('aiMessages');
@@ -1041,14 +1174,13 @@ function render(){
 
 // ---------- HOME ----------
 const FIN_ICONS = {
-  wallet: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
-  up: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`,
-  pie: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`,
-  coins: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v5c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 11v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>`,
+  wallet: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>`,
+  up: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`,
+  pie: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`,
+  coins: `<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v5c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 11v5c0 1.7 3.1 3 7 3s7-1.3 7-3v-5"/></svg>`,
 };
 function renderHome(){
   const t = totalDebt();
-  const todayStr = new Date().toLocaleDateString('tr-TR', { day:'numeric', month:'long', year:'numeric' });
   const income = state.monthlyIncome||0;
   const aylikBorc = monthlyDue(state.selectedMonth);
   const aylikKalan = income - aylikBorc;
@@ -1060,56 +1192,77 @@ function renderHome(){
     { key:'debts', name:'Elden Borçlar', amt:t.debts, cat:'elden', page:'debts' },
   ];
   return `
-    <p class="top-date">${todayStr}</p>
-    <div class="fin-card">
-      <div class="fin-row" style="background:var(--accent);">
-        <div class="fr-icon">${FIN_ICONS.wallet}</div>
-        <div class="fr-text">
-          <div class="fr-label">Aylık Gelir</div>
-          <div class="fr-sub">Gelirinizi düzenlemek için dokunun</div>
-        </div>
-        <div class="fr-value-wrap">
-          <span class="fr-edit-icon" data-action="edit-income">✏️</span>
-          <span class="fr-value editable" data-action="edit-income">${formatTL(income)}</span>
-        </div>
+    <div class="stack">
+      <button class="mainCard c1" data-action="edit-income">
+        <div class="circle">▰</div>
+        <div class="cardText"><strong>Aylık Gelir</strong><span>Gelirinizi düzenlemek için dokunun.</span></div>
+        <div class="amount">${formatTL(income)}</div>
+        <div class="go">›</div>
+      </button>
+      <button class="mainCard c2" data-action="nav" data-page="monthly">
+        <div class="circle">↑</div>
+        <div class="cardText"><strong>Aylık Borç</strong><span>Bu ay ödenecek toplam tutar</span></div>
+        <div class="amount">${formatTL(aylikBorc)}</div>
+        <div class="go">›</div>
+      </button>
+      <div class="mainCard c3">
+        <div class="circle">◔</div>
+        <div class="cardText"><strong>Aylık Kalan</strong><span>Gelirinizden sonra kalan tutar</span></div>
+        <div class="amount">${formatTL(aylikKalan)}</div>
+        <div class="go">›</div>
       </div>
-      <div class="fin-row" style="background:var(--purple);cursor:pointer;" data-action="nav" data-page="monthly">
-        <div class="fr-icon">${FIN_ICONS.up}</div>
-        <div class="fr-text">
-          <div class="fr-label">Aylık Borç</div>
-          <div class="fr-sub">Bu ay ödenecek toplam tutar — detaylar için dokun</div>
-        </div>
-        <div class="fr-value-wrap"><span class="fr-value">${formatTL(aylikBorc)}</span></div>
-      </div>
-      <div class="fin-row" style="background:var(--paid);">
-        <div class="fr-icon">${FIN_ICONS.pie}</div>
-        <div class="fr-text">
-          <div class="fr-label">Aylık Kalan</div>
-          <div class="fr-sub">Gelirinizden sonra kalan tutar</div>
-        </div>
-        <div class="fr-value-wrap"><span class="fr-value">${formatTL(aylikKalan)}</span></div>
-      </div>
-      <div class="fin-row" style="background:var(--pending);">
-        <div class="fr-icon">${FIN_ICONS.coins}</div>
-        <div class="fr-text">
-          <div class="fr-label">Kalan Toplam Borç</div>
-          <div class="fr-sub">Tüm borçlarınızın toplamı</div>
-        </div>
-        <div class="fr-value-wrap"><span class="fr-value">${formatTL(t.total)}</span></div>
+      <div class="mainCard c4">
+        <div class="circle">◎</div>
+        <div class="cardText"><strong>Kalan Toplam Borç</strong><span>Tüm borçlarınızın toplamı</span></div>
+        <div class="amount">${formatTL(t.total)}</div>
+        <div class="go">›</div>
       </div>
     </div>
-    <div class="section-title">Borç Dağılımı</div>
-    <div class="card-wrap">
+    <div class="panel">
+      <div class="head"><h2>Borç Dağılımı</h2><span>Toplam: <b>${formatTL(t.total)}</b></span></div>
       ${dist.map(d=>`
-        <div class="dist-row" data-action="nav" data-page="${d.page}">
-          <div class="dist-icon" style="background:${CAT_ICONS[d.cat].bg};color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
-          <div class="dist-name">${d.name}</div>
-          <div class="dist-amt">${formatTL(d.amt)}</div>
-          <div class="dist-arrow">›</div>
+        <div class="row" data-action="nav" data-page="${d.page}">
+          <div class="ico" style="background:${CAT_ICONS[d.cat].bg};color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
+          <div class="rname">${d.name}</div>
+          <div class="rvalue">${formatTL(d.amt)}</div>
+          <div class="chev">›</div>
         </div>`).join('')}
     </div>
-    <button class="big-add-btn" data-action="open-modal" data-modal="monthPicker">Aylık Sayfayı Aç</button>
-    <p class="fin-note">Borç, kalan ve toplam borç tutarları kayıtlarınıza göre otomatik hesaplanır.</p>
+    ${renderMarketSection()}
+  `;
+}
+function marketChangeHtml(pct){
+  if(pct==null || isNaN(pct)) return '<div class="mup" style="color:var(--ink-soft);">—</div>';
+  const up = pct>=0;
+  return `<div class="${up?'mup':'mdown'}">${up?'↑':'↓'} %${Math.abs(pct).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>`;
+}
+function renderMarketSection(){
+  const chg = state.marketChange || {};
+  const updLabel = liveRatesUpdatedAt
+    ? liveRatesUpdatedAt.toLocaleDateString('tr-TR',{day:'numeric',month:'long'}) + ' · ' + liveRatesUpdatedAt.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})
+    : 'yaklaşık (canlı veri alınamadı)';
+  return `
+    <div class="panel">
+      <div class="head"><h2>Piyasa</h2><span>Son güncelleme: ${updLabel}<button class="refresh-btn" data-action="refresh-market" title="Yenile">↻</button></span></div>
+      <div class="market">
+        <div class="mcard gold">
+          <div class="mi">🪙</div><h3>Altın</h3><b>${Math.round(GOLD_RATE).toLocaleString('tr-TR')} TL</b><small>gram</small>
+          ${marketChangeHtml(chg.gold)}
+        </div>
+        <div class="mcard usd">
+          <div class="mi">💵</div><h3>Dolar</h3><b>${FX.USD.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} TL</b><small>1 USD</small>
+          ${marketChangeHtml(chg.usd)}
+        </div>
+        <div class="mcard eur">
+          <div class="mi">€</div><h3>Euro</h3><b>${FX.EUR.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} TL</b><small>1 EUR</small>
+          ${marketChangeHtml(chg.eur)}
+        </div>
+        <div class="mcard bist">
+          <div class="mi">📈</div><h3>BIST 100</h3><b>${state.bist100!=null ? Number(state.bist100).toLocaleString('tr-TR') : '—'}</b><small>XU100</small>
+          ${marketChangeHtml(chg.bist)}
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -1120,57 +1273,69 @@ function formatDMY(ym, day){
 }
 function renderLoans(){
   $fab.style.display='none';
-  if(state.loans.length===0) return `
-    <button class="dashed-add-card" data-action="open-modal" data-modal="addLoan">
-      <span class="dashed-add-icon">+</span>
-      <div><div class="dashed-add-title">Yeni kredi eklemek için dokun</div><div class="dashed-add-sub">Yeni bir kredi kaydı ekleyin.</div></div>
+  const addBtn = `<button class="kr-add" data-action="open-modal" data-modal="addLoan">
+      <span>＋</span>
+      <div><strong>Yeni Kredi Eklemek İçin Dokunun</strong><small>Farklı bankalardaki kredilerinizi buradan ekleyebilirsiniz.</small></div>
     </button>`;
+  if(state.loans.length===0) return addBtn;
   const loansTotalRemaining = state.loans.reduce((s,l)=> s + loanRemaining(l), 0);
-  const loansSummary = `
-    <div class="hero-card" style="margin-bottom:14px;">
-      <p class="hero-label">Toplam Kalan Kredi Borcu</p>
-      <p class="hero-number" style="cursor:default;">${formatTL(loansTotalRemaining)}</p>
-      <p style="font-size:12px;opacity:.85;margin:2px 0 0;">${state.loans.length} kredi kaydı</p>
+  const loansMonthlyDue = state.loans.reduce((s,l)=>{
+    const inst = loanInstallmentForMonth(l, state.selectedMonth);
+    return s + (inst && inst.status!=='odendi' ? inst.amount : 0);
+  }, 0);
+  const summary = `
+    <div class="kr-summary">
+      <div><b>Toplam Kredi Borcu</b><strong>${formatTL(loansTotalRemaining)}</strong><small>${state.loans.length} kredi</small></div>
+      <div><b>Bu Ay Ödenecek</b><strong>${formatTL(loansMonthlyDue)}</strong></div>
     </div>`;
-  return loansSummary + state.loans.map(l=>{
+  const loansSorted = state.loans.slice().sort((a,b)=>{
+    if(ui.loanSort==='amount') return loanRemaining(b) - loanRemaining(a);
+    const na = loanInstallments(a).find(i=>i.status!=='odendi');
+    const nb = loanInstallments(b).find(i=>i.status!=='odendi');
+    const da = na ? na.ym+String(a.dueDay).padStart(2,'0') : '9999';
+    const db = nb ? nb.ym+String(b.dueDay).padStart(2,'0') : '9999';
+    return da.localeCompare(db);
+  });
+  const listHead = `
+    <div class="kr-list-head">
+      <h2>Kredi Listesi</h2>
+      <button data-action="toggle-loan-sort">☷ ${ui.loanSort==='amount' ? 'Tutara Göre' : 'Ödeme Tarihine Göre'} ⌄</button>
+    </div>`;
+  const cards = loansSorted.map(l=>{
       const insts = loanInstallments(l);
-      const paidCount = insts.filter(i=>i.status==='odendi').length;
-      const remaining = l.count - paidCount;
       const nextUnpaid = insts.find(i=>i.status!=='odendi');
       const dueStr = nextUnpaid ? formatDMY(nextUnpaid.ym, l.dueDay) : '-';
       const bank = bankByCode(l.bankCode);
       // Durum kutusu her zaman SEÇİLİ AYIN (Aylık sayfadaki ile aynı, tek kaynaktan) taksitini
       // yansıtır — "sıradaki ödenmemiş taksit"i değil. Böylece Eylül ödendiğinde, henüz Ekim
       // gelmediyse kart hâlâ ÖDENDİ gösterir; yeni ay geldiğinde kendi taksitine göre güncellenir.
-      // Seçili ay için hiç taksit yoksa (kredi henüz başlamamış ya da tamamen bitmişse) kutu
-      // tamamen BOŞ kalır, yeşil arka plan gösterilir.
       const thisMonthInst = loanInstallmentForMonth(l, state.selectedMonth);
-      let statusKey, pillLabel;
-      if(!thisMonthInst){ statusKey = 'odendi'; pillLabel = '&nbsp;'; }
-      else if(thisMonthInst.status==='odendi'){ statusKey = 'odendi'; pillLabel = 'ÖDENDİ'; }
-      else { statusKey = thisMonthInst.status; pillLabel = statusKey==='gecikti' ? 'GECİKTİ' : 'BEKLİYOR'; }
-      return `<div class="record-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}">
-        <div class="record-top">
-          <span class="record-avatar" style="background:${bank.color}">${bank.initials}</span>
-          <div style="flex:1;min-width:0;">
-            <div class="record-title">${bank.name}</div>
-            <div class="record-sub">${esc(l.loanType||l.name)}</div>
-          </div>
-          <span class="record-status-pill ${statusKey}">${pillLabel}</span>
-          <span class="record-chevron">›</span>
+      let statusKey, statusCls, pillLabel;
+      if(!thisMonthInst){ statusKey='odendi'; statusCls='paid'; pillLabel = '&nbsp;'; }
+      else if(thisMonthInst.status==='odendi'){ statusKey='odendi'; statusCls='paid'; pillLabel = 'ÖDENDİ'; }
+      else { statusKey = thisMonthInst.status; statusCls = statusKey==='gecikti'?'late':'waiting'; pillLabel = statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'; }
+      return `<article class="kr-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}">
+        <div class="kr-main">
+          ${bankLogoHtml(bank, 'kr-bank-logo')}
+          <div><h2>${bank.name}</h2><p>${esc(l.loanType||l.name)}</p><small>Kredi No: ${esc(l.loanNo||'—')}</small></div>
+          <span class="kr-status ${statusCls}">${pillLabel}</span>
         </div>
-        <div class="record-stats">
-          <div class="record-stat"><div class="l">Kalan Borç</div><div class="v">${formatTL(loanRemaining(l))}</div></div>
-          <div class="record-stat"><div class="l">Aylık Taksit</div><div class="v">${formatTL(l.amount)}</div></div>
-          <div class="record-stat"><div class="l">Kalan Taksit</div><div class="v">${remaining}/${l.count}</div></div>
-          <div class="record-stat"><div class="l">Son Ödeme Tarihi</div><div class="v" style="font-size:12px;">${dueStr}</div></div>
+        <div class="kr-meta">
+          <div>Kalan Borç<strong>${formatTL(loanRemaining(l))}</strong></div>
+          <div>Aylık Ödeme<strong>${formatTL(l.amount)}</strong></div>
+          <div class="${statusKey==='gecikti'?'kr-late':''}">Son Ödeme<strong>${dueStr}</strong></div>
         </div>
-      </div>`;
-    }).join('') + `
-    <button class="dashed-add-card" data-action="open-modal" data-modal="addLoan">
-      <span class="dashed-add-icon">+</span>
-      <div><div class="dashed-add-title">Yeni kredi eklemek için dokun</div><div class="dashed-add-sub">Yeni bir kredi kaydı ekleyin.</div></div>
-    </button>`;
+      </article>`;
+    }).join('');
+  return `
+    ${summary}
+    ${listHead}
+    <div class="kr-scroll">
+      ${cards}
+      ${addBtn}
+    </div>
+    <div class="kr-info">ⓘ <span>Kayda dokunarak detayları görüntüleyin.<br>Uzun basarak <b>Düzenle</b> veya <b>Sil</b> seçeneklerini açın.</span></div>
+  `;
 }
 
 function renderLoanDetail(){
@@ -1441,6 +1606,7 @@ const modalTemplates = {
       <div class="choice-row" id="loanTypeChoice">${LOAN_TYPES.map((tp,i)=>`<button data-val="${tp}" data-action="pick-choice" class="${i===0?'active':''}">${tp}</button>`).join('')}</div>
     </div>
     <div class="field"><label>Kredi Adı (opsiyonel)</label><input id="f_name" placeholder="Örn: Konut Kredisi"></div>
+    <div class="field"><label>Kredi No (opsiyonel)</label><input id="f_loanNo" placeholder="Örn: 12345678"></div>
     <div class="field-row">
       <div class="field"><label>Aylık Taksit (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
       <div class="field"><label>Toplam Taksit Sayısı</label><input id="f_count" type="number" placeholder="Örn: 60"></div>
@@ -1460,6 +1626,7 @@ const modalTemplates = {
       <div class="choice-row" id="loanTypeChoice">${LOAN_TYPES.map((tp)=>`<button data-val="${tp}" data-action="pick-choice" class="${tp===l.loanType?'active':''}">${tp}</button>`).join('')}</div>
     </div>
     <div class="field"><label>Kredi Adı (opsiyonel)</label><input id="f_name" value="${esc(l.name)}" placeholder="Örn: Konut Kredisi"></div>
+    <div class="field"><label>Kredi No (opsiyonel)</label><input id="f_loanNo" value="${esc(l.loanNo||'')}" placeholder="Örn: 12345678"></div>
     <div class="field-row aligned-row">
       <div class="field"><label>Aylık Taksit (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" value="${l.amount.toLocaleString('tr-TR')}" placeholder="0"></div>
       <div class="field"><label>Toplam Taksit Sayısı</label><input id="f_count" type="number" value="${l.count}" placeholder="Örn: 60"></div>
@@ -1770,6 +1937,11 @@ document.body.addEventListener('click', function(e){
   }
 
   if(action==='nav'){ navigate(t.dataset.page, t.dataset.id?{loanDetailId:t.dataset.id}:null); return; }
+  if(action==='refresh-market'){ fetchLiveRates(); return; }
+  if(action==='toggle-loan-sort'){
+    ui.loanSort = (ui.loanSort==='amount') ? 'date' : 'amount';
+    render(); return;
+  }
   if(action==='close-modal'){ closeModal(); return; }
   if(action==='open-modal'){ openModal(t.dataset.modal, t.dataset.id); return; }
   if(action==='toggle-switch'){ t.classList.toggle('on'); return; }
@@ -1821,11 +1993,12 @@ document.body.addEventListener('click', function(e){
       start=wheelValue('loanDateWheel_m')||state.selectedMonth, day=parseInt(wheelValue('loanDateWheel_d'))||15;
     if(!amount||!count){ alert('Aylık taksit ve taksit sayısı zorunlu.'); return; }
     const name = nameInput || loanType;
+    const loanNo = val('f_loanNo').trim();
     const infoRateEl = document.getElementById('f_infoRate');
     const infoRateRaw = infoRateEl ? infoRateEl.value.trim().replace(',','.') : '';
     const infoRateNum = infoRateRaw ? parseFloat(infoRateRaw) : NaN;
     // infoInterestRate SADECE bilgi amaçlıdır — hiçbir hesaplamada (taksit, kalan borç vb.) kullanılmaz.
-    state.loans.push({ id:uid(), bankCode, loanType, name, total:amount*count, amount, count, startMonth:start, dueDay:day,
+    state.loans.push({ id:uid(), bankCode, loanType, name, loanNo: loanNo||null, total:amount*count, amount, count, startMonth:start, dueDay:day,
       infoInterestRate: (!isNaN(infoRateNum) && infoRateNum>0) ? infoRateNum : null });
     save(); closeModal(); navigate('loans'); return;
   }
@@ -1841,6 +2014,7 @@ document.body.addEventListener('click', function(e){
     const remainingInput = document.getElementById('f_remaining');
     if(!amount||!count){ alert('Aylık taksit ve taksit sayısı zorunlu.'); return; }
     loan.bankCode=bankCode; loan.loanType=loanType; loan.name=nameInput||loanType;
+    loan.loanNo = val('f_loanNo').trim() || null;
     loan.amount=amount; loan.count=count; loan.total=amount*count; loan.startMonth=start; loan.dueDay=day;
     const infoRateEl = document.getElementById('f_infoRate');
     const infoRateRaw = infoRateEl ? infoRateEl.value.trim().replace(',','.') : '';
