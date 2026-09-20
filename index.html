@@ -3128,11 +3128,21 @@ async function callOpenRouter(messages, userText=''){
   if(!resp.ok){
     let detail = '';
     try{ detail = await resp.text(); }catch(_e){}
+    // 429 (çok istek) hatasında OpenRouter'ın "x-ratelimit-*" başlıklarını da okuyoruz — bu
+    // sayede "birkaç saniye içinde tekrar deneyebilirsin" durumu ile "günlük ücretsiz kota
+    // tamamen tükendi, saatlerce/ertesi güne kadar bekle" durumunu AYIRT edebiliyoruz. İkisi de
+    // aynı 429 koduyla döner ama kullanıcıya gösterilecek doğru mesaj çok farklı olmalı.
+    let rateLimitResetMs = null;
+    try{
+      const resetHeader = resp.headers.get('x-ratelimit-reset') || resp.headers.get('X-RateLimit-Reset');
+      if(resetHeader) rateLimitResetMs = Number(resetHeader);
+    }catch(_e2){}
     console.log('[OpenRouter] İstek başarısız — HTTP durum kodu:', resp.status, resp.statusText);
     console.log('[OpenRouter] Ham hata yanıtı:', detail || '(gövde boş)');
     const e = new Error('http_'+resp.status);
     e.status = resp.status;
     e.detail = detail;
+    e.rateLimitResetMs = rateLimitResetMs;
     throw e;
   }
   let data;
@@ -3169,8 +3179,25 @@ async function callAi(messages, userText=''){
     }
     if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
     if(err.status===429){
-      const e = new Error('Çok hızlı mesaj gönderdiniz, lütfen 10 saniye bekleyin.');
+      // "429" tek başına yeterli bilgi vermiyor: OpenRouter hem "çok hızlı istek attın, birkaç
+      // saniye bekle" hem de "ücretsiz modelin GÜNLÜK kotası tamamen tükendi" durumlarının
+      // İKİSİNİ de aynı 429 koduyla döndürür. İkisi aynı "10 saniye bekleyin" mesajıyla
+      // gösterilirse, günlük kota tükenmiş bir kullanıcı sonsuza kadar "10 saniye bekle" görür
+      // ama her denemesinde yine 429 alır — kullanıcıya "yapay zeka bozuk" gibi görünür.
+      // Bu yüzden x-ratelimit-reset başlığı ve hata mesajı metni incelenerek ayrıştırılıyor.
+      const detailLower = String(err.detail||'').toLocaleLowerCase('tr-TR');
+      let waitMs = 10000;
+      let longWait = /\bday\b|daily|per day|gün(l[üu]k)?/.test(detailLower);
+      if(err.rateLimitResetMs){
+        const resetMs = err.rateLimitResetMs < 1e12 ? err.rateLimitResetMs*1000 : err.rateLimitResetMs; // sn veya ms olabilir
+        const diff = resetMs - Date.now();
+        if(diff>0){ waitMs = diff; if(diff>60000) longWait = true; }
+      }
+      const e = new Error(longWait
+        ? 'Bu ücretsiz yapay zeka modelinin günlük kullanım kotası doldu. Birkaç saat sonra ya da yarın tekrar deneyebilir, veya openrouter.ai hesabınıza en az 10$ kredi yükleyerek günlük limiti yükseltebilirsiniz.'
+        : 'Çok hızlı mesaj gönderdiniz, lütfen birkaç saniye bekleyin.');
       e.kind = 'rate_limit';
+      e.cooldownMs = longWait ? Math.min(Math.max(waitMs,60000), 6*3600*1000) : Math.max(10000, Math.min(waitMs,60000));
       throw e;
     }
     if(err.status>=500 && err.status<600) throw new Error('OpenRouter şu anda yanıt veremiyor (sunucu hatası). Lütfen birazdan tekrar dener misin?');
@@ -3213,8 +3240,9 @@ async function sendAiMessage(text){
     aiMessages.pop();
     aiMessages.push({ role:'assistant', text: '⚠️ ' + (err.message || 'Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.') });
     if(err.kind==='rate_limit'){
-      aiCooldownUntil = Date.now() + 10000;
-      setTimeout(()=>{ render(); }, 10000);
+      const ms = err.cooldownMs || 10000;
+      aiCooldownUntil = Date.now() + ms;
+      setTimeout(()=>{ render(); }, Math.min(ms, 2147483647));
     }
   } finally {
     aiBusy = false;
