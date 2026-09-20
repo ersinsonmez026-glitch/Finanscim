@@ -2224,10 +2224,10 @@ const modalTemplates = {
     return `
     <h3>🤖 Yapay Zeka Ayarları</h3>
     <p style="font-size:12.5px;color:var(--ink-soft);margin:-6px 0 12px;line-height:1.5;">
-      Google AI Studio'dan (aistudio.google.com) ücretsiz bir Gemini API anahtarı oluştur, aşağıya yapıştır.
-      Anahtar sadece bu cihazda saklanır, kimseyle veya bir sunucuya gönderilmez, sadece Google'ın API'sine doğrudan bu cihazdan istek atmak için kullanılır.
+      OpenRouter'dan (openrouter.ai/keys) ücretsiz/uygun fiyatlı bir API anahtarı oluştur, aşağıya yapıştır.
+      Anahtar sadece bu cihazda saklanır, kimseyle veya bir sunucuya gönderilmez, sadece OpenRouter'ın API'sine doğrudan bu cihazdan istek atmak için kullanılır.
     </p>
-    <div class="field"><label>Gemini API Anahtarı</label><input id="f_orkey" value="${esc(key)}" placeholder="AIzaSy..." style="font-size:12px;"></div>
+    <div class="field"><label>OpenRouter API Anahtarı</label><input id="f_orkey" value="${esc(key)}" placeholder="sk-or-..." style="font-size:12px;"></div>
     <button class="save-btn" data-action="save-ai-key">Kaydet</button>
     <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
   `; },
@@ -2622,8 +2622,6 @@ document.body.addEventListener('click', function(e){
     if(box){ const v = box.value.trim(); if(v){ box.value=''; sendAiMessage(v); } }
     return;
   }
-  if(action==='ai-confirm'){ confirmPendingAction(parseInt(t.dataset.idx)); return; }
-  if(action==='ai-cancel'){ cancelPendingAction(parseInt(t.dataset.idx)); return; }
   if(action==='save-ai-key'){
     const key = val('f_orkey');
     if(key) localStorage.setItem('gemini_api_key', key);
@@ -2883,18 +2881,18 @@ if(vcEl) vcEl.textContent = '🔢 Bu, ' + state.visitCount + '. açılışın (k
 if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
-// ---------- YAPAY ZEKA (Google Gemini — Function/Tool Calling) — Finans Asistanım ----------
-const AI_MODEL = 'gemini-3.6-flash';
-// Endpoint TAM OLARAK şu formatta kurulur:
-// https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=API_ANAHTARI
-function geminiUrlFor(model){ return 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent'; }
-const GEMINI_API_URL = geminiUrlFor(AI_MODEL);
-let aiMessages = []; // {role:'user'|'assistant', text, pendingAction?} — sadece bu oturumda tutulur.
-let pendingAiAction = null;
+// ---------- YAPAY ZEKA (OpenRouter — google/gemini-3.8-flash) — Finans Asistanım ----------
+// SADECE OKUMA: Yapay zeka uygulamadaki hiçbir veriyi değiştiremez, hiçbir state-mutasyon
+// fonksiyonunu çağıramaz. Her mesajda uygulamanın GERÇEK güncel finansal özeti system prompt
+// içine gömülerek gönderilir; model bunun dışında bir veri "uydurmaz". Tool/function calling
+// KULLANILMAZ (önceki sürümdeki hatanın kök nedeni buydu — bkz. callOpenRouter üstündeki not).
+const AI_MODEL = 'google/gemini-3.8-flash';
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+let aiMessages = []; // {role:'user'|'assistant', text} — sadece bu oturumda tutulur.
 
 function getORKey(){ return localStorage.getItem('gemini_api_key') || ''; }
 
-// ---- Kontrollü fonksiyonlar (Yapay Zeka SADECE bunlar üzerinden veri okuyabilir) ----
+// ---- Salt-okunur veri fonksiyonları (AI'nın erişebildiği TEK veri kaynağı) ----
 function get_total_debt(){
   const t = totalDebt();
   return { toplam_borc: t.total, krediler: t.loans, kredi_kartlari: t.cards, kmh: t.kmh, elden_borclar: t.debts };
@@ -2935,128 +2933,120 @@ function get_upcoming_payments(){
   return monthlyRows(state.selectedMonth).filter(r=>r.status!=='odendi').sort((a,b)=>a.day-b.day).slice(0,5)
     .map(r=>({ ad:r.name, tutar:r.amount, gun:r.day }));
 }
-function calculate_kmh_interest(amount, days, monthlyRate){ return calculateKmhScenario(amount, days, monthlyRate); }
-function calculate_monthly_summary(month){
-  const ym = month||state.selectedMonth;
-  const income = state.monthlyIncome||0, due = monthlyDue(ym);
-  return { ay: ym, aylik_gelir: income, aylik_borc: due, aylik_kalan: income-due };
-}
-function search_debt_records(query){
-  const q = (query||'').toLocaleLowerCase('tr');
-  return state.debts.filter(d=>d.person.toLocaleLowerCase('tr').includes(q))
-    .map(d=>({ kisi:d.person, tutar_tl:debtTL(d), odendi:!!d.paid }));
-}
 
-// ---- Okuma araçları (function declarations) — model gerektiğinde bunları çağırır, biz de
-// SADECE bu fonksiyonlar üzerinden veri açığa çıkarırız. Her mesajda tüm veritabanı GÖNDERİLMEZ;
-// model hangi veriye ihtiyacı olduğuna kendi karar verip ilgili aracı çağırır. ----
-const AI_READ_TOOLS = [
-  { name:'get_total_debt', description:'Kullanıcının kalan toplam borcunu (krediler+kartlar+KMH+elden borçlar toplamı, ve alt kırılımları) döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_monthly_income', description:'Kullanıcının aylık gelirini döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_monthly_debt', description:'Belirtilen ayda (YYYY-MM formatında, boş bırakılırsa uygulamada şu an seçili ay) ödenmesi gereken TOPLAM aylık borcu döner.', parameters:{ type:'OBJECT', properties:{ month:{ type:'STRING', description:'YYYY-MM formatında ay, opsiyonel' } } } },
-  { name:'get_monthly_remaining', description:'Belirtilen ay için aylık gelirden aylık borç düşüldükten sonra kalan tutarı döner.', parameters:{ type:'OBJECT', properties:{ month:{ type:'STRING' } } } },
-  { name:'get_credit_data', description:'Tüm kredilerin listesini (banka, aylık taksit, kalan taksit sayısı, kalan borç) döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_credit_card_data', description:'Tüm kredi kartlarının listesini (banka, limit, toplam borç, bu ayki ödenecek miktar, kalan limit) döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_kmh_data', description:'Tüm KMH hesaplarının listesini (banka, limit, toplam borç, ödenecek borç, kalan limit, günlük yaklaşık faiz) döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_bill_data', description:'Tüm fatura/aboneliklerin bu ayki tutar ve ödeme durumunu döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_cash_debt_data', description:'Elden borç/alacak kayıtlarının listesini döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'get_upcoming_payments', description:'Henüz ödenmemiş, en yakın son ödeme tarihine sahip 5 ödemeyi döner.', parameters:{ type:'OBJECT', properties:{} } },
-  { name:'calculate_kmh_interest', description:'Henüz gerçek bir kayıt olmayan, varsayımsal bir KMH senaryosu için ("X TL kullansam Y gün sonra ne kadar öderim" gibi) yaklaşık faiz+BSMV+KKDF tutarını hesaplar. Bu hesabı SEN yapma, mutlaka bu aracı çağır.', parameters:{ type:'OBJECT', properties:{ amount:{type:'NUMBER'}, days:{type:'NUMBER'} }, required:['amount','days'] } },
-  { name:'search_debt_records', description:'Kişi ismine göre elden borç kayıtlarında arama yapar.', parameters:{ type:'OBJECT', properties:{ query:{type:'STRING'} }, required:['query'] } },
-];
+// ---- Uygulamanın GERÇEK güncel verisinden, modele her mesajda gönderilecek özet metni ----
+// Önceki sürümde model, ihtiyaç duyduğu veriye "tool calling" ile (fonksiyon çağırarak)
+// erişiyordu; Gemini'nin fonksiyon-çağırma şemasında parametre almayan bir araç için boş bir
+// "properties:{}" göndermek TÜM araç listesini (28 araç) tek seferde geçersiz kılıyordu — bu da
+// basit sorular dahil HER isteğin başarısız olmasına ve "cevabı anlamadım" gibi anlamsız
+// cevaplara yol açıyordu. Bu hata sınıfını KÖKTEN ortadan kaldırmak için tool calling tamamen
+// kaldırıldı: tüm gerçek veri, her mesajda TEK bir istekte system prompt'un içine düz metin
+// olarak gömülüyor. Model artık hiçbir araç çağırmadan, doğrudan bu veriye bakarak cevap verir.
+function buildAiDataSummary(){
+  const ym = state.selectedMonth;
+  const totals = get_total_debt();
+  const income = state.monthlyIncome||0;
+  const monthlyDebt = monthlyDue(ym);
+  const remaining = income - monthlyDebt;
+  const loans = get_credit_data();
+  const cards = get_credit_card_data();
+  const kmh = get_kmh_data();
+  const bills = get_bill_data();
+  const debts = get_cash_debt_data();
+  const upcoming = get_upcoming_payments();
+  const monthRows = get_monthly_payments(ym).map(r=>({ ad:r.name, tutar:r.amount, gun:r.day, durum:r.status }));
 
-// ---- Yazma (veri değiştiren) araçlar — model bunlardan birini "çağırdığında" veri HEMEN
-// değişmez: uygulama önce kullanıcıya "summary" alanındaki Türkçe özeti ONAYLA/VAZGEÇ ile
-// gösterir, gerçek değişiklik SADECE kullanıcı ONAYLA'ya bastığında executeAiAction() içinde olur.
-const AI_ACTION_TOOLS = [
-  { name:'addLoan', description:'Yeni bir kredi kaydı ekler.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, loanType:{type:'STRING'}, amount:{type:'NUMBER',description:'aylık taksit tutarı'}, count:{type:'NUMBER',description:'toplam taksit sayısı'}, summary:{type:'STRING'} }, required:['amount','count','summary'] } },
-  { name:'markLoanPaid', description:'Bir kredinin içinde bulunulan aya ait, henüz ödenmemiş taksitini ÖDENDİ olarak işaretler.', parameters:{ type:'OBJECT', properties:{ loanName:{type:'STRING',description:'kredi adı veya banka adı'}, summary:{type:'STRING'} }, required:['summary'] } },
-  { name:'addCard', description:'Yeni bir kredi kartı ekler.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, limit:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['limit','summary'] } },
-  { name:'setCardDebt', description:'Bir kredi kartının toplam borcunu belirli bir tutara ayarlar (düzeltme amaçlı).', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
-  { name:'setCardPlanned', description:'Bir kredi kartı için bu ay ödenecek planlı miktarı ayarlar.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
-  { name:'markCardPaid', description:'Bir kredi kartının bu ayki ödenecek miktarını ÖDENDİ olarak işaretler ve borçtan düşer.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, summary:{type:'STRING'} }, required:['summary'] } },
-  { name:'addKmh', description:'Yeni bir KMH (kredili mevduat hesabı) ekler.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, limit:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['limit','summary'] } },
-  { name:'setKmhDebt', description:'Bir KMH hesabının toplam (=ödenecek) borcunu belirli bir tutara ayarlar (düzeltme amaçlı).', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
-  { name:'markKmhPaid', description:'Bir KMH hesabına, kullanıcının bu ay ödediği tutar kadar ödeme kaydeder; bu tutar hem toplam borçtan hem ödenecek borçtan aynı anda düşer ve kalan limite eklenir.', parameters:{ type:'OBJECT', properties:{ bankName:{type:'STRING'}, amount:{type:'NUMBER',description:'ödenen tutar'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
-  { name:'addBill', description:'Yeni bir fatura/abonelik kaydı ekler.', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING'}, category:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['summary'] } },
-  { name:'markBillPaid', description:'Bir fatura/aboneliği bu ay için ÖDENDİ olarak işaretler. Örn: "Elektrik faturasını ödedim", "Elektriği ödendi yap".', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING',description:'fatura/abonelik adı veya kategorisi'}, summary:{type:'STRING'} }, required:['name','summary'] } },
-  { name:'setBillAmount', description:'Bir faturanın bu ayki gerçek tutarını günceller.', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['name','amount','summary'] } },
-  { name:'toggleBillAutoPay', description:'Bir faturanın otomatik ödeme talimatını açar/kapatır.', parameters:{ type:'OBJECT', properties:{ name:{type:'STRING'}, on:{type:'BOOLEAN'}, summary:{type:'STRING'} }, required:['name','on','summary'] } },
-  { name:'addDebt', description:'Yeni bir elden borç/alacak kaydı ekler.', parameters:{ type:'OBJECT', properties:{ person:{type:'STRING'}, direction:{type:'STRING',description:'"borcum" (benim borcum) veya "alacak" (bana borcu)'}, amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['person','amount','summary'] } },
-  { name:'markDebtPaid', description:'Bir elden borç kaydını ÖDENDİ olarak işaretler.', parameters:{ type:'OBJECT', properties:{ person:{type:'STRING'}, summary:{type:'STRING'} }, required:['person','summary'] } },
-  { name:'setIncome', description:'Kullanıcının aylık gelirini günceller.', parameters:{ type:'OBJECT', properties:{ amount:{type:'NUMBER'}, summary:{type:'STRING'} }, required:['amount','summary'] } },
-];
-const AI_WRITE_ACTION_NAMES = AI_ACTION_TOOLS.map(t=>t.name);
+  const lines = [];
+  lines.push(`SEÇİLİ AY: ${ym}`);
+  lines.push(`AYLIK GELİR: ${income} TL`);
+  lines.push(`BU AY ÖDENECEK TOPLAM (AYLIK BORÇ): ${monthlyDebt} TL`);
+  lines.push(`BU AY GELİRDEN ARTAN/KALAN: ${remaining} TL`);
+  lines.push(`TOPLAM BORÇ (tüm krediler+kartlar+KMH+elden borçlar): ${totals.toplam_borc} TL`);
+  lines.push(`  - Krediler toplamı: ${totals.krediler} TL`);
+  lines.push(`  - Kredi kartları toplamı: ${totals.kredi_kartlari} TL`);
+  lines.push(`  - KMH toplamı: ${totals.kmh} TL`);
+  lines.push(`  - Elden borçlar toplamı: ${totals.elden_borclar} TL`);
 
-function dispatchAiReadTool(name, args){
-  args = args||{};
-  switch(name){
-    case 'get_total_debt': return get_total_debt();
-    case 'get_monthly_income': return get_monthly_income();
-    case 'get_monthly_debt': return get_monthly_debt(args.month);
-    case 'get_monthly_remaining': return get_monthly_remaining(args.month);
-    case 'get_credit_data': return get_credit_data();
-    case 'get_credit_card_data': return get_credit_card_data();
-    case 'get_kmh_data': return get_kmh_data();
-    case 'get_bill_data': return get_bill_data();
-    case 'get_cash_debt_data': return get_cash_debt_data();
-    case 'get_upcoming_payments': return get_upcoming_payments();
-    case 'calculate_kmh_interest': return calculate_kmh_interest(args.amount, args.days);
-    case 'search_debt_records': return search_debt_records(args.query);
-    default: return { hata: 'Bilinmeyen fonksiyon: '+name };
-  }
+  lines.push(`\nKREDİLER (${loans.length} adet):`);
+  if(!loans.length) lines.push('  (kayıt yok)');
+  loans.forEach(l=>lines.push(`  - ${l.ad||l.banka}: aylık taksit ${l.aylik_taksit} TL, kalan taksit ${l.kalan_taksit}/${l.toplam_taksit}, kalan borç ${l.kalan_borc} TL`));
+
+  lines.push(`\nKREDİ KARTLARI (${cards.length} adet):`);
+  if(!cards.length) lines.push('  (kayıt yok)');
+  cards.forEach(c=>lines.push(`  - ${c.banka}: limit ${c.limit} TL, toplam borç ${c.toplam_borc} TL, bu ay ödenecek ${c.odenecek_miktar} TL, kalan limit ${c.kalan_limit} TL`));
+
+  lines.push(`\nKMH HESAPLARI (${kmh.length} adet):`);
+  if(!kmh.length) lines.push('  (kayıt yok)');
+  kmh.forEach(k=>lines.push(`  - ${k.banka}: limit ${k.limit} TL, toplam borç ${k.toplam_borc} TL, ödenecek borç ${k.odenecek_borc} TL, kalan limit ${k.kalan_limit} TL, günlük yaklaşık faiz ${k.gunluk_yaklasik_faiz} TL`));
+
+  lines.push(`\nFATURA/ABONELİKLER (${bills.length} adet, ${ym}):`);
+  if(!bills.length) lines.push('  (kayıt yok)');
+  bills.forEach(b=>lines.push(`  - ${b.ad} (${b.kategori}): ${b.tutar} TL, durum: ${b.durum}${b.otomatik_odeme?', otomatik ödeme açık':''}`));
+
+  lines.push(`\nELDEN BORÇ/ALACAKLAR (${debts.length} adet):`);
+  if(!debts.length) lines.push('  (kayıt yok)');
+  debts.forEach(d=>lines.push(`  - ${d.kisi}: ${d.yon==='benim_borcum'?'benim borcum':'bana borcu'} ${d.tutar_tl} TL, ödendi mi: ${d.odendi?'evet':'hayır'}`));
+
+  lines.push(`\nBU AYIN (${ym}) TÜM ÖDEME KALEMLERİ VE DURUMLARI:`);
+  if(!monthRows.length) lines.push('  (kayıt yok)');
+  monthRows.forEach(r=>lines.push(`  - ${r.ad}: ${r.tutar} TL, ${r.gun}. gün, durum: ${r.durum}`));
+
+  lines.push(`\nEN YAKIN 5 BEKLEYEN ÖDEME:`);
+  if(!upcoming.length) lines.push('  (bekleyen ödeme yok)');
+  upcoming.forEach(u=>lines.push(`  - ${u.ad}: ${u.tutar} TL, ${u.gun}. gün`));
+
+  return lines.join('\n');
 }
 
 function buildAiSystemPrompt(){
-  return `Sen "Finansçım" uygulamasının akıllı finans asistanısın; adın "Finans Asistanım". Kullanıcıyla YALNIZCA yazılı sohbet üzerinden konuşursun (sesli özellik yok). Kullanıcının doğal, günlük Türkçesini doğru anlamalısın — aynı isteği farklı şekillerde söyleyebilir (örn. "Elektrik faturasını ödedim.", "Elektriği ödendi yap.", "Bu ayki kredimi ödedim.", "Kredi taksidini kapat.", "Bu ay borçlarım ne kadar?", "Toplam borcum kaç?", "Bu ay ne kadar ödeme yapacağım?", "KMH borcum ne kadar?", "Kredi kartımı ödedim.", "Bunu ödendi olarak işaretle."). Basit ve net isteklerde ASLA "Sizi anlayamadım, tekrar sorar mısınız?" deme — niyeti anlamaya çalış, gerekiyorsa kısaca netleştirici bir soru sor.
+  return `Sen "Finansçım" uygulamasının akıllı finans asistanısın; adın "Finans Asistanım". Kullanıcıyla YALNIZCA yazılı sohbet üzerinden konuşursun.
 
-Bugünün tarihi: ${todayStr()}. Uygulamada şu an seçili ay: ${state.selectedMonth}.
+Bugünün tarihi: ${todayStr()}.
 
-KURALLAR:
-1) Kullanıcının verisine SADECE sana tanımlı get_/search_/calculate_ araçlarını çağırarak eriş. Kendi kafandan rakam, bakiye ya da tarih UYDURMA. Bir soruyu cevaplamadan önce ihtiyacın olan veriyi ilgili aracı çağırarak al.
-2) Basit matematiksel toplama/çıkarma işlemlerini SEN yapma — ilgili "get_" aracı zaten hesaplanmış sonucu döner, onu kullan. KMH faiz/maliyet senaryolarında calculate_kmh_interest aracını çağır, kendi kafandan %X hesaplama yapma.
-3) Kullanıcı bir kayıt EKLEMEK/DEĞİŞTİRMEK/ÖDENDİ İŞARETLEMEK istediğinde (veri değiştiren HER istek için, kullanıcı "evet/tamam/yap" dese bile) SADECE ilgili yazma aracını (action) çağır — veriyi KENDİN asla değiştiremezsin, uygulama bu çağrıyı kullanıcıya ONAYLA/VAZGEÇ olarak gösterecek ve veri SADECE kullanıcı ONAYLA'ya basarsa değişecek. Bu araçları çağırırken MUTLAKA kısa ve net bir Türkçe "summary" (özet) parametresi de ver — kullanıcı onay ekranında bunu görecek.
-4) İstek belirsizse (örn. hangi kredi/kart/fatura olduğu anlaşılmıyorsa ve birden fazla kayıt varsa) kısa bir netleştirici soru sor, araç çağırma.
-5) Tahmini/yaklaşık bir şey söylüyorsan "yaklaşık" kelimesini kullan. Uygulamada ilgili veri hiç yoksa "veri yok" de, veri varmış gibi davranma.
-6) Cevapların kısa, net ve samimi bir Türkçeyle olsun — gereksiz uzatma.`;
+ÇOK ÖNEMLİ - SADECE OKUMA: Sen SADECE aşağıda verilen gerçek finansal verileri okuyup yorumlayabilirsin. Hiçbir şekilde kredi/kart/KMH/fatura/abonelik/elden borç EKLEYEMEZ, SİLEMEZ, DÜZENLEYEMEZ, "ödendi" İŞARETLEYEMEZSİN, aylık geliri DEĞİŞTİREMEZSİN. Kullanıcı bir kayıt eklemek/değiştirmek/ödendi işaretlemek isterse bunu SEN YAPAMAZSIN — kullanıcıya bu işlemi uygulamanın ilgili sayfasından (Krediler, Kartlar, KMH, Faturalar, Elden Borç vb.) kendisinin yapması gerektiğini kısaca söyle.
+
+VERİ KURALI: Aşağıdaki "GÜNCEL FİNANSAL VERİLER" bölümü, uygulamadaki GERÇEK ve GÜNCEL verilerdir. Cevaplarını SADECE bu verilere dayandır. Burada olmayan hiçbir rakamı UYDURMA; bir bilgi burada yoksa "bu bilgi uygulamada yok" de.
+
+CEVAP UZUNLUĞU (ÇOK ÖNEMLİ): Cevapların KISA olsun — varsayılan olarak 2-5 kısa cümle. Gereksiz açıklama, uzun rapor veya madde listesi kullanma; kullanıcı açıkça daha fazla detay istemedikçe cevabı uzatma. Aynı bilgiyi tekrar etme. Örnek stil: "Toplam borcunuz 75.488 TL.\nBu ay ödemeniz gereken tutar 14.587 TL."
+
+Kullanıcının doğal, günlük Türkçesini anlamaya çalış (yazım hataları olsa bile). Bir soru belirsizse kısaca netleştirici bir soru sorabilirsin, ama basit ve net sorularda ASLA "anlayamadım" deme — verilen veriye bakarak makul bir cevap üretmeye çalış.
+
+GÜNCEL FİNANSAL VERİLER:
+${buildAiDataSummary()}`;
 }
 
-// DÜZELTME: "thinkingLevel" diye bir alan Gemini'nin generationConfig.thinkingConfig şemasında
-// HİÇBİR ZAMAN var olmadı (resmi REST şemasında sadece "thinkingBudget" ve "includeThoughts" var) —
-// bu yüzden her istekte gönderilen bu geçersiz alan, "Unknown name \"thinkingLevel\": Cannot find
-// field." tipi 400 Bad Request hatasına yol açıyordu. Ayrıca "thinking" özelliği zaten sadece
-// Gemini 2.5 serisi modellerde var; AI_MODEL 2.0/1.5 gibi bu özelliği hiç desteklemeyen bir modele
-// ayarlıysa thinkingConfig alanının kendisi bile (geçerli alanlarla gönderilse dahi) reddedilebilir.
-// Asistanın hangi model seçili olursa olsun (2.0-flash, 1.5-flash, 2.5-flash, …) çalışmaya devam
-// etmesi için bu isteğe bağlı alanı artık HİÇ göndermiyoruz — model, düşünme adımını kendi
-// varsayılanına göre yönetir; bu basit soru-cevap/fonksiyon-çağırma akışı için bir kayıp yaratmaz.
-function buildGenerationConfig(thinkingLevel){
-  return null;
-}
-
-// İstek en az 15 saniye yanıt bekler (zaman aşımı) — bu süre dolmadan "modele ulaşılamadı" gibi
-// erken bir hata gösterilmez; yanıt gerçekten hiç gelmezse AbortController isteği keser ve
-// kullanıcıya net bir "zaman aşımı" mesajı gösterilir.
 const AI_REQUEST_TIMEOUT_MS = 20000;
 
-async function geminiRequest(url, key, body){
+// OpenRouter, OpenAI ile uyumlu "chat completions" formatını kullanır: Authorization: Bearer
+// <anahtar> başlığı ile kimlik doğrulanır, gövdede {model, messages:[{role,content}]} gönderilir,
+// cevap data.choices[0].message.content alanından okunur. Tool/function calling YOK — bu sayede
+// önceki sürümdeki "tek bozuk araç tanımı tüm araçları geçersiz kılıyor" hata sınıfı tamamen
+// ortadan kalkıyor ve "cevabı anlamadım" hatası da bununla birlikte çözülüyor.
+async function callOpenRouter(messages){
+  const key = getORKey();
+  if(!key){ const e = new Error('API anahtarı ayarlanmamış. Lütfen önce ⚙ API Ayarı üzerinden anahtarını gir.'); e.kind='no_key'; throw e; }
+  const body = { model: AI_MODEL, messages };
   let resp;
   const controller = new AbortController();
   const timeoutId = setTimeout(()=>controller.abort(), AI_REQUEST_TIMEOUT_MS);
   try{
-    resp = await fetch(url + '?key=' + encodeURIComponent(key), {
+    resp = await fetch(OPENROUTER_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+      },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
   }catch(networkErr){
+    console.log('[OpenRouter] Ağ hatası:', networkErr);
     if(networkErr && networkErr.name === 'AbortError'){
       const e = new Error('Yapay zekadan yanıt gelmedi (zaman aşımı). Lütfen tekrar dener misin?');
       e.kind = 'timeout';
       throw e;
     }
-    const e = new Error('Yapay zekaya bağlanılamadı. İnternet bağlantını kontrol edip tekrar dener misin?');
+    const e = new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
     e.kind = 'network';
     throw e;
   }finally{
@@ -3065,11 +3055,10 @@ async function geminiRequest(url, key, body){
   if(!resp.ok){
     let detail = '';
     try{ detail = await resp.text(); }catch(_e){}
-    // Hangi HTTP kodunun (400/404/429/vb.) ve hangi gerçek Google hata metninin döndüğü, kullanıcıya
-    // gösterilen sadeleştirilmiş Türkçe mesajdan bağımsız olarak, HER ZAMAN konsola tam olarak yazılır
-    // — böylece tarayıcının geliştirici konsolundan sorunun gerçek kaynağı kesin olarak görülebilir.
-    console.log('[Gemini API] İstek başarısız — URL:', url, '| HTTP durum kodu:', resp.status, resp.statusText);
-    console.log('[Gemini API] Ham hata yanıtı:', detail || '(gövde boş)');
+    // Gerçek HTTP kodu ve OpenRouter'ın ham hata metni SADECE konsola yazılır; kullanıcı
+    // ekranına asla teknik hata kodu/metni gösterilmez.
+    console.log('[OpenRouter] İstek başarısız — HTTP durum kodu:', resp.status, resp.statusText);
+    console.log('[OpenRouter] Ham hata yanıtı:', detail || '(gövde boş)');
     const e = new Error('http_'+resp.status);
     e.status = resp.status;
     e.detail = detail;
@@ -3077,269 +3066,49 @@ async function geminiRequest(url, key, body){
   }
   let data;
   try{ data = await resp.json(); }
-  catch(e2){ const e = new Error('Yapay zekadan beklenmeyen bir cevap geldi, lütfen tekrar dener misin?'); e.kind='parse'; throw e; }
-  const candidate = data.candidates && data.candidates[0];
-  const parts = candidate && candidate.content && candidate.content.parts;
-  if(!parts || !parts.length){
+  catch(e2){ console.log('[OpenRouter] Cevap JSON olarak ayrıştırılamadı:', e2); const e = new Error('Yapay zekadan beklenmeyen bir cevap geldi, lütfen tekrar dener misin?'); e.kind='parse'; throw e; }
+  const content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+  if(!content || !String(content).trim()){
+    console.log('[OpenRouter] Cevap gövdesinde metin bulunamadı:', JSON.stringify(data));
     const e = new Error('Yapay zekadan boş bir cevap geldi, lütfen tekrar dener misin?');
     e.kind = 'empty';
     throw e;
   }
-  return parts;
+  return String(content).trim();
 }
 
-// Gemini'nin fonksiyon çağırma şeması, parametresi OLMAYAN bir fonksiyon için "parameters"
-// alanının hiç GÖNDERİLMEMESİNİ bekler — boş bir "properties:{}" nesnesi göndermek isteği
-// tamamen geçersiz kılıp 400 Bad Request ile reddedilmesine yol açabiliyor (ve tek bir bozuk
-// araç tanımı, tools listesindeki TÜM 28 aracı birden geçersiz kılıyor — bu yüzden basit sorular
-// da dahil HER istek başarısız oluyordu). Gönderim öncesi bu alanı burada temizliyoruz.
-function sanitizeToolDeclarations(tools){
-  return tools.map(t=>{
-    const params = t.parameters;
-    if(params && params.properties && Object.keys(params.properties).length===0){
-      const { parameters, ...rest } = t;
-      return rest;
-    }
-    return t;
-  });
-}
-
-// Kullanıcının açık isteği üzerine: HİÇBİR otomatik tekrar deneme (auto-retry/loop) YOK.
-// "Gönder" butonuna bir kez basıldığında Gemini'ye TAM OLARAK 1 istek gider; hata (400/404/429/
-// ağ hatası, ne olursa olsun) hemen kullanıcıya anlaşılır bir Türkçe mesajla bildirilir ve
-// uygulama kendi kendine yeniden denemez. Kullanıcı isterse "Gönder"e tekrar basarak yeni bir
-// istek başlatabilir — bu da yine tek seferlik bir istektir.
-async function callGemini(contents, thinkingLevel){
-  const key = getORKey();
-  if(!key) throw new Error('API anahtarı ayarlanmamış. Lütfen önce 🤖 simgesinden anahtarını gir.');
-  const body = {
-    systemInstruction: { parts:[{ text: buildAiSystemPrompt() }] },
-    contents,
-    tools: [{ functionDeclarations: sanitizeToolDeclarations(AI_READ_TOOLS.concat(AI_ACTION_TOOLS)) }],
-  };
-  // generationConfig, sadece geçerli/desteklenen bir değer üretildiğinde eklenir — geçersiz veya
-  // boş bir alanın isteğe hiç girmemesi, "Unknown name" tipi 400 hatalarının önüne geçer.
-  const genConfig = buildGenerationConfig(thinkingLevel);
-  if(genConfig) body.generationConfig = genConfig;
+async function callAi(messages){
   try{
-    return await geminiRequest(geminiUrlFor(AI_MODEL), key, body);
+    return await callOpenRouter(messages);
   }catch(err){
-    if(err.kind==='network' || err.kind==='parse' || err.kind==='empty' || err.kind==='timeout') throw err;
-    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. 🤖 simgesinden anahtarını kontrol et.');
-    if(err.status===400) throw new Error('Yapay zeka isteği geçersiz görünüyor. Lütfen tekrar dener misin?');
+    if(err.kind==='no_key') throw err;
+    if(err.kind==='network' || err.kind==='timeout'){
+      const e = new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
+      e.kind = err.kind;
+      throw e;
+    }
+    if(err.status===401 || err.status===403) throw new Error('API anahtarı geçersiz görünüyor. ⚙ API Ayarı üzerinden anahtarını kontrol et.');
+    if(err.status===400) throw new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
     if(err.status===404) throw new Error('Yapay zeka modeline ulaşılamadı. Lütfen daha sonra tekrar dener misin?');
     if(err.status===429){
       const e = new Error('Çok hızlı mesaj gönderdiniz, lütfen 10 saniye bekleyin.');
       e.kind = 'rate_limit';
       throw e;
     }
-    throw new Error('Yapay zeka şu anda cevap veremedi, lütfen tekrar dener misin?');
+    if(err.kind==='parse' || err.kind==='empty') throw err;
+    throw new Error('Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.');
   }
 }
 
-// Basit sezgisel kural: günlük/basit komutlar için düşük, karmaşık analiz/özet istekleri için
-// orta düşünme seviyesi — hız için gereksiz yere yüksek seviye kullanılmaz.
-function pickThinkingLevel(text){
-  const q = (text||'').toLocaleLowerCase('tr');
-  const complexHints = ['analiz','özet','karşılaştır','tahmin','plan','strateji','rapor','öner','değerlendir'];
-  return complexHints.some(h=>q.includes(h)) ? 'medium' : 'low';
-}
-
-function findBank(nameFragment){
-  const q = (nameFragment||'').toLocaleLowerCase('tr');
-  if(!q) return bankByCode('diger');
-  return BANKS.find(b=>b.name.toLocaleLowerCase('tr').includes(q) || b.short.toLocaleLowerCase('tr').includes(q) || q.includes(b.short.toLocaleLowerCase('tr'))) || bankByCode('diger');
-}
-function findLoanByName(name){
-  const q = (name||'').toLocaleLowerCase('tr');
-  return state.loans.find(l=>l.name.toLocaleLowerCase('tr').includes(q) || bankByCode(l.bankCode).name.toLocaleLowerCase('tr').includes(q));
-}
-function findCardByBank(name){
-  const bank = findBank(name);
-  const match = state.cards.find(c=>c.bankCode===bank.code);
-  if(match) return match;
-  if((!name || bank.code==='diger') && state.cards.length===1) return state.cards[0];
-  return null;
-}
-function findKmhByBank(name){
-  const bank = findBank(name);
-  const match = state.kmhAccounts.find(k=>k.bankCode===bank.code);
-  if(match) return match;
-  if((!name || bank.code==='diger') && state.kmhAccounts.length===1) return state.kmhAccounts[0];
-  return null;
-}
-function findBillByName(name){
-  const q = (name||'').toLocaleLowerCase('tr');
-  return state.bills.find(b=>b.name.toLocaleLowerCase('tr').includes(q) || b.category.toLocaleLowerCase('tr').includes(q));
-}
-function findDebtByPerson(name){
-  const q = (name||'').toLocaleLowerCase('tr');
-  return state.debts.find(d=>d.person.toLocaleLowerCase('tr').includes(q));
-}
-
-// Bu fonksiyon SADECE kullanıcı ONAYLA butonuna bastığında çağrılır — hiçbir zaman
-// yapay zeka cevabı geldiği anda otomatik çalıştırılmaz.
-function executeAiAction(cmd){
-  if(!cmd || !cmd.action) return 'Anlayamadım, tekrar dener misin?';
-  const p = cmd.params || cmd;
-  switch(cmd.action){
-    case 'addLoan': {
-      const bank = findBank(p.bankName);
-      const amount = Number(p.amount)||0, count = Number(p.count)||0;
-      if(!amount||!count) return 'Tutar ve taksit sayısını anlayamadım.';
-      state.loans.push({ id:uid(), bankCode:bank.code, loanType:p.loanType||'İhtiyaç Kredisi', name:p.loanType||'Kredi', amount, count, total:amount*count, startMonth:monthKey(new Date()), dueDay:15 });
-      save(); render();
-      return `${bank.name} için aylık ${formatTL(amount)}, ${count} taksitli kredi eklendi.`;
-    }
-    case 'markLoanPaid': {
-      const loan = findLoanByName(p.loanName);
-      if(!loan) return 'Bu isimde bir kredi bulamadım.';
-      const next = loanInstallments(loan).find(i=>i.status!=='odendi');
-      if(!next) return 'Bu kredinin tüm taksitleri zaten ödenmiş.';
-      state.loanStatus[next.key] = 'odendi';
-      save(); render();
-      return `${loan.name} kredisinin bir sonraki taksiti ödendi olarak işaretlendi.`;
-    }
-    case 'addCard': {
-      const bank = findBank(p.bankName);
-      const limit = Number(p.limit)||0;
-      if(!limit) return 'Kart limitini anlayamadım.';
-      state.cards.push({ id:uid(), bankCode:bank.code, limit, dueDay:15, totalDebt:0 });
-      save(); render();
-      return `${bank.name} kredi kartı ${formatTL(limit)} limitle eklendi.`;
-    }
-    case 'setCardDebt': {
-      const card = findCardByBank(p.bankName);
-      if(!card) return 'Bu bankaya ait bir kredi kartı bulamadım.';
-      card.totalDebt = Number(p.amount)||0;
-      save(); render();
-      return `${bankByCode(card.bankCode).name} kartının toplam borcu ${formatTL(card.totalDebt)} olarak güncellendi.`;
-    }
-    case 'setCardPlanned': {
-      const card = findCardByBank(p.bankName);
-      if(!card) return 'Bu bankaya ait bir kredi kartı bulamadım.';
-      const amount = Number(p.amount)||0;
-      const existing = cardStatement(card.id, state.selectedMonth);
-      if(existing) existing.amount = amount;
-      else state.cardStatements.push({ id:uid(), cardId:card.id, ym:state.selectedMonth, amount, status:'bekliyor' });
-      save(); render();
-      return `${bankByCode(card.bankCode).name} kartı için ödenecek miktar ${formatTL(amount)} olarak ayarlandı.`;
-    }
-    case 'markCardPaid': {
-      const card = findCardByBank(p.bankName);
-      if(!card) return 'Bu bankaya ait bir kredi kartı bulamadım.';
-      const existing = cardStatement(card.id, state.selectedMonth);
-      const amt = existing ? existing.amount : 0;
-      card.totalDebt = Math.max(0, (card.totalDebt||0) - amt);
-      if(existing) existing.status = 'odendi';
-      save(); render();
-      return `${bankByCode(card.bankCode).name} kartının bu ayki ödemesi (${formatTL(amt)}) yapıldı, borçtan düşüldü.`;
-    }
-    case 'addKmh': {
-      const bank = findBank(p.bankName);
-      const limit = Number(p.limit)||0;
-      if(!limit) return 'KMH limitini anlayamadım.';
-      state.kmhAccounts.push({ id:uid(), bankCode:bank.code, limit, dueDay:15, debt:0, plannedPayment:0, paymentStatus:'bekliyor', paymentStatusYm:null, transactions:[] });
-      save(); render();
-      return `${bank.name} KMH hesabı ${formatTL(limit)} limitle eklendi.`;
-    }
-    case 'setKmhDebt': {
-      // Toplam Borç (k.debt), Ödenecek Borç'tan (k.plannedPayment) BAĞIMSIZ bir alandır.
-      // Fark, Tah. Toplam Faiz'in gerçek geçmişe göre hesaplanabilmesi için işlem olarak da kaydedilir.
-      const k = findKmhByBank(p.bankName);
-      if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
-      const amount = Number(p.amount)||0;
-      const delta = amount - (k.debt||0);
-      if(delta!==0){ if(!k.transactions) k.transactions=[]; k.transactions.push({ date: todayStr(), amount: delta }); }
-      k.debt = amount;
-      if((k.plannedPayment||0) > amount) k.plannedPayment = amount;
-      save(); render();
-      return `${bankByCode(k.bankCode).name} KMH toplam borcu ${formatTL(amount)} olarak güncellendi.`;
-    }
-    case 'markKmhPaid': {
-      // Ödeme ÖNCE birikmiş faize, kalanı anaparaya uygulanır: önce tahmini faiz anaparaya
-      // kapitalize edilir (faiz sayacı sıfırlanır), sonra ödenen tutarın tamamı düşülür.
-      const k = findKmhByBank(p.bankName);
-      if(!k) return 'Bu bankaya ait bir KMH hesabı bulamadım.';
-      const due = k.plannedPayment||0;
-      const paid = Math.min(Number(p.amount)||due, due, k.debt||0);
-      let accrued = 0;
-      if(paid>0){
-        if(!k.transactions) k.transactions=[];
-        const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
-        accrued = calculateKmhInterest(k.transactions, todayStr(), bankRate).total;
-        if(accrued>0) k.transactions.push({ date: todayStr(), amount: accrued });
-        k.transactions.push({ date: todayStr(), amount: -paid });
-      }
-      k.debt = Math.max(0, (k.debt||0) + accrued - paid);
-      k.plannedPayment = Math.max(0, due - paid);
-      save(); render();
-      return `${bankByCode(k.bankCode).name} KMH ödemesi (${formatTL(paid)}) yapıldı; birikmiş faiz önce anaparaya eklendi, kalan tutar borçtan düştü.`;
-    }
-    case 'addBill': {
-      const amount = Number(p.amount)||0;
-      state.bills.push({ id:uid(), name:p.name||p.category||'Fatura', category:p.category||'Diğer', estimatedAmount:amount, dueDay:15, isFixed:false, autoPay:false });
-      save(); render();
-      return `${p.name||p.category} ${formatTL(amount)} olarak eklendi.`;
-    }
-    case 'markBillPaid': {
-      const bill = findBillByName(p.name);
-      if(!bill) return 'Bu isimde bir fatura/abonelik bulamadım.';
-      const r = billRecord(bill, state.selectedMonth);
-      setBillRecord(bill.id, state.selectedMonth, r.amount, 'odendi');
-      save(); render();
-      return `${bill.name} ödendi olarak işaretlendi.`;
-    }
-    case 'setBillAmount': {
-      const bill = findBillByName(p.name);
-      if(!bill) return 'Bu isimde bir fatura/abonelik bulamadım.';
-      const amount = Number(p.amount)||0;
-      const r = billRecord(bill, state.selectedMonth);
-      setBillRecord(bill.id, state.selectedMonth, amount, r.status);
-      save(); render();
-      return `${bill.name} tutarı ${formatTL(amount)} olarak güncellendi.`;
-    }
-    case 'toggleBillAutoPay': {
-      const bill = findBillByName(p.name);
-      if(!bill) return 'Bu isimde bir fatura/abonelik bulamadım.';
-      bill.autoPay = !!p.on;
-      save(); render();
-      return `${bill.name} için otomatik ödeme talimatı ${bill.autoPay?'açıldı':'kapatıldı'}.`;
-    }
-    case 'addDebt': {
-      const amount = Number(p.amount)||0;
-      state.debts.push({ id:uid(), person:p.person||'İsimsiz', direction:p.direction==='alacak'?'alacak':'borcum', debtType:'TL', unit:'TL', amount, date:new Date().toISOString().slice(0,10), paid:false });
-      save(); render();
-      return `${p.person} için ${formatTL(amount)} kaydı eklendi.`;
-    }
-    case 'markDebtPaid': {
-      const debt = findDebtByPerson(p.person);
-      if(!debt) return 'Bu isimde bir elden borç kaydı bulamadım.';
-      debt.paid = true;
-      save(); render();
-      return `${debt.person} ile olan borç ödendi olarak işaretlendi.`;
-    }
-    case 'setIncome': {
-      state.monthlyIncome = Number(p.amount)||0;
-      save(); render();
-      return `Aylık gelir ${formatTL(state.monthlyIncome)} olarak güncellendi.`;
-    }
-    default: return 'Bu işlemi henüz yapamıyorum.';
-  }
-}
-
-// ---- Sohbet akışı (Gemini Function/Tool Calling) ----
-// geminiHistory: Gemini'nin "contents" formatında tuttuğumuz gerçek konuşma geçmişi — aiMessages
-// (ekranda gösterilen balonlar) ile aynı şey DEĞİLDİR. Her mesajda tüm finans verisi BURAYA
-// gömülmez; model ihtiyaç duyduğu veriyi get_/search_/calculate_ araçlarını çağırarak alır.
-let geminiHistory = [];
+// ---- Sohbet akışı — tek istek/tek cevap, tool calling YOK, veri değiştirme YOK ----
+let aiHistory = []; // OpenRouter "messages" formatında {role:'user'|'assistant', content} geçmişi (sadece bu oturum)
 let aiBusy = false; // bir yanıt beklenirken yeni istek gönderilmesini / donmayı engeller
 let aiCooldownUntil = 0; // 429 (çok fazla istek) sonrası butonun pasif kalacağı an (Date.now() ms)
 
 async function sendAiMessage(text){
   if(!text) return;
-  if(aiBusy) return; // önceki istek hâlâ cevap beklerken aynı isteği ikinci kez gönderme
-  if(Date.now() < aiCooldownUntil) return; // 429 sonrası 10 saniyelik bekleme dolmadan yeni istek atma
+  if(aiBusy) return;
+  if(Date.now() < aiCooldownUntil) return;
   if(!getORKey()){ openModal('aiSettings'); return; }
   aiBusy = true;
   const sendBtn = document.querySelector('[data-action="ai-send"]');
@@ -3347,75 +3116,24 @@ async function sendAiMessage(text){
   aiMessages.push({ role:'user', text });
   aiMessages.push({ role:'assistant', text:'…', thinking:true });
   render();
-  geminiHistory.push({ role:'user', parts:[{ text }] });
-  const thinkingLevel = pickThinkingLevel(text);
   try{
-    let finalText = null;
-    let pendingCmd = null;
-    for(let round=0; round<5 && finalText===null && !pendingCmd; round++){
-      const parts = await callGemini(geminiHistory, thinkingLevel);
-      // Gemini 3 modelleri (gemini-3.6-flash dahil) fonksiyon çağrılarında bir "thoughtSignature"
-      // döner ve bir SONRAKİ istekte bunu AYNEN geri göndermezsen "... is missing a
-      // thoughtSignature" mesajıyla 400 Bad Request verir. Bu yüzden fonksiyon çağrısı
-      // parçalarını (varsa thoughtSignature'ı da içinde tutarak) OLDUĞU GİBİ geri yazıyoruz —
-      // sadece {name,args} çıkarıp yeniden kurmuyoruz. Ayrıca Gemini bir turda BİRDEN FAZLA
-      // (paralel) fonksiyon çağrısı da dönebilir; hepsini işliyoruz, sadece ilkini değil.
-      const funcCallParts = parts.filter(p=>p.functionCall);
-      if(funcCallParts.length){
-        geminiHistory.push({ role:'model', parts: funcCallParts });
-        const responseParts = [];
-        for(const fcPart of funcCallParts){
-          const { name, args, id } = fcPart.functionCall;
-          if(AI_WRITE_ACTION_NAMES.includes(name)){
-            if(!pendingCmd){
-              // Yazma (veri değiştiren) aracı — HİÇBİR ZAMAN otomatik çalıştırılmaz. Sadece
-              // kullanıcı arayüzde ONAYLA'ya basınca executeAiAction() ile gerçekleşir.
-              const respPart = { functionResponse:{ name, response:{ durum:'kullanıcı_onayı_bekleniyor' } } };
-              if(id) respPart.functionResponse.id = id;
-              // _historyResponsePart: bu nesneye doğrudan referansı saklıyoruz ki kullanıcı
-              // ONAYLA/VAZGEÇ'e bastığında, geçmişteki bu yer tutucu yanıtı GERÇEK sonuçla
-              // güncelleyebilelim (confirmPendingAction/cancelPendingAction içinde).
-              pendingCmd = { action:name, params:args||{}, summary:(args&&args.summary) || 'Bu işlemi yapmak istiyor musun?', _historyResponsePart: respPart };
-              responseParts.push(respPart);
-            } else {
-              // Aynı turda ikinci bir yazma isteği daha gelirse: arayüz tek seferde tek
-              // ONAYLA/VAZGEÇ gösterdiği için sadece ilki onaya sunulur, veri asla otomatik
-              // değişmez — diğeri açıkça "atlandı" sonucuyla geçiştirilir.
-              const respPart = { functionResponse:{ name, response:{ durum:'atlandı_aynı_turda_baska_islem_onay_bekliyor' } } };
-              if(id) respPart.functionResponse.id = id;
-              responseParts.push(respPart);
-            }
-          } else {
-            // Okuma aracı — hemen çalıştır, sonucu modele geri ver ki cevabı tamamlasın.
-            const result = dispatchAiReadTool(name, args||{});
-            const respPart = { functionResponse:{ name, response: result==null?{}:{ sonuc: result } } };
-            if(id) respPart.functionResponse.id = id;
-            responseParts.push(respPart);
-          }
-        }
-        geminiHistory.push({ role:'user', parts: responseParts });
-      } else {
-        const textPart = parts.find(p=>p.text);
-        finalText = (textPart && textPart.text) || 'Cevabı anlayamadım, tekrar sorar mısın?';
-        geminiHistory.push({ role:'model', parts:[{ text: finalText }] });
-      }
-    }
-    aiMessages.pop(); // "…" balonunu kaldır
-    if(pendingCmd){
-      pendingAiAction = pendingCmd;
-      aiMessages.push({ role:'assistant', text: pendingCmd.summary, pendingAction: pendingCmd });
-    } else {
-      aiMessages.push({ role:'assistant', text: finalText || 'Cevabı anlayamadım, tekrar sorar mısın?' });
-    }
-  } catch(err){
+    // Sistem talimatı (ve içine gömülü güncel finansal veri özeti) HER istekte yeniden
+    // oluşturulur, böylece model her zaman uygulamadaki en güncel veriye bakar.
+    const messages = [{ role:'system', content: buildAiSystemPrompt() }]
+      .concat(aiHistory)
+      .concat([{ role:'user', content:text }]);
+    const answer = await callAi(messages);
+    aiHistory.push({ role:'user', content:text });
+    aiHistory.push({ role:'assistant', content:answer });
+    // Geçmişi makul bir uzunlukta tutuyoruz (son 10 mesaj / 5 tur) — hem hız hem de token
+    // maliyeti için; zaten güncel veri her seferinde system prompt'a yeniden gömülüyor.
+    if(aiHistory.length > 10) aiHistory = aiHistory.slice(-10);
     aiMessages.pop();
-    aiMessages.push({ role:'assistant', text: '⚠️ ' + (err.message || 'Beklenmeyen bir hata oluştu, lütfen tekrar dener misin?') });
-    // Hatalı turu geçmişten temizle ki bir sonraki mesaj bozuk bir bağlamla başlamasın.
-    if(geminiHistory.length && geminiHistory[geminiHistory.length-1].role==='user') geminiHistory.pop();
+    aiMessages.push({ role:'assistant', text: answer });
+  }catch(err){
+    aiMessages.pop();
+    aiMessages.push({ role:'assistant', text: '⚠️ ' + (err.message || 'Yapay zeka bağlantısı kurulamadı. İnternet bağlantınızı ve API anahtarınızı kontrol edin.') });
     if(err.kind==='rate_limit'){
-      // 429 (kota/dakikalık limit) alındığında art arda otomatik yeniden deneme YAPILMAZ —
-      // bunun yerine kullanıcı görsün diye buton 10 saniyeliğine pasif hale getirilir; süre
-      // dolunca kendiliğinden tekrar aktif olur.
       aiCooldownUntil = Date.now() + 10000;
       setTimeout(()=>{ render(); }, 10000);
     }
@@ -3426,51 +3144,15 @@ async function sendAiMessage(text){
   }
   render();
 }
-function confirmPendingAction(msgIndex){
-  const msg = aiMessages[msgIndex];
-  if(!msg || !msg.pendingAction) return;
-  const pendingAction = msg.pendingAction;
-  const resultText = executeAiAction(pendingAction);
-  msg.pendingAction = null;
-  msg.confirmed = true;
-  aiMessages.push({ role:'assistant', text: '✅ ' + resultText });
-  // Gemini'ye gönderilen konuşma geçmişindeki "kullanıcı_onayı_bekleniyor" yer tutucusunu,
-  // kullanıcının GERÇEKTEN ONAYLA'ya bastığını ve işlemin sonucunu yansıtacak şekilde
-  // güncelliyoruz — böylece kullanıcı hemen ardından yeni bir soru sorarsa model bu işlemin
-  // gerçekten uygulandığını (ya da uygulanmadığını) bilir, geçmiş tutarsız kalmaz.
-  if(pendingAction._historyResponsePart){
-    pendingAction._historyResponsePart.functionResponse.response = { durum:'kullanıcı_onayladı_ve_islem_uygulandı', sonuc: resultText };
-  }
-  render();
-}
-function cancelPendingAction(msgIndex){
-  const msg = aiMessages[msgIndex];
-  if(!msg) return;
-  const pendingAction = msg.pendingAction;
-  msg.pendingAction = null;
-  msg.cancelled = true;
-  aiMessages.push({ role:'assistant', text: 'İşlem iptal edildi, kayıt değiştirilmedi.' });
-  if(pendingAction && pendingAction._historyResponsePart){
-    pendingAction._historyResponsePart.functionResponse.response = { durum:'kullanıcı_vazgeçti_islem_uygulanmadı' };
-  }
-  render();
-}
 
 function renderAI(){
   $fab.style.display='none';
   const aiCoolingDown = Date.now() < aiCooldownUntil; // 429 sonrası 10 sn'lik bekleme penceresi
-  const bubbles = aiMessages.map((m,i)=>{
+  const bubbles = aiMessages.map((m)=>{
     if(m.role==='user'){
       return `<div class="ai-bubble ai-user">${esc(m.text)}</div>`;
     }
-    let extra = '';
-    if(m.pendingAction){
-      extra = `<div class="ai-confirm-row">
-        <button class="save-btn" style="margin:6px 4px 0 0;display:inline-block;width:auto;padding:9px 18px;" data-action="ai-confirm" data-idx="${i}">ONAYLA</button>
-        <button class="cancel-btn" style="margin:6px 0 0;display:inline-block;width:auto;padding:9px 18px;" data-action="ai-cancel" data-idx="${i}">VAZGEÇ</button>
-      </div>`;
-    }
-    return `<div class="ai-bubble ai-assistant ${m.thinking?'ai-thinking':''}">${esc(m.text).replace(/\n/g,'<br>')}${extra}</div>`;
+    return `<div class="ai-bubble ai-assistant ${m.thinking?'ai-thinking':''}">${esc(m.text).replace(/\n/g,'<br>')}</div>`;
   }).join('');
   return `
     <div class="ai-chat-wrap">
@@ -3479,7 +3161,7 @@ function renderAI(){
         <button class="ai-close-btn" data-action="ai-close" title="Kapat">✕</button>
       </div>
       <div class="ai-messages" id="aiMessages">
-        ${bubbles || '<div class="empty">Merhaba! Kredilerin, kartların, faturaların ve KMH hesapların hakkında soru sorabilir, hesap yaptırabilir ya da yeni kayıt eklememi isteyebilirsin.</div>'}
+        ${bubbles || '<div class="empty">Merhaba! Kredilerin, kartların, faturaların ve KMH hesapların hakkında soru sorabilirsin.</div>'}
       </div>
       <div class="ai-input-row">
         <input id="aiInputBox" class="ai-input-box" placeholder="Mesajını yaz..." autocomplete="off" ${(aiBusy||aiCoolingDown)?'disabled':''}>
