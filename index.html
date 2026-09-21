@@ -2178,7 +2178,7 @@ function importBackupFile(file){
 }
 function performDataDelete(){
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-  try{ localStorage.removeItem(LAST_ACTIVE_KEY); }catch(e){}
+  sessionUnlocked = false;
   endLockFlow();
   state = load();
   lockFlow = null;
@@ -2323,24 +2323,18 @@ function currentAutoLockMs(){
   const v = state.appLock && state.appLock.autoLockMs;
   return (v!=null) ? v : 300000;
 }
-const LAST_ACTIVE_KEY = 'finanscim_last_active';
-function getLastActive(){
-  let v = 0;
-  try{ v = Number(localStorage.getItem(LAST_ACTIVE_KEY)); }catch(e){}
-  return isFinite(v) && v>0 ? v : 0;
-}
-let lastActiveWriteAt = 0;
-function markActive(){
-  const now = Date.now();
-  if(now - lastActiveWriteAt > 4000){
-    lastActiveWriteAt = now;
-    try{ localStorage.setItem(LAST_ACTIVE_KEY, String(now)); }catch(e){}
-  }
-}
+// Kilidin açık/kapalı olduğu bilgisi artık tarayıcı hafızasında (localStorage) SAKLANMIYOR —
+// bilerek sadece bu oturumun belleğinde (sessionUnlocked) tutuluyor. Böylece uygulama her
+// yeniden açıldığında (sayfa yenilense de, kapatılıp tekrar girilse de) PIN'i mutlaka sorar.
+// "Otomatik Kilitleme" süresi ise sadece uygulama AÇIKKEN hareketsiz kalınırsa ya da
+// arka plana alınırsa devreye girer (aşağıdaki visibilitychange/interval mantığı).
+let sessionUnlocked = false;
+let lastActiveTime = Date.now();
+let hiddenAt = 0;
+function markActive(){ lastActiveTime = Date.now(); }
 function isLocked(){
   if(!(state.appLock && state.appLock.enabled)) return false;
-  const last = getLastActive();
-  return last===0 || (Date.now()-last) > currentAutoLockMs();
+  return !sessionUnlocked;
 }
 let lockFlow = null; // {purpose:'unlock'|'setup'|'change'|'disable'|'delete'|'forgotReset', target:'giris'|'modal', mode, buffer, newPin, question, answer, error}
 function pinPadHtml(digitsEntered){
@@ -2439,7 +2433,7 @@ async function handlePinComplete(){
     const hash = await hashText(entered);
     if(!lockFlow) return; // akış iptal edildiyse (ör. vazgeç) devam etme
     if(f.purpose==='unlock'){
-      if(state.appLock.pinHash===hash){ lockFlow=null; markActive(); render(); }
+      if(state.appLock.pinHash===hash){ sessionUnlocked=true; lockFlow=null; markActive(); render(); }
       else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
     }else if(f.purpose==='delete'){
       if(state.appLock.pinHash===hash){ f.mode='deleteConfirm'; f.buffer=''; f.error=''; refreshLockUI(); }
@@ -2484,7 +2478,7 @@ async function saveNewSecurityQuestion(){
   const prevAutoLock = (state.appLock && state.appLock.autoLockMs!=null) ? state.appLock.autoLockMs : 300000;
   state.appLock = { enabled:true, pinHash, question:q, answerHash, autoLockMs:prevAutoLock };
   save();
-  if(purpose==='forgotReset'){ lockFlow=null; markActive(); render(); }
+  if(purpose==='forgotReset'){ sessionUnlocked=true; lockFlow=null; markActive(); render(); }
   else{ endLockFlow(); if(ui.page==='settings') render(); }
 }
 
@@ -2906,7 +2900,12 @@ document.body.addEventListener('click', function(e){
   if(action==='pin-key'){
     const f = lockFlow; if(!f || f.buffer.length>=4) return;
     f.buffer += t.dataset.digit;
-    if(f.buffer.length===4){ refreshLockUI(); handlePinComplete(); }
+    if(f.buffer.length===4){
+      refreshLockUI();
+      // 4. rakam girildiğinde dolan son noktayı görebilmeniz için kısa bir an bekleyip
+      // öyle doğruluyoruz — ekran anında değişmesin diye.
+      setTimeout(()=>{ if(lockFlow===f) handlePinComplete(); }, 350);
+    }
     else{ refreshLockUI(); }
     return;
   }
@@ -3454,14 +3453,37 @@ state.visitCount = (state.visitCount||0) + 1;
 save();
 render();
 fetchLiveRates();
-// Kilit süresi dolduğunda (kullanıcı sekmeyi açık bırakıp uzun süre dokunmadığında) uygulamayı
-// otomatik olarak Giriş Sayfası'na döndürür — yeni bir gezinme/tıklama beklemeden.
-setInterval(()=>{ if(isLocked() && ui.page!=='giris'){ navigate('giris'); } }, 15000);
-// Kullanıcı uygulamayla etkileşimdeyken "son aktif" zamanını güncel tutar ki, aktif kullanım
-// sırasında otomatik kilitlenme tetiklenmesin.
-document.addEventListener('pointerdown', ()=>{ if(!appLockedNow) markActive(); }, { passive:true });
-document.addEventListener('keydown', ()=>{ if(!appLockedNow) markActive(); });
-document.addEventListener('scroll', ()=>{ if(!appLockedNow) markActive(); }, { passive:true, capture:true });
+// Uygulama açıkken, dokunmadan "Otomatik Kilitleme" süresi kadar hareketsiz kalınırsa yeniden
+// kilitler (yalnızca "Hemen" DIŞINDAKİ süreler için — "Hemen" sadece uygulamadan gerçekten
+// uzaklaşınca / arka plana alınca aşağıdaki visibilitychange ile tetiklenir).
+setInterval(()=>{
+  if(state.appLock && state.appLock.enabled && sessionUnlocked){
+    const threshold = currentAutoLockMs();
+    if(threshold>0 && (Date.now()-lastActiveTime) > threshold){ sessionUnlocked = false; }
+  }
+  if(isLocked() && ui.page!=='giris'){ navigate('giris'); }
+}, 15000);
+// Uygulama arka plana alınıp (sekme değişimi, ekranın kilitlenmesi, uygulamadan çıkılması vb.)
+// tekrar öne geldiğinde: "Hemen" seçiliyse her durumda, diğer sürelerde ise o süre dolmuşsa
+// yeniden kilitler. Bu, PIN'in "uygulamadan çıkıp tekrar girince" gerçekten sorulmasını sağlar.
+document.addEventListener('visibilitychange', ()=>{
+  if(!(state.appLock && state.appLock.enabled)) return;
+  if(document.hidden){
+    hiddenAt = Date.now();
+  } else if(hiddenAt){
+    const elapsed = Date.now() - hiddenAt;
+    const threshold = currentAutoLockMs();
+    if(sessionUnlocked && (threshold===0 || elapsed > threshold)){ sessionUnlocked = false; }
+    hiddenAt = 0;
+    if(isLocked() && ui.page!=='giris'){ navigate('giris'); }
+  }
+});
+// Kullanıcı uygulamayla etkileşimdeyken "son aktif" zamanını güncel tutar (yukarıdaki hareketsizlik
+// kontrolü için) — kilit ekranındaki PIN tuşlarına dokunmak da bu sayılır, bir sakıncası yok çünkü
+// kilidin açık/kapalı olması artık bu zamana değil, sadece doğru PIN girilmiş olmasına bakıyor.
+document.addEventListener('pointerdown', markActive, { passive:true });
+document.addEventListener('keydown', markActive);
+document.addEventListener('scroll', markActive, { passive:true, capture:true });
 const vcEl = document.getElementById('visitCountLabel');
 if(vcEl) vcEl.textContent = '🔢 Bu, ' + state.visitCount + '. açılışın (kalıcılık testi)';
 if(storageBroken) showStorageWarning();
