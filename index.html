@@ -557,11 +557,17 @@ button.mainCard{cursor:pointer;}
 .giris-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:5px;padding:6px 0 10px;}
 .giris-header .bell{justify-self:end;}
 .giris-header .giris-settings-btn,.giris-header .bell{font-size:27px;background:none;border:none;cursor:pointer;padding:2px;line-height:1;color:var(--ink);}
-.giris-header .giris-logo{justify-self:center;display:flex;align-items:center;gap:6px;min-width:0;}
+.giris-header .giris-logo{justify-self:center;display:flex;align-items:center;gap:9px;min-width:0;}
+.giris-app-icon{width:46px;height:46px;border-radius:13px;display:block;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.giris-wordmark{transform:scale(1.4);transform-origin:left center;}
 .giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 16px;font-size:13.5px;font-style:italic;font-weight:600;color:var(--ink-soft);font-family:var(--font-display);}
 .giris-body{flex:1;display:flex;flex-direction:column;}
 .giris-footer{padding:14px 0 4px;}
-.giris-footer .save-btn{display:flex;align-items:center;justify-content:center;gap:8px;}
+.giris-footer-row{display:flex;align-items:stretch;gap:10px;}
+.giris-footer-row .save-btn{flex:1.6;display:flex;align-items:center;justify-content:center;gap:8px;}
+.giris-footer-row .save-btn .homeico{width:22px;height:22px;font-size:11px;}
+.giris-exit-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--ink-soft);font-weight:600;font-size:13.5px;cursor:pointer;}
+.giris-exit-btn span:first-child{font-size:16px;}
 .giris-alerts-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px;}
 .giris-alerts-head h2{font-size:18px;margin:0;font-family:var(--font-display);}
 .giris-filter-chip{padding:6px 14px;border-radius:14px;border:none;background:var(--brand,#0aa3a3);background:linear-gradient(135deg,var(--brand,#0aa3a3),var(--accent,#0aa3a3));color:#fff;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:4px;}
@@ -625,6 +631,10 @@ button.mainCard{cursor:pointer;}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink);}
 .settings-section-head + .settings-row{border-top:none;}
 .pill-btn{padding:5px 13px;border-radius:16px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;}
+.data-actions-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:2px;}
+.data-action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 2px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:10.5px;font-weight:600;cursor:pointer;}
+.data-action-btn span:first-child{font-size:16px;}
+.data-action-btn.data-action-danger{color:var(--debt);}
 .pill-btn.pill-danger{color:var(--debt);border-color:var(--debt-soft,var(--border));}
 .settings-footer-text{text-align:center;font-size:10.5px;color:var(--ink-soft);margin:8px 0 2px;}
 </style>
@@ -1374,6 +1384,13 @@ const $headerAction = document.getElementById('headerAction');
 // logo üretmemek için DOM'daki gerçek görseli (küçük ikon + "Finansçım" yazı görseli) buradan alıp
 // giriş sayfası şablonunda yeniden kullanıyoruz.
 const BRAND_HTML = (document.querySelector('.header .brand') || {}).innerHTML || '';
+// Giriş sayfasında büyük logo için: telefona "Ana Ekrana Ekle" yapıldığında kullanılan gerçek
+// uygulama simgesi (apple-touch-icon) + kurumsal yazı (wordmark) ayrı ayrı yakalanır.
+const APP_ICON_URL = (document.querySelector('link[rel="apple-touch-icon"]') || {}).href || '';
+const BRAND_NAME_HTML = (document.querySelector('.header .brand .brand-name') || {}).outerHTML || '';
+// Alt navigasyon çubuğundaki "Ana Sayfa" ikonuyla birebir aynı simge — Giriş sayfasındaki
+// "Ana Sayfa" butonunda da bu kullanılır, böylece iki yerde de aynı görsel dil olur.
+const HOME_ICON_HTML = (document.querySelector('.bottom .home .homeico') || {}).outerHTML || '';
 
 function navigate(page, extra){
   if(isLocked() && page!=='giris'){ page='giris'; extra=null; }
@@ -1452,6 +1469,13 @@ function updateNotifBadge(){
   if(badge){
     if(count>0){ badge.textContent = count>9?'9+':count; badge.style.display='grid'; badge.style.background=sevColor; if(bell) bell.classList.add('bell-active'); }
     else { badge.style.display='none'; if(bell) bell.classList.remove('bell-active'); }
+  }
+  // Giriş sayfasının kendi zil butonu da (üst genel başlıktan bağımsız) aynı sayıyı göstermeli.
+  const girisBadge = document.getElementById('girisNotifBadge');
+  const girisBell = document.getElementById('girisBell');
+  if(girisBadge){
+    if(count>0){ girisBadge.textContent = count>9?'9+':count; girisBadge.style.display='grid'; girisBadge.style.background=sevColor; if(girisBell) girisBell.classList.add('bell-active'); }
+    else { girisBadge.style.display='none'; if(girisBell) girisBell.classList.remove('bell-active'); }
   }
   // Yeni bir uyarı belirdiğinde (daha önce görülmemiş bir anahtar) ve "Bildirim Sesi" açıksa kısa bir ses çal.
   const keys = [].concat(n.overdue, n.dueToday, n.soon).map(i=>i.key).sort();
@@ -2341,11 +2365,13 @@ function renderSettings(){
     </div>
 
     <div class="settings-section" style="margin-top:8px;">
-      ${settingsSectionHead('🗄️','badge-blue','Veriler','Yedekle, geri yükle veya sil')}
-      <div class="settings-row"><span>Verileri Yedekle</span><button class="pill-btn" data-action="backup-data">Yedekle</button></div>
-      <div class="settings-row"><span>Verileri Geri Yükle</span><button class="pill-btn" data-action="restore-data">Yükle</button></div>
+      ${settingsSectionHead('🗄️','badge-blue','Veriler', locked?'Yedekle, geri yükle veya sil — hepsi PIN ister':'Yedekle, geri yükle veya sil')}
+      <div class="data-actions-row">
+        <button class="data-action-btn" data-action="backup-data"><span aria-hidden="true">📤</span><span>Yedekle</span></button>
+        <button class="data-action-btn" data-action="restore-data"><span aria-hidden="true">📥</span><span>Yükle</span></button>
+        <button class="data-action-btn data-action-danger" data-action="open-data-delete"><span aria-hidden="true">🗑️</span><span>Sil</span></button>
+      </div>
       <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
-      <div class="settings-row"><span>Tüm Verileri Sil</span><button class="pill-btn pill-danger" data-action="open-data-delete">Sil</button></div>
     </div>
     <div class="settings-footer-text">Finansçım • Sürüm 1.0</div>
   `;
@@ -2356,12 +2382,20 @@ function girisPageHtml(bodyHtml, showFooter){
   return `<div class="giris-page">
     <div class="giris-header">
       <button class="giris-settings-btn" data-action="nav" data-page="settings" title="Ayarlar">⚙️</button>
-      <div class="giris-logo">${BRAND_HTML}</div>
-      <button class="bell" id="girisBell" data-action="nav" data-page="giris" title="Bildirimler">🔔</button>
+      <div class="giris-logo">
+        <img src="${APP_ICON_URL}" alt="Finansçım" class="giris-app-icon">
+        <div class="giris-wordmark">${BRAND_NAME_HTML}</div>
+      </div>
+      <button class="bell" id="girisBell" data-action="nav" data-page="giris" title="Bildirimler">🔔<span id="girisNotifBadge" class="badge" style="display:none;"></span></button>
     </div>
     <div class="giris-subtitle">Mali özgürlüğe bir adım daha</div>
     <div class="giris-body">${bodyHtml}</div>
-    ${showFooter ? `<div class="giris-footer"><button class="save-btn" data-action="nav" data-page="home"><span aria-hidden="true">🏠</span> Ana Sayfa</button></div>` : ''}
+    ${showFooter ? `<div class="giris-footer">
+      <div class="giris-footer-row">
+        <button class="giris-exit-btn" data-action="giris-exit" title="Çıkış"><span aria-hidden="true">🚪</span><span>Çıkış</span></button>
+        <button class="save-btn giris-home-btn" data-action="nav" data-page="home">${HOME_ICON_HTML}<span>Ana Sayfa</span></button>
+      </div>
+    </div>` : ''}
   </div>`;
 }
 function renderAlertsContent(){
@@ -2489,6 +2523,8 @@ function buildLockBoxHtml(f){
     if(f.purpose==='change'){ title="PIN'i Değiştir"; sub="Önce mevcut PIN'inizi girin"; }
     else if(f.purpose==='disable'){ title="PIN'i Kapat"; sub="Onaylamak için mevcut PIN'inizi girin"; }
     else if(f.purpose==='delete'){ title='Verileri Sil'; sub="Onaylamak için mevcut PIN'inizi girin"; }
+    else if(f.purpose==='backup'){ title='Verileri Yedekle'; sub="Onaylamak için mevcut PIN'inizi girin"; }
+    else if(f.purpose==='restore'){ title='Verileri Geri Yükle'; sub="Onaylamak için mevcut PIN'inizi girin"; }
     body = pinPadHtml(f.buffer.length)
       + (f.error?`<p class="pin-error">${esc(f.error)}</p>`:'')
       + (f.purpose==='unlock' && state.appLock.question ? `<button class="pin-forgot-link" data-action="pin-forgot">PIN'i unuttum</button>` : '')
@@ -2581,6 +2617,12 @@ async function handlePinComplete(){
         if(f.purpose==='disable'){
           state.appLock = { enabled:false, pinHash:null, question:null, answerHash:null };
           save(); endLockFlow(); if(ui.page==='settings') render();
+        }else if(f.purpose==='backup'){
+          endLockFlow(); exportBackup();
+        }else if(f.purpose==='restore'){
+          endLockFlow();
+          const inp = document.getElementById('restoreFileInput');
+          if(inp) inp.click();
         }else{ f.mode='setNew1'; f.buffer=''; f.error=''; refreshLockUI(); }
       }else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
     }
@@ -3066,10 +3108,17 @@ document.body.addEventListener('click', function(e){
   if(action==='toggle-notif-enabled'){ state.notifEnabled = !(state.notifEnabled!==false); save(); markActive(); render(); return; }
   if(action==='toggle-notif-sound'){ state.notifSoundEnabled = !state.notifSoundEnabled; save(); markActive(); render(); return; }
   if(action==='set-notif-days'){ state.notifDaysAhead = Number(t.dataset.days); save(); markActive(); render(); return; }
-  if(action==='backup-data'){ exportBackup(); return; }
+  if(action==='backup-data'){
+    if(state.appLock && state.appLock.enabled){ startLockFlow('backup','modal'); }
+    else{ exportBackup(); }
+    return;
+  }
   if(action==='restore-data'){
-    const inp = document.getElementById('restoreFileInput');
-    if(inp) inp.click();
+    if(state.appLock && state.appLock.enabled){ startLockFlow('restore','modal'); }
+    else{
+      const inp = document.getElementById('restoreFileInput');
+      if(inp) inp.click();
+    }
     return;
   }
   if(action==='dismiss-notif'){
@@ -3083,6 +3132,17 @@ document.body.addEventListener('click', function(e){
     const keys = [...n.overdue, ...n.dueToday, ...n.soon].map(x=>x.key);
     state.dismissedNotifs = Array.from(new Set([...(state.dismissedNotifs||[]), ...keys]));
     save(); render();
+    return;
+  }
+  if(action==='giris-exit'){
+    // Uygulamayı gerçekten kapatmak bir web sayfasından güvenilir şekilde yapılamıyor; bunun yerine
+    // PIN açıksa oturumu hemen kilitleyip Giriş ekranını kilitli haliyle gösteriyoruz — kullanıcı
+    // "çıkış" yapmış gibi tekrar PIN girmeden ileri gidemiyor. PIN yoksa sekmeyi kapatmayı dener.
+    if(state.appLock && state.appLock.enabled){
+      sessionUnlocked = false; hiddenAt = 0; lockFlow = null; render();
+    } else {
+      try{ window.close(); }catch(e){}
+    }
     return;
   }
   if(action==='refresh-market'){ fetchLiveRates(); return; }
