@@ -768,6 +768,27 @@ function calculateCardInterest(card, ym){
   const bsmv = interest * CARD_BSMV_RATE;
   return { carried: Math.round(carried), interest: Math.round(interest), bsmv: Math.round(bsmv), total: Math.round(interest+bsmv), late };
 }
+
+// Kredi (taksit) gecikme faizi de kredi kartı/KMH'dan AYRI, kendi sabitleriyle hesaplanır —
+// karıştırılmaz. Kredi taksit gecikmesinde faiz sadece GECİKEN taksit tutarı üzerinden ve
+// geçen gün sayısına göre (günlük bileşik değil, basit günlük oran) YAKLAŞIK hesaplanır.
+// Kullanıcı krediye kendi faiz oranını girmişse (infoInterestRate, aylık %) o esas alınıp
+// üzerine yaygın bir gecikme/temerrüt marjı (%30) eklenir; girmemişse kredi kartı gecikme
+// oranıyla aynı YAKLAŞIK tavan oran (%3,80/ay) kullanılır — ikisi de BDDK'nın perakende
+// kredi ürünlerine uyguladığı tavan orana yakın olduğu için makul bir varsayılan kabul edilir.
+// Sadece BSMV uygulanır (kredi kartıyla aynı mantık, KKDF yok).
+const LOAN_LATE_MARGIN = 1.30;
+function calculateLoanLateInterest(loan, thisMonthInst){
+  if(!thisMonthInst || thisMonthInst.status!=='gecikti') return { days:0, amount:0, total:0 };
+  const dueDate = new Date(...thisMonthInst.ym.split('-').map((v,idx)=>idx===1?Number(v)-1:Number(v)), loan.dueDay||1);
+  const today = new Date(new Date().setHours(0,0,0,0));
+  const days = Math.max(1, Math.round((today - dueDate) / 86400000));
+  const baseRate = loan.infoInterestRate!=null ? (loan.infoInterestRate/100)*LOAN_LATE_MARGIN : CARD_LATE_MONTHLY_INTEREST_RATE;
+  const amount = thisMonthInst.amount||0;
+  const interest = amount * (baseRate/30) * days;
+  const total = interest * (1 + CARD_BSMV_RATE);
+  return { days, amount, total: Math.round(total) };
+}
 const INVEST_TYPES = ['Hisse Senedi','Fon','Mevduat','Döviz Hesabı','Altın Hesabı','Kripto','Diğer'];
 const INVEST_ICONS = { 'Hisse Senedi':'📈','Fon':'📊','Mevduat':'🏦','Döviz Hesabı':'💱','Altın Hesabı':'🪙','Kripto':'🌐','Diğer':'💼' };
 // Abonelik/Fatura kategori grupları — "Kategori Seç" tam sayfasında gösterilir. Marka renkli
@@ -1577,15 +1598,17 @@ function renderLoans(){
       if(!thisMonthInst){ statusKey='odendi'; statusCls='paid'; pillLabel = '&nbsp;'; }
       else if(thisMonthInst.status==='odendi'){ statusKey='odendi'; statusCls='paid'; pillLabel = 'ÖDENDİ'; }
       else { statusKey = thisMonthInst.status; statusCls = statusKey==='gecikti'?'late':'waiting'; pillLabel = statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'; }
+      const loanLate = calculateLoanLateInterest(l, thisMonthInst);
       return `<article class="kr-card" data-action="nav" data-page="loanDetail" data-id="${l.id}" data-lp-type="loan" data-lp-id="${l.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
           <div><h2>${bank.name}</h2><p>${esc(l.loanType||l.name)}</p>${(l.name && l.name!==l.loanType) ? `<small>${esc(l.name)}</small>` : ''}</div>
           <span class="kr-status ${statusCls}">${pillLabel}</span>
         </div>
-        <div class="kr-meta">
-          <div>Kalan Borç<strong>${formatTL(loanRemaining(l))}</strong></div>
+        <div class="kr-meta cols4">
+          <div>Kalan Ödeme<strong>${formatTL(loanRemaining(l))}</strong></div>
           <div>Aylık Ödeme<strong>${formatTL(l.amount)}</strong></div>
+          <div class="${statusKey==='gecikti'?'kr-late':''}">Gecikme Faizi<strong>${loanLate.total>0?formatTL(loanLate.total):'-'}</strong></div>
           <div class="${statusKey==='gecikti'?'kr-late':''}">Son Ödeme<strong>${dueStr}</strong></div>
         </div>
       </article>`;
@@ -1669,10 +1692,14 @@ function renderCards(){
       const statusKey = hasCharge ? periodStatus(paid, state.selectedMonth, c.dueDay) : 'odendi';
       const statusCls = statusKey==='odendi' ? 'paid' : (statusKey==='gecikti' ? 'late' : 'waiting');
       const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'));
+      const cfi = calculateCardInterest(c, state.selectedMonth);
+      const cardRate = cfi.late ? CARD_LATE_MONTHLY_INTEREST_RATE : CARD_MONTHLY_INTEREST_RATE;
+      const cardDailyInterest = cfi.carried>0 ? Math.round(cfi.carried * (cardRate/30) * (1 + CARD_BSMV_RATE)) : 0;
+      const cardDueDateStr = c.dueDay ? formatDMY(currentYm(), c.dueDay) : '—';
       return `<article class="kr-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
-          <div><div class="kr-title-row"><h2>${bank.name}</h2><span class="kr-duedate">Son Ödeme: ${c.dueDay||'-'}'i</span></div><p>${c.name?esc(c.name):'Kredi Kartı'}</p></div>
+          <div><div class="kr-title-row"><h2>${bank.name}</h2></div><p>${c.name?esc(c.name):'Kredi Kartı'}</p></div>
           <span class="kr-status ${statusCls}">${pillLabel}</span>
         </div>
         <div class="kr-meta cols4">
@@ -1680,6 +1707,12 @@ function renderCards(){
           <div>Güncel Borç<strong>${formatTL(debt)}</strong></div>
           <div>Bu Ay Ödenecek<strong>${st?formatTL(st.amount):'—'}</strong></div>
           <div class="${statusKey==='gecikti'?'kr-late':''}">Kalan Limit<strong>${formatTL(remainingLimit)}</strong></div>
+        </div>
+        <div class="kr-meta cols4" style="margin-top:4px;">
+          <div>${cfi.late?'Gecikme Faizi':'Yakl. Faiz Oranı'}<strong>~%${(cardRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})}</strong></div>
+          <div>Gün. Tah. Faiz<strong>${formatTL(cardDailyInterest)}</strong></div>
+          <div>Top. Tah. Faiz<strong>${formatTL(cfi.total)}</strong></div>
+          <div>Son Ödeme<strong>${cardDueDateStr}</strong></div>
         </div>
       </article>`;
     }).join('');
@@ -1738,7 +1771,7 @@ function renderKmh(){
       return `<article class="kr-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
-          <div><div class="kr-title-row"><h2>${bank.name}</h2><span class="kr-duedate">Son Ödeme: ${k.dueDay||'-'}'i</span></div><p>KMH Hesabı</p></div>
+          <div><div class="kr-title-row"><h2>${bank.name}</h2></div><p>KMH Hesabı</p></div>
           <span class="kr-status ${statusCls}">${pillLabel}</span>
         </div>
         <div class="kr-meta cols4">
