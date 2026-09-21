@@ -549,15 +549,14 @@ button.mainCard{cursor:pointer;}
 @media (min-width:521px){ .app{border-left:1px solid var(--border);border-right:1px solid var(--border);} }
 
 /* ---- Uygulama Kilidi (4 haneli PIN) / Giriş Sayfası ---- */
-.settings-section{border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--surface);}
+.settings-section{border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--surface);}
 .app.giris-mode .header{display:none;}
 .app.giris-mode .bottombar-wrap{display:none;}
 .app.giris-mode .content{padding:0 14px 24px;}
 .giris-page{display:flex;flex-direction:column;min-height:100%;}
 .giris-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:5px;padding:6px 0 10px;}
 .giris-header .bell{justify-self:end;}
-.giris-header .giris-settings-btn,.giris-header .bell{width:38px;height:38px;border-radius:12px;font-size:17px;background:var(--surface);border:1px solid var(--border);cursor:pointer;padding:0;line-height:1;color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.05);}
-.giris-header .giris-settings-btn:active,.giris-header .bell:active{background:var(--border);}
+.giris-header .giris-settings-btn,.giris-header .bell{font-size:27px;background:none;border:none;cursor:pointer;padding:2px;line-height:1;color:var(--ink);}
 .giris-header .giris-logo{justify-self:center;display:flex;align-items:center;gap:6px;min-width:0;}
 .giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 16px;font-size:13.5px;font-style:italic;font-weight:600;color:var(--ink-soft);font-family:var(--font-display);}
 .giris-body{flex:1;display:flex;flex-direction:column;}
@@ -565,16 +564,42 @@ button.mainCard{cursor:pointer;}
 .giris-footer .save-btn{display:flex;align-items:center;justify-content:center;gap:8px;}
 .giris-alerts-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px;}
 .giris-alerts-head h2{font-size:18px;margin:0;font-family:var(--font-display);}
-.giris-filter-chip{padding:5px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--ink-soft);font-size:12.5px;display:flex;align-items:center;gap:4px;}
+.giris-filter-chip{padding:6px 14px;border-radius:14px;border:none;background:var(--brand,#0aa3a3);background:linear-gradient(135deg,var(--brand,#0aa3a3),var(--accent,#0aa3a3));color:#fff;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:4px;}
 .giris-filter-chip .chev{font-size:11px;}
 .giris-congrats{font-family:var(--font-display);font-size:27px;font-weight:700;font-style:italic;color:var(--ink);}
+.notif-avatar{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;flex-shrink:0;}
+.notif-group{margin-bottom:14px;}
+.notif-group-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:11px;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:8px;}
+.notif-group-head .ngh-left{display:flex;align-items:center;gap:6px;}
+.notif-group-head .ngh-chev{opacity:.85;font-size:12px;}
+.notif-group-head.sev-overdue{background:var(--debt,#ef2846);}
+.notif-group-head.sev-today{background:var(--pending,#e0812f);}
+.notif-group-head.sev-soon{background:#3a72d8;}
+.notif-row2{display:flex;align-items:center;gap:10px;padding:10px;border-radius:13px;margin-bottom:7px;}
+.notif-row2.sev-overdue{background:var(--debt-soft);}
+.notif-row2.sev-today{background:var(--pending-soft);}
+.notif-row2.sev-soon{background:#e4edfb;}
+:root[data-theme="dark"] .notif-row2.sev-soon{background:#1c2c47;}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .notif-row2.sev-soon{background:#1c2c47;} }
+.notif-row2 .nr-info{flex:1;min-width:0;}
+.notif-row2 .nr-title{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.notif-row2 .nr-sub{font-size:11px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.notif-row2 .nr-date{font-size:10.5px;color:var(--ink-soft);margin-top:1px;}
+.notif-row2 .nr-right{text-align:right;flex-shrink:0;}
+.notif-row2 .nr-days{font-size:11.5px;font-weight:700;white-space:nowrap;}
+.notif-row2.sev-overdue .nr-days{color:var(--debt);}
+.notif-row2.sev-today .nr-days{color:var(--pending);}
+.notif-row2.sev-soon .nr-days{color:#3a72d8;}
+.notif-row2 .nr-amt{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--ink);margin-top:2px;}
+.notif-trash{width:30px;height:30px;border-radius:9px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--debt);font-size:13px;cursor:pointer;flex-shrink:0;padding:0;}
+.giris-done-btn{border:1px solid var(--border);border-radius:14px;padding:10px;margin-top:4px;font-weight:600;}
 .lock-box{width:100%;max-width:340px;text-align:center;margin:auto;}
-.lock-icon{font-size:34px;margin-bottom:6px;}
+.lock-icon{font-size:44px;margin-bottom:8px;}
 .lock-box h2{font-size:18px;margin:0 0 4px;font-family:var(--font-display);}
 .lock-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;}
-.pin-dots{display:flex;justify-content:center;gap:14px;margin:10px 0 24px;}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);background:transparent;transition:background .12s,border-color .12s;}
-.pin-dot.filled{background:var(--brand,#0aa3a3);border-color:var(--brand,#0aa3a3);}
+.pin-dots{display:flex;justify-content:center;gap:16px;margin:14px 0 26px;}
+.pin-dot{width:20px;height:20px;border-radius:50%;border:2px solid var(--accent,#3a72d8);background:transparent;transition:background .12s,border-color .12s;}
+.pin-dot.filled{background:var(--accent,#3a72d8);border-color:var(--accent,#3a72d8);}
 .pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:260px;margin:0 auto;}
 .pin-key{aspect-ratio:1;border-radius:50%;border:none;background:var(--surface-2,var(--border));font-size:21px;font-weight:600;color:var(--ink);cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,.06);}
 .pin-key:active{background:var(--accent-soft);color:var(--accent);}
@@ -590,18 +615,18 @@ button.mainCard{cursor:pointer;}
 .app.settings-mode .header{display:none;}
 .app.settings-mode .bottombar-wrap{display:none;}
 .app.settings-mode .content{padding:0 14px 24px;}
-.settings-section-head{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;}
-.settings-icon-badge{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.settings-section-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;}
+.settings-icon-badge{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
 .settings-icon-badge.badge-green{background:var(--paid-soft,#e2f6ea);color:var(--paid,#1fa35a);}
 .settings-icon-badge.badge-pink{background:#fde3ee;color:#e0508a;}
 .settings-icon-badge.badge-orange{background:var(--pending-soft,#fdead9);color:var(--pending,#e0812f);}
 .settings-icon-badge.badge-blue{background:#e1ecfd;color:#3a72d8;}
-.settings-section-desc{font-size:12px;color:var(--ink-soft);margin-top:2px;}
-.settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:13.5px;color:var(--ink);}
+.settings-section-desc{font-size:10.5px;color:var(--ink-soft);margin-top:1px;line-height:1.25;}
+.settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink);}
 .settings-section-head + .settings-row{border-top:none;}
-.pill-btn{padding:7px 16px;border-radius:20px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:12.5px;font-weight:600;cursor:pointer;}
+.pill-btn{padding:5px 13px;border-radius:16px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;}
 .pill-btn.pill-danger{color:var(--debt);border-color:var(--debt-soft,var(--border));}
-.settings-footer-text{text-align:center;font-size:11.5px;color:var(--ink-soft);margin:18px 0 6px;}
+.settings-footer-text{text-align:center;font-size:10.5px;color:var(--ink-soft);margin:8px 0 2px;}
 </style>
 </head>
 <body>
@@ -996,6 +1021,16 @@ function kurumChipRow(id, pool, selected){
       ${kurumBadgeHtml(it)}<span>${esc(it.name)}</span>
     </div>`).join('')}</div>`;
 }
+// Uyarılar listesindeki her satır için ilgili bankanın/kurumun/abonelik markasının GERÇEK logosunu
+// gösterir (banka ise BANKS listesinden, fatura/abonelik ise BILL_ICONS'tan) — böylece kullanıcı
+// hangi ödemenin hangi kuruma ait olduğunu ikonundan anında tanıyabilir.
+function notifAvatarHtml(avatar){
+  if(avatar && avatar.kind==='bank'){
+    return bankAvatarHtml(bankByCode(avatar.bankCode), 'notif-avatar sq');
+  }
+  const ic = (avatar && BILL_ICONS[avatar.category]) || BILL_ICONS['Diğer'];
+  return kurumBadgeHtml(ic, 'notif-avatar');
+}
 function wheelCol(id, items, selectedValue, width){
   let idx = items.findIndex(it=>String(it.value)===String(selectedValue));
   if(idx<0) idx = 0;
@@ -1357,10 +1392,10 @@ function getNotifications(){
   const overdue=[], dueToday=[], soon=[];
   const dismissed = state.dismissedNotifs||[];
   const daysAhead = (state.notifDaysAhead!=null) ? state.notifDaysAhead : 5;
-  function bucket(key, name, amount, dueDate){
+  function bucket(key, title, subtitle, amount, dueDate, avatar){
     if(dismissed.includes(key)) return;
     const days = Math.round((dueDate-today)/86400000);
-    const item = { key, name, amount, days };
+    const item = { key, name:title, title, subtitle, amount, days, dueDate, avatar };
     if(days<0) overdue.push(item);
     else if(days===0) dueToday.push(item);
     else if(days<=daysAhead) soon.push(item);
@@ -1370,14 +1405,14 @@ function getNotifications(){
     const next = insts.find(i=>i.status!=='odendi');
     if(next){
       const [y,m] = next.ym.split('-').map(Number);
-      bucket('loan-'+next.key, l.name, next.amount, new Date(y, m-1, l.dueDay||1));
+      bucket('loan-'+next.key, l.name+' Taksiti', bankByCode(l.bankCode).name, next.amount, new Date(y, m-1, l.dueDay||1), { kind:'bank', bankCode:l.bankCode });
     }
   });
   state.cards.forEach(c=>{
     const st = cardStatement(c.id, state.selectedMonth);
     if(st && st.status!=='odendi'){
       const [y,m] = state.selectedMonth.split('-').map(Number);
-      bucket('card-'+st.id, bankByCode(c.bankCode).name+' Kartı', st.amount, new Date(y, m-1, c.dueDay||1));
+      bucket('card-'+st.id, 'Kredi Kartı Ödemesi', bankByCode(c.bankCode).name, st.amount, new Date(y, m-1, c.dueDay||1), { kind:'bank', bankCode:c.bankCode });
     }
   });
   state.bills.forEach(b=>{
@@ -1385,7 +1420,7 @@ function getNotifications(){
     const r = billRecord(b, state.selectedMonth);
     if(r.status!=='odendi'){
       const [y,m] = state.selectedMonth.split('-').map(Number);
-      bucket('bill-'+b.id+'-'+state.selectedMonth, b.name, r.amount, new Date(y, m-1, b.dueDay||1));
+      bucket('bill-'+b.id+'-'+state.selectedMonth, b.name, b.category, r.amount, new Date(y, m-1, b.dueDay||1), { kind:'kurum', category:b.category });
     }
   });
   return { overdue, dueToday, soon };
@@ -2265,33 +2300,33 @@ function renderSettings(){
   return `<div class="giris-header">
       <button class="giris-settings-btn" data-action="nav" data-page="giris" title="Geri">←</button>
       <div class="giris-logo">${BRAND_HTML}</div>
-      <span style="width:38px;"></span>
+      <span style="width:27px;"></span>
     </div>
     <div class="settings-section">
-      ${settingsSectionHead('🛡️','badge-green','Güvenlik', locked?'PIN aktif — verileriniz korunuyor':'Finansal verilerinizi 4 haneli PIN ile koruyun')}
+      ${settingsSectionHead('🛡️','badge-green','Güvenlik', locked?'PIN aktif':'4 haneli PIN ile koruyun')}
       <div class="settings-row">
         <span>PIN Kodu</span>
         <button class="pill-btn" data-action="${locked?'open-pin-change':'open-pin-setup'}">${locked?"Değiştir":'Oluştur'}</button>
       </div>
       ${locked?`<div class="settings-row"><span>PIN'i Kapat</span><button class="pill-btn pill-danger" data-action="open-pin-disable">Kapat</button></div>`:''}
-      ${locked?`<div class="settings-row"><span>Otomatik Kilitleme</span><span style="color:var(--ink-soft);font-size:12.5px;">10 dakika hareketsizlik / arka plan</span></div>`:''}
+      ${locked?`<div class="settings-row"><span>Otomatik Kilitleme</span><span style="color:var(--ink-soft);font-size:11px;">10 dk</span></div>`:''}
     </div>
 
-    <div class="settings-section" style="margin-top:14px;">
-      ${settingsSectionHead('🔔','badge-pink','Bildirimler','Ödeme hatırlatmalarınızı yönetin')}
+    <div class="settings-section" style="margin-top:8px;">
+      ${settingsSectionHead('🔔','badge-pink','Bildirimler','Ödeme hatırlatmaları')}
       <div class="settings-row">
         <span>Ödeme Bildirimleri</span>
         <div class="switch ${notifOn?'on':''}" data-action="toggle-notif-enabled"><div class="knob"></div></div>
       </div>
-      ${notifOn?`<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+      ${notifOn?`<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:5px;">
         <span>Hatırlatma Süresi</span>
         <div class="choice-row">${NOTIF_DAY_OPTIONS.map(o=>`<button data-action="set-notif-days" data-days="${o.v}" class="${daysAhead===o.v?'active':''}">${o.label}</button>`).join('')}</div>
       </div>`:''}
     </div>
 
-    <div class="settings-section" style="margin-top:14px;">
-      ${settingsSectionHead('🎨','badge-orange','Uygulama','Görünüm ve ses tercihleri')}
-      <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:8px;">
+    <div class="settings-section" style="margin-top:8px;">
+      ${settingsSectionHead('🎨','badge-orange','Uygulama','Görünüm ve ses')}
+      <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:5px;">
         <span>Görünüm</span>
         <div class="choice-row">
           <button data-action="set-theme" data-theme="system" class="${theme==='system'?'active':''}">Sistem</button>
@@ -2305,14 +2340,13 @@ function renderSettings(){
       </div>
     </div>
 
-    <div class="settings-section" style="margin-top:14px;">
-      ${settingsSectionHead('🗄️','badge-blue','Veriler','Yedekleyin, geri yükleyin veya silin')}
+    <div class="settings-section" style="margin-top:8px;">
+      ${settingsSectionHead('🗄️','badge-blue','Veriler','Yedekle, geri yükle veya sil')}
       <div class="settings-row"><span>Verileri Yedekle</span><button class="pill-btn" data-action="backup-data">Yedekle</button></div>
       <div class="settings-row"><span>Verileri Geri Yükle</span><button class="pill-btn" data-action="restore-data">Yükle</button></div>
       <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
       <div class="settings-row"><span>Tüm Verileri Sil</span><button class="pill-btn pill-danger" data-action="open-data-delete">Sil</button></div>
     </div>
-    <div class="kr-info" style="margin-top:16px;">ⓘ <span>PIN, telefonunuzu elinize alan başka birinin finansal verilerinizi kolayca görmesini engeller. Unutursanız, belirlediğiniz hatırlatıcı soru ile PIN'i sıfırlayabilirsiniz.</span></div>
     <div class="settings-footer-text">Finansçım • Sürüm 1.0</div>
   `;
 }
@@ -2333,17 +2367,31 @@ function girisPageHtml(bodyHtml, showFooter){
 function renderAlertsContent(){
   const n = getNotifications();
   const total = n.overdue.length + n.dueToday.length + n.soon.length;
-  function section(title, items, sevClass){
+  const SEV_META = {
+    overdue: { icon:'⚠️', dayText: it=>Math.abs(it.days)+' gün geçti' },
+    today:   { icon:'🕐', dayText: ()=>'Bugün' },
+    soon:    { icon:'📅', dayText: it=>it.days+' gün kaldı' }
+  };
+  function group(title, items, sevClass){
     if(!items.length) return '';
-    return `<div style="margin-bottom:16px;">
-      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:7px;">${esc(title)}</div>
-      ${items.map(it=>`<div class="notif-row sev-${sevClass}" style="margin-bottom:6px;">
-        <div style="flex:1;min-width:0;">
-          <div class="n-name">${esc(it.name)}</div>
-          <div class="n-sub">${sevClass==='overdue'?(Math.abs(it.days)+' gün geçti'):(it.days===0?'bugün son gün':it.days+' gün kaldı')}</div>
+    const meta = SEV_META[sevClass];
+    return `<div class="notif-group">
+      <div class="notif-group-head sev-${sevClass}">
+        <span class="ngh-left">${meta.icon} ${esc(title)} (${items.length})</span>
+        <span class="ngh-chev">⌃</span>
+      </div>
+      ${items.map(it=>`<div class="notif-row2 sev-${sevClass}">
+        ${notifAvatarHtml(it.avatar)}
+        <div class="nr-info">
+          <div class="nr-title">${esc(it.title||it.name)}</div>
+          ${it.subtitle?`<div class="nr-sub">${esc(it.subtitle)}</div>`:''}
+          <div class="nr-date">Son Ödeme: ${it.dueDate.toLocaleDateString('tr-TR',{day:'numeric',month:'short',year:'numeric'})}</div>
         </div>
-        <div class="n-amt">${formatTL(it.amount)}</div>
-        <button data-action="dismiss-notif" data-key="${esc(it.key)}" title="Kaldır" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--ink-soft);padding:4px 2px;">🗑</button>
+        <div class="nr-right">
+          <div class="nr-days">${meta.dayText(it)}</div>
+          <div class="nr-amt">${formatTL(it.amount)}</div>
+        </div>
+        <button class="notif-trash" data-action="dismiss-notif" data-key="${esc(it.key)}" title="Kaldır">🗑</button>
       </div>`).join('')}
     </div>`;
   }
@@ -2361,10 +2409,10 @@ function renderAlertsContent(){
       <h2>Önemli Uyarılar</h2>
       <button class="giris-filter-chip" style="cursor:default;">Tümü <span class="chev">⌄</span></button>
     </div>
-    ${section('Günü Geçmiş Ödemeler', n.overdue, 'overdue')}
-    ${section('Son Günü Olan Ödemeler', n.dueToday, 'today')}
-    ${section((state.notifDaysAhead||5)+' Günden Az Kalan Ödemeler', n.soon, 'soon')}
-    <button class="cancel-btn" data-action="dismiss-all-notifs">Tümünü Okundu Yap</button>
+    ${group('Günü Geçmiş Ödemeler', n.overdue, 'overdue')}
+    ${group('Son Günü Olan Ödemeler', n.dueToday, 'today')}
+    ${group((state.notifDaysAhead||5)+' Günden Az Kalan Ödemeler', n.soon, 'soon')}
+    <button class="cancel-btn giris-done-btn" data-action="dismiss-all-notifs">✓ Tümünü Okundu Yap</button>
   `;
 }
 let appLockedNow = false; // Kilit ekranı gösterilirken true — bu sırada genel "aktiflik" dinleyicileri
