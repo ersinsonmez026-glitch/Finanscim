@@ -2930,15 +2930,28 @@ if(storageBroken) showStorageWarning();
 
 // Ensure nothing is lost when the person leaves: flush any open inline edit and force-save.
 // ---------- YAPAY ZEKA (OpenRouter) — Finans Asistanım ----------
-// SADECE OKUMA: Yapay zeka uygulamadaki hiçbir veriyi değiştiremez, hiçbir state-mutasyon
-// fonksiyonunu çağıramaz. Her mesajda uygulamanın GERÇEK güncel finansal özeti system prompt
-// içine gömülerek gönderilir; model bunun dışında bir veri "uydurmaz". Uygulama içi finans
-// verileri için tool calling kullanılmaz; güncel dış bilgi gerektiğinde OpenRouter'ın web
-// eklentisi (plugins:[{id:'web'}]) kullanılır.
-// NOT: "openrouter/free" diye bir model OpenRouter'da GEÇERLİ/erişilebilir bir model kimliği
-// DEĞİLDİR (böyle bir "router" modeli yok) — bu değer isteklerin tamamının 400/404 ile
-// başarısız olmasına yol açardı. Bilinen, erişilebilir bir modelle değiştirildi.
-const AI_MODEL = 'google/gemma-4-31b-it:free';
+// SADECE OKUMA (KESİN KURAL): Yapay zeka uygulamadaki verileri DOĞRUDAN ya da DOLAYLI hiçbir
+// şekilde değiştiremez — ekleyemez, silemez, düzenleyemez, "ödendi" işaretleyemez. Hiçbir
+// state-mutasyon fonksiyonunu çağırmaz/çağıramaz (uygulamada AI'nın çağırabileceği yazma
+// fonksiyonu YOK — bu dosyada AI'ya sadece salt-okunur get_* fonksiyonları görünür).
+// Her mesajda uygulamanın GERÇEK güncel finansal özeti system prompt içine düz metin olarak
+// gömülerek gönderilir; tool/function calling KULLANILMAZ (veri okuma için de, yazma için de).
+// Güncel dolar/euro/altın gibi dış bilgi gerektiğinde SADECE OpenRouter'ın web eklentisi
+// (plugins:[{id:'web'}]) kullanılır — bu, modelin kendisinden BAĞIMSIZ, OpenRouter tarafında
+// çalışan bir arama-sonuçlarını-sisteme-ekleme mekanizmasıdır, model "tool calling" desteklemese
+// bile çalışır.
+//
+// MODEL SEÇİMİ: "google/gemma-4-31b-it:free" günlük ücretsiz kotayı (kredisiz hesapta 50
+// istek/gün) hızla dolduruyordu ve kalite/Türkçe anlama açısından sınırlıydı. Uygulama tool
+// calling KULLANMADIĞI için modelin "tool calling" desteklemesi gerekmiyor — sadece iyi bir
+// genel dil/anlama kalitesi ve geniş bağlam yeterli. "qwen/qwen3-next-80b-a3b-instruct:free"
+// ile değiştirildi: aynı ücretsiz kota kurallarına tabi (kredisiz hesapta günde 50, hesaba bir
+// kez 10$ kredi yüklenirse günde 1000 istek — bkz. openrouter.ai/settings/credits), çok dilli
+// (Türkçe dahil) ve "thinking" (düşünme izi) üretmiyor, bu da CEVAPLARIN KISA kalması
+// kuralıyla (bkz. buildAiSystemPrompt) daha uyumlu. Model erişilemez hale gelirse (kaldırılır/
+// yeniden adlandırılırsa) openrouter.ai/models?max_price=0 üzerinden güncel bir ücretsiz model
+// seçip burada değiştirmek yeterli — başka hiçbir yeri değiştirmeye gerek yok.
+const AI_MODEL = 'qwen/qwen3-next-80b-a3b-instruct:free';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 let aiMessages = []; // {role:'user'|'assistant', text} — sadece bu oturumda tutulur.
 
