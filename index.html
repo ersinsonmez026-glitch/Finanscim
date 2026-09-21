@@ -46,7 +46,16 @@ button{font-family:var(--font-body);}
 .app{display:flex;height:100vh;height:100dvh;max-width:520px;margin:0 auto;position:relative;}
 
 /* ---- Finansçım mockup kodundan birebir alınan bileşenler (header, özet grid, panel/liste, piyasa, alt bar) ---- */
-.header{height:70px;display:grid;grid-template-columns:130px minmax(0,1fr) 130px;align-items:center;gap:5px;padding:3px 10px;position:sticky;top:0;z-index:5;background:var(--bg);}
+.header{height:70px;display:grid;grid-template-columns:130px minmax(0,1fr) 130px;align-items:center;gap:5px;padding:3px 10px;position:sticky;top:0;z-index:5;
+  background:var(--bg);
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  transition:height .18s ease,padding .18s ease;}
+.header.scrolled{height:54px;}
+.header.scrolled .brand-sub{display:none;}
+.header.scrolled .title h1{font-size:13.5px;}
+.header.scrolled .title p{display:none;}
+.header.scrolled .wallet{transform:scale(.82);}
 .brand{display:flex;align-items:center;gap:5px;min-width:0;overflow:hidden;}
 .brand>div:last-child{min-width:0;overflow:hidden;}
 .wallet{width:32px;height:26px;border-radius:8px;background:#07526a;position:relative;flex-shrink:0;}
@@ -56,7 +65,7 @@ button{font-family:var(--font-body);}
 .wallet.mini:after{right:-1px;top:4px;width:8px;height:6px;border-radius:2px;}
 .wallet.mini .leaf{width:8px;height:5px;left:4px;top:-4px;}
 .brand-name{font:700 16px "Brush Script MT","Segoe Script",cursive;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.brand-name-dark{display:none;}
+.brand-name-dark{display:none;filter:brightness(1.4) contrast(1.12);}
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]) .brand-name-light{display:none;}
   :root:not([data-theme="light"]) .brand-name-dark{display:inline-block;}
@@ -65,8 +74,8 @@ button{font-family:var(--font-body);}
 :root[data-theme="dark"] .brand-name-dark{display:inline-block;}
 .brand-sub{font-size:6.5px;color:#60759b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .title{text-align:center;min-width:0;overflow:hidden;}
-.title h1{font-size:16px;margin:0 0 3px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.title p{font-size:9.5px;color:#61759b;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.title h1{font-size:16px;margin:0 0 4px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;padding-bottom:3px;border-bottom:2.5px solid var(--page-accent,var(--accent));transition:border-color .2s;}
+.title p{font-size:9.5px;color:var(--ink-soft);font-weight:600;letter-spacing:.01em;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .bell{font-size:27px;text-align:right;position:relative;background:none;border:none;cursor:pointer;padding:2px;justify-self:end;transform-origin:50% 0%;}
 .badge{position:absolute;right:-5px;top:-6px;background:#ef2846;color:#fff;border-radius:50%;font-size:10px;width:18px;height:18px;display:grid;place-items:center;align-items:center;justify-content:center;line-height:1;text-align:center;}
 .bell.bell-active{animation:bellShake 3.6s ease-in-out infinite;}
@@ -534,6 +543,38 @@ button.mainCard{cursor:pointer;}
 .item-card.compact .cat-icon{width:30px;height:30px;border-radius:9px;font-size:14px;}
 
 @media (min-width:521px){ .app{border-left:1px solid var(--border);border-right:1px solid var(--border);} }
+
+/* ---- Uygulama Kilidi (4 haneli PIN) / Giriş Sayfası ---- */
+.settings-section{border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--surface);}
+.app.giris-mode .header{display:none;}
+.app.giris-mode .bottombar-wrap{display:none;}
+.app.giris-mode .content{padding:0 14px 24px;}
+.giris-page{display:flex;flex-direction:column;min-height:100%;}
+.giris-header{display:grid;grid-template-columns:60px minmax(0,1fr) 60px;align-items:center;gap:5px;padding:6px 0 14px;}
+.giris-header .bell{justify-self:start;}
+.giris-header .giris-settings-btn{justify-self:end;font-size:22px;background:none;border:none;cursor:pointer;padding:2px;line-height:1;color:var(--ink-soft);}
+.giris-header .giris-logo{justify-self:center;display:flex;align-items:center;gap:6px;min-width:0;}
+.giris-body{flex:1;display:flex;flex-direction:column;}
+.giris-footer{padding:14px 0 4px;}
+.lock-box{width:100%;max-width:340px;text-align:center;margin:auto;}
+.lock-icon{font-size:34px;margin-bottom:6px;}
+.lock-box h2{font-size:18px;margin:0 0 4px;font-family:var(--font-display);}
+.lock-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;}
+.pin-dots{display:flex;justify-content:center;gap:14px;margin:10px 0 24px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--border);background:transparent;transition:background .12s,border-color .12s;}
+.pin-dot.filled{background:var(--brand,#0aa3a3);border-color:var(--brand,#0aa3a3);}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:260px;margin:0 auto;}
+.pin-key{aspect-ratio:1;border-radius:50%;border:1px solid var(--border);background:var(--surface);font-size:20px;color:var(--ink);cursor:pointer;}
+.pin-key:active{background:var(--border);}
+.pin-error{color:var(--debt);font-size:12.5px;margin:14px 0 0;}
+.pin-forgot-link{margin-top:22px;background:none;border:none;color:var(--ink-soft);font-size:12.5px;text-decoration:underline;cursor:pointer;}
+.pin-question{font-size:14px;font-weight:600;margin:4px 0 14px;}
+.pin-answer-input{width:100%;box-sizing:border-box;padding:11px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--ink);font-size:14px;margin-bottom:12px;}
+.lock-box.shake{animation:pinShake .4s;}
+@keyframes pinShake{
+  0%,100%{transform:translateX(0);} 20%{transform:translateX(-9px);} 40%{transform:translateX(8px);}
+  60%{transform:translateX(-6px);} 80%{transform:translateX(5px);}
+}
 </style>
 </head>
 <body>
@@ -1046,7 +1087,9 @@ let state = load();
 let ui = { page:'home', loanDetailId:null, loanSort:'date' };
 
 function load(){
-  const defaults = { loans:[], loanStatus:{}, cards:[], cardStatements:[], kmhAccounts:[], bills:[], billOverrides:{}, debts:[], manualPayments:[], monthlyIncome:0, dismissedNotifs:[], visitCount:0, selectedMonth: monthKey(new Date()) };
+  const defaults = { loans:[], loanStatus:{}, cards:[], cardStatements:[], kmhAccounts:[], bills:[], billOverrides:{}, debts:[], manualPayments:[], monthlyIncome:0, dismissedNotifs:[], visitCount:0, selectedMonth: monthKey(new Date()),
+    uiTheme:'system',
+    appLock: { enabled:false, pinHash:null, question:null, answerHash:null, autoLockMs:300000 } };
   let s = defaults;
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1264,12 +1307,19 @@ const $content = document.getElementById('content');
 const $title = document.getElementById('pageTitle');
 const $fab = document.getElementById('fab');
 const $headerAction = document.getElementById('headerAction');
+// Giriş sayfasının ortasındaki logo, mevcut header'daki logonun ta kendisi — yeni/rastgele bir
+// logo üretmemek için DOM'daki gerçek görseli (küçük ikon + "Finansçım" yazı görseli) buradan alıp
+// giriş sayfası şablonunda yeniden kullanıyoruz.
+const BRAND_HTML = (document.querySelector('.header .brand') || {}).innerHTML || '';
 
 function navigate(page, extra){
+  if(isLocked() && page!=='giris'){ page='giris'; extra=null; }
   ui.page = page;
   if(extra) Object.assign(ui, extra);
   render();
   if($content) $content.scrollTop = 0;
+  const $headerEl = document.querySelector('.header');
+  if($headerEl) $headerEl.classList.remove('scrolled');
 }
 
 // ---------- NOTIFICATIONS ----------
@@ -1313,11 +1363,14 @@ function getNotifications(){
 function updateNotifBadge(){
   const n = getNotifications();
   const count = n.overdue.length + n.dueToday.length + n.soon.length;
+  // En ciddi bekleyen uyarı türüne göre rozet rengi: geciken (kırmızı) > bugün son gün (turuncu) > yaklaşan (sarı).
+  const sevColor = n.overdue.length ? 'var(--debt,#ef2846)' : (n.dueToday.length ? 'var(--pending,#e0812f)' : 'var(--soon,#e0c22f)');
   const badge = document.getElementById('notifBadge');
   const bell = document.getElementById('notifBell');
-  if(!badge) return;
-  if(count>0){ badge.textContent = count>9?'9+':count; badge.style.display='grid'; if(bell) bell.classList.add('bell-active'); }
-  else { badge.style.display='none'; if(bell) bell.classList.remove('bell-active'); }
+  if(badge){
+    if(count>0){ badge.textContent = count>9?'9+':count; badge.style.display='grid'; badge.style.background=sevColor; if(bell) bell.classList.add('bell-active'); }
+    else { badge.style.display='none'; if(bell) bell.classList.remove('bell-active'); }
+  }
 }
 
 // ---------- GÜNÜN SÖZÜ ----------
@@ -1392,14 +1445,22 @@ function render(){
   $headerAction.style.display='none';
   updateNotifBadge();
   const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, cards:renderCards, kmh:renderKmh,
-    bills:renderBills, billAdd:renderBillAdd, debts:renderDebts, debtAdd:renderDebtAdd, monthly:renderMonthly, ai:renderAI };
+    bills:renderBills, billAdd:renderBillAdd, debts:renderDebts, debtAdd:renderDebtAdd, monthly:renderMonthly, ai:renderAI, settings:renderSettings, giris:renderGiris };
   const fn = map[ui.page] || renderHome;
   const titles = { home:'Ana Sayfa', loans:'Kredilerim', loanDetail:'Kredi Detayı', cards:'Kredi Kartlarım', kmh:'KMH Durumum',
-    bills:'Abonelikler ve Faturalarım', billAdd:'Fatura / Abonelik Ekle', debts:'Borçlarım ve Alacaklarım', debtAdd:'Borç / Alacak Ekle', monthly:'Aylık', ai:'Finans Asistanım' };
+    bills:'Abonelikler ve Faturalarım', billAdd:'Fatura / Abonelik Ekle', debts:'Borçlarım ve Alacaklarım', debtAdd:'Borç / Alacak Ekle', monthly:'Aylık', ai:'Finans Asistanım', settings:'Ayarlar', giris:'Finansçım' };
   let pageTitle = titles[ui.page] || 'Finansçım';
   if(ui.page==='debts') pageTitle = (ui.debtFilter==='alacak') ? 'Alacaklarım' : 'Borçlarım';
   if(ui.page==='debtAdd') pageTitle = (ui.debtAddDir==='alacak') ? 'Alacaklarım' : 'Borçlarım';
   $title.textContent = pageTitle;
+  const $appEl = document.querySelector('.app');
+  if($appEl) $appEl.classList.toggle('giris-mode', ui.page==='giris');
+  // Sayfaya özel ince vurgu rengi (başlığın altındaki çizgi) — her sayfanın kendi rengini yansıtır.
+  const PAGE_ACCENTS = { home:'var(--accent)', loans:'var(--pending)', loanDetail:'var(--pending)', cards:'var(--debt)',
+    kmh:'var(--purple,var(--accent))', bills:'var(--soon)', billAdd:'var(--soon)', debts:'var(--paid)', debtAdd:'var(--paid)',
+    monthly:'var(--accent)', ai:'var(--accent)', settings:'var(--ink-soft)' };
+  const $headerEl = document.querySelector('.header');
+  if($headerEl) $headerEl.style.setProperty('--page-accent', PAGE_ACCENTS[ui.page] || 'var(--accent)');
   const $topbarDate = document.getElementById('topbarDate');
   if($topbarDate){
     const _now = new Date();
@@ -1450,6 +1511,13 @@ function render(){
       const cur = row.dataset.value || (row.querySelector('.active')||{}).dataset.val;
       updateDebtTypeExtra(cur);
     }
+  }
+  if(ui.page==='giris'){
+    attachLockFocus($content);
+  }
+  if(ui.page==='settings'){
+    const rf = document.getElementById('restoreFileInput');
+    if(rf) rf.addEventListener('change', ()=>{ const file = rf.files && rf.files[0]; if(file) importBackupFile(file); rf.value=''; });
   }
   if($content.querySelector('.wheel-col')) initWheelPickers($content);
   initLongPress($content);
@@ -2063,6 +2131,365 @@ function renderMonthly(){
   `;
 }
 
+// ---------- AYARLAR ----------
+const SECURITY_QUESTIONS = [
+  'İlkokul öğretmeninizin adı?',
+  'Çocukluk arkadaşınızın adı?',
+  'İlk evcil hayvanınızın adı?',
+  'Annenizin kızlık soyadı?',
+  'Doğduğunuz şehir neresi?'
+];
+const AUTO_LOCK_OPTIONS = [ {ms:0,label:'Hemen'}, {ms:60000,label:'1 dakika'}, {ms:300000,label:'5 dakika'}, {ms:900000,label:'15 dakika'} ];
+
+function applyTheme(mode){
+  const root = document.documentElement;
+  if(mode==='light') root.setAttribute('data-theme','light');
+  else if(mode==='dark') root.setAttribute('data-theme','dark');
+  else root.removeAttribute('data-theme');
+}
+
+function exportBackup(){
+  try{
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = 'financim-yedek-' + stamp + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }catch(e){ console.error('[Finansçım/Yedekle] Hata:', e); }
+}
+function importBackupFile(file){
+  const reader = new FileReader();
+  reader.onload = function(){
+    try{
+      const obj = JSON.parse(reader.result);
+      if(!obj || typeof obj!=='object') throw new Error('Geçersiz dosya');
+      askConfirm('Mevcut tüm veriler, seçtiğiniz yedek dosyasıyla değiştirilecek. Devam etmek istiyor musunuz?', ()=>{
+        state = Object.assign({}, load(), obj);
+        save();
+        applyTheme(state.uiTheme||'system');
+        markActive();
+        navigate('settings');
+      });
+    }catch(e){
+      alert('Dosya okunamadı veya geçerli bir Finansçım yedeği değil.');
+    }
+  };
+  reader.readAsText(file);
+}
+function performDataDelete(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  try{ localStorage.removeItem(LAST_ACTIVE_KEY); }catch(e){}
+  endLockFlow();
+  state = load();
+  lockFlow = null;
+  ui = { page:'home', loanDetailId:null, loanSort:'date' };
+  applyTheme('system');
+  render();
+}
+
+function renderSettings(){
+  $fab.style.display='none';
+  const lock = state.appLock || {};
+  const locked = !!lock.enabled;
+  const autoMs = (lock.autoLockMs!=null) ? lock.autoLockMs : 300000;
+  const theme = state.uiTheme || 'system';
+  return `
+    <div class="settings-section">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.03em;margin-bottom:10px;">GÜVENLİK</div>
+      <div class="toggle-row">
+        <span><b>PIN Kodu</b><br><small style="color:var(--ink-soft);">${locked?'PIN aktif — verileriniz korunuyor':'Kapalı — finansal verilerinizi 4 haneli PIN ile koruyun'}</small></span>
+      </div>
+      <button class="save-btn" style="margin-top:10px;" data-action="${locked?'open-pin-change':'open-pin-setup'}">${locked?"PIN'i Değiştir":'PIN Oluştur'}</button>
+      ${locked?`<button class="danger-btn" style="margin-top:8px;" data-action="open-pin-disable">PIN'i Kapat</button>`:''}
+      ${locked?`
+      <div style="margin-top:16px;">
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">Otomatik Kilitleme</div>
+        <div class="choice-row">${AUTO_LOCK_OPTIONS.map(o=>`<button data-action="set-autolock" data-ms="${o.ms}" class="${autoMs===o.ms?'active':''}">${o.label}</button>`).join('')}</div>
+      </div>`:''}
+    </div>
+
+    <div class="settings-section" style="margin-top:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.03em;margin-bottom:10px;">UYGULAMA</div>
+      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;">Görünüm</div>
+      <div class="choice-row">
+        <button data-action="set-theme" data-theme="system" class="${theme==='system'?'active':''}">Sistem</button>
+        <button data-action="set-theme" data-theme="light" class="${theme==='light'?'active':''}">Açık</button>
+        <button data-action="set-theme" data-theme="dark" class="${theme==='dark'?'active':''}">Koyu</button>
+      </div>
+    </div>
+
+    <div class="settings-section" style="margin-top:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);letter-spacing:.03em;margin-bottom:10px;">VERİLER</div>
+      <button class="save-btn" data-action="backup-data">Verileri Yedekle</button>
+      <button class="save-btn" style="margin-top:8px;" data-action="restore-data">Verileri Geri Yükle</button>
+      <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
+      <button class="danger-btn" style="margin-top:8px;" data-action="open-data-delete">Tüm Verileri Sil</button>
+    </div>
+    <div class="kr-info" style="margin-top:16px;">ⓘ <span>PIN, telefonunuzu elinize alan başka birinin finansal verilerinizi kolayca görmesini engeller. Unutursanız, belirlediğiniz hatırlatıcı soru ile PIN'i sıfırlayabilirsiniz.</span></div>
+  `;
+}
+
+// ---------- GİRİŞ SAYFASI (PIN ekranı / Önemli Uyarılar) ----------
+function girisPageHtml(bodyHtml, showFooter){
+  return `<div class="giris-page">
+    <div class="giris-header">
+      <button class="bell" id="girisBell" data-action="nav" data-page="giris" title="Bildirimler">🔔</button>
+      <div class="giris-logo">${BRAND_HTML}</div>
+      <button class="giris-settings-btn" data-action="nav" data-page="settings" title="Ayarlar">⚙️</button>
+    </div>
+    <div class="giris-body">${bodyHtml}</div>
+    ${showFooter ? `<div class="giris-footer"><button class="save-btn" data-action="nav" data-page="home">Ana Sayfa</button></div>` : ''}
+  </div>`;
+}
+function renderAlertsContent(){
+  const n = getNotifications();
+  const total = n.overdue.length + n.dueToday.length + n.soon.length;
+  function section(title, items, sevClass){
+    if(!items.length) return '';
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:7px;">${esc(title)}</div>
+      ${items.map(it=>`<div class="notif-row sev-${sevClass}" style="margin-bottom:6px;">
+        <div style="flex:1;min-width:0;">
+          <div class="n-name">${esc(it.name)}</div>
+          <div class="n-sub">${sevClass==='overdue'?(Math.abs(it.days)+' gün geçti'):(it.days===0?'bugün son gün':it.days+' gün kaldı')}</div>
+        </div>
+        <div class="n-amt">${formatTL(it.amount)}</div>
+        <button data-action="dismiss-notif" data-key="${esc(it.key)}" title="Kaldır" style="background:none;border:none;font-size:16px;cursor:pointer;color:var(--ink-soft);padding:4px 2px;">🗑</button>
+      </div>`).join('')}
+    </div>`;
+  }
+  if(total===0){
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 10px;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:var(--paid-soft);color:var(--paid);font-size:18px;">✓</span>
+        <span style="font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--ink);">Tebrikler!</span>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);margin-top:12px;max-width:260px;">Şu anda günü geçmiş veya bekleyen bir ödemeniz bulunmamaktadır.</p>
+    </div>`;
+  }
+  return `
+    <h2 style="font-size:18px;margin:2px 0 8px;font-family:var(--font-display);">Önemli Uyarılar</h2>
+    <div class="choice-row" style="margin-bottom:12px;"><button class="active" style="cursor:default;">Tümü</button></div>
+    ${section('Günü Geçmiş Ödemeler', n.overdue, 'overdue')}
+    ${section('Son Günü Olan Ödemeler', n.dueToday, 'today')}
+    ${section('5 Günden Az Kalan Ödemeler', n.soon, 'soon')}
+    <button class="cancel-btn" data-action="dismiss-all-notifs">Tümünü Okundu Yap</button>
+  `;
+}
+let appLockedNow = false; // Kilit ekranı gösterilirken true — bu sırada genel "aktiflik" dinleyicileri
+                           // son-aktif zaman damgasını GÜNCELLEMEMELİ; yoksa PIN'e dokunmak bile
+                           // kilidi (yanlış şekilde) açılmış gösterebilir.
+function renderGiris(){
+  $fab.style.display='none';
+  if(isLocked()){
+    appLockedNow = true;
+    if(!lockFlow || lockFlow.target!=='giris'){
+      lockFlow = { purpose:'unlock', target:'giris', mode:'enter', buffer:'', newPin:'', question:'', answer:'', error:'' };
+    }
+    return girisPageHtml(buildLockBoxHtml(lockFlow), false);
+  }
+  appLockedNow = false;
+  lockFlow = null;
+  return girisPageHtml(renderAlertsContent(), true);
+}
+
+// ---------- UYGULAMA KİLİDİ (4 haneli PIN) ----------
+// Sunucu/veritabanı olmayan bir uygulama olduğu için gerçek bir "kullanıcı adı" yok — tek
+// cihazda tek kullanıcı verisi var. Bunun yerine, isteyen kullanıcı Ayarlar'dan 4 haneli bir
+// PIN belirleyip verilerini başkalarının göz ucuyla görmesine karşı koruyabilir. PIN ve
+// hatırlatıcı soru cevabı düz metin DEĞİL, hash olarak saklanır (crypto.subtle varsa SHA-256,
+// yoksa basit bir yedek hash). Bu, üçüncü bir tarafın localStorage'a erişse bile PIN'i
+// doğrudan okuyamamasını sağlar — ama bu KESİN bir güvenlik önlemi değil, sadece "yanımdan
+// geçen biri ekrana bakarsa görmesin" seviyesinde bir gizlilik katmanıdır.
+async function hashText(str){
+  try{
+    if(window.crypto && crypto.subtle && crypto.subtle.digest){
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){ console.warn('[Finansçım/PIN] crypto.subtle kullanılamadı, yedek hash kullanılıyor:', e); }
+  // Yedek (crypto.subtle olmayan çok eski/kısıtlı ortamlar için) — geri döndürülemez basit hash.
+  let h1=0xdeadbeef, h2=0x41c6ce57;
+  for(let i=0;i<str.length;i++){
+    const ch=str.charCodeAt(i);
+    h1=Math.imul(h1^ch,2654435761); h2=Math.imul(h2^ch,1597334677);
+  }
+  h1 = Math.imul(h1^(h1>>>16),2246822507) ^ Math.imul(h2^(h2>>>13),3266489909);
+  h2 = Math.imul(h2^(h2>>>16),2246822507) ^ Math.imul(h1^(h1>>>13),3266489909);
+  return (h1>>>0).toString(16).padStart(8,'0') + (h2>>>0).toString(16).padStart(8,'0');
+}
+function currentAutoLockMs(){
+  const v = state.appLock && state.appLock.autoLockMs;
+  return (v!=null) ? v : 300000;
+}
+const LAST_ACTIVE_KEY = 'finanscim_last_active';
+function getLastActive(){
+  let v = 0;
+  try{ v = Number(localStorage.getItem(LAST_ACTIVE_KEY)); }catch(e){}
+  return isFinite(v) && v>0 ? v : 0;
+}
+let lastActiveWriteAt = 0;
+function markActive(){
+  const now = Date.now();
+  if(now - lastActiveWriteAt > 4000){
+    lastActiveWriteAt = now;
+    try{ localStorage.setItem(LAST_ACTIVE_KEY, String(now)); }catch(e){}
+  }
+}
+function isLocked(){
+  if(!(state.appLock && state.appLock.enabled)) return false;
+  const last = getLastActive();
+  return last===0 || (Date.now()-last) > currentAutoLockMs();
+}
+let lockFlow = null; // {purpose:'unlock'|'setup'|'change'|'disable'|'delete'|'forgotReset', target:'giris'|'modal', mode, buffer, newPin, question, answer, error}
+function pinPadHtml(digitsEntered){
+  const dots = Array.from({length:4}).map((_,i)=>`<span class="pin-dot ${i<digitsEntered?'filled':''}"></span>`).join('');
+  const nums = [1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-key" data-action="pin-key" data-digit="${n}">${n}</button>`).join('');
+  return `<div class="pin-dots">${dots}</div>
+    <div class="pin-keypad">${nums}<span></span><button class="pin-key" data-action="pin-key" data-digit="0">0</button><button class="pin-key" data-action="pin-backspace">⌫</button></div>`;
+}
+function buildLockBoxHtml(f){
+  if(!f) return '';
+  const showCancel = f.target==='modal';
+  let title='Uygulama Kilitli', sub="Devam etmek için PIN'inizi girin", body='';
+  if(f.mode==='enter'){
+    if(f.purpose==='change'){ title="PIN'i Değiştir"; sub="Önce mevcut PIN'inizi girin"; }
+    else if(f.purpose==='disable'){ title="PIN'i Kapat"; sub="Onaylamak için mevcut PIN'inizi girin"; }
+    else if(f.purpose==='delete'){ title='Verileri Sil'; sub="Onaylamak için mevcut PIN'inizi girin"; }
+    body = pinPadHtml(f.buffer.length)
+      + (f.error?`<p class="pin-error">${esc(f.error)}</p>`:'')
+      + (f.purpose==='unlock' && state.appLock.question ? `<button class="pin-forgot-link" data-action="pin-forgot">PIN'i unuttum</button>` : '')
+      + (showCancel ? `<button class="cancel-btn" style="margin-top:18px;" data-action="pin-cancel">Vazgeç</button>` : '');
+  } else if(f.mode==='forgotAsk'){
+    title='Hatırlatıcı Soru'; sub='';
+    body = `<p class="pin-question">${esc(state.appLock.question)}</p>
+      <input id="pinAnswerInput" class="pin-answer-input" type="text" autocomplete="off" placeholder="Cevabınız">
+      ${f.error?`<p class="pin-error">${esc(f.error)}</p>`:''}
+      <button class="save-btn" data-action="pin-check-answer">Kontrol Et</button>
+      <button class="cancel-btn" style="margin-top:8px;" data-action="pin-cancel-forgot">Vazgeç</button>`;
+  } else if(f.mode==='setNew1'){
+    title='Yeni PIN Belirle'; sub="4 haneli yeni PIN'inizi girin";
+    body = pinPadHtml(f.buffer.length) + (f.error?`<p class="pin-error">${esc(f.error)}</p>`:'') + (showCancel ? `<button class="cancel-btn" style="margin-top:18px;" data-action="pin-cancel">Vazgeç</button>` : '');
+  } else if(f.mode==='setNew2'){
+    title='Yeni PIN Belirle'; sub="Yeni PIN'inizi tekrar girin";
+    body = pinPadHtml(f.buffer.length) + (f.error?`<p class="pin-error">${esc(f.error)}</p>`:'') + (showCancel ? `<button class="cancel-btn" style="margin-top:18px;" data-action="pin-cancel">Vazgeç</button>` : '');
+  } else if(f.mode==='setQuestion'){
+    title='Hatırlatıcı Soru'; sub="PIN'i unutursanız bununla sıfırlayabilirsiniz";
+    body = `<div class="field" style="text-align:left;">
+        <label>Hatırlatıcı Sorunuz</label>
+        <select id="pinQSelect">
+          <option value="">Soru seçin…</option>
+          ${SECURITY_QUESTIONS.map(q=>`<option value="${esc(q)}" ${f.question===q?'selected':''}>${esc(q)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="text-align:left;"><label>Cevabınız</label><input id="pinAInput" type="text" autocomplete="off" placeholder="Cevap" value="${f.answer?esc(f.answer):''}"></div>
+      ${f.error?`<p class="pin-error">${esc(f.error)}</p>`:''}
+      <button class="save-btn" style="margin-top:6px;" data-action="pin-save-question">Kaydet</button>
+      ${showCancel ? `<button class="cancel-btn" style="margin-top:8px;" data-action="pin-cancel">Vazgeç</button>` : ''}`;
+  } else if(f.mode==='deleteConfirm'){
+    title='Verileri Sil'; sub='';
+    body = `<p style="font-size:13.5px;color:var(--ink);margin:0 0 16px;">Tüm verileriniz kalıcı olarak silinecek. Devam etmek istiyor musunuz?</p>
+      <button class="danger-btn" data-action="pin-confirm-delete">Evet, Tümünü Sil</button>
+      <button class="cancel-btn" style="margin-top:8px;" data-action="pin-cancel">Vazgeç</button>`;
+  }
+  return `<div class="lock-box" id="lockBox">
+      <div class="lock-icon">🔒</div>
+      <h2>${title}</h2>
+      ${sub?`<p class="lock-sub">${sub}</p>`:''}
+      ${body}
+    </div>`;
+}
+function attachLockFocus(container){
+  const root = container || document;
+  const ans = root.querySelector('#pinAnswerInput');
+  if(ans){ ans.focus(); ans.addEventListener('keydown', e=>{ if(e.key==='Enter') checkForgotAnswer(); }); }
+  const aInp = root.querySelector('#pinAInput');
+  if(aInp){ aInp.addEventListener('keydown', e=>{ if(e.key==='Enter') saveNewSecurityQuestion(); }); }
+}
+function shakeLock(){
+  const box = document.getElementById('lockBox');
+  if(!box) return;
+  box.classList.remove('shake'); void box.offsetWidth; box.classList.add('shake');
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+function refreshLockUI(){
+  if(!lockFlow) return;
+  if(lockFlow.target==='modal'){
+    $modalSheet.innerHTML = modalTemplates.pinFlow();
+    attachLockFocus($modalSheet);
+  } else {
+    render();
+  }
+}
+function startLockFlow(purpose, target){
+  lockFlow = { purpose, target, mode: purpose==='setup' ? 'setNew1' : 'enter', buffer:'', newPin:'', question:'', answer:'', error:'' };
+  if(target==='modal'){ openModal('pinFlow'); attachLockFocus($modalSheet); }
+  else { render(); }
+}
+function endLockFlow(){
+  const wasModal = lockFlow && lockFlow.target==='modal';
+  lockFlow = null;
+  if(wasModal) closeModal(); else render();
+}
+async function handlePinComplete(){
+  const f = lockFlow; if(!f) return;
+  const entered = f.buffer;
+  if(f.mode==='enter'){
+    const hash = await hashText(entered);
+    if(!lockFlow) return; // akış iptal edildiyse (ör. vazgeç) devam etme
+    if(f.purpose==='unlock'){
+      if(state.appLock.pinHash===hash){ lockFlow=null; markActive(); render(); }
+      else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
+    }else if(f.purpose==='delete'){
+      if(state.appLock.pinHash===hash){ f.mode='deleteConfirm'; f.buffer=''; f.error=''; refreshLockUI(); }
+      else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
+    }else{
+      if(state.appLock.pinHash===hash){
+        if(f.purpose==='disable'){
+          state.appLock = { enabled:false, pinHash:null, question:null, answerHash:null, autoLockMs: state.appLock.autoLockMs||300000 };
+          save(); endLockFlow(); if(ui.page==='settings') render();
+        }else{ f.mode='setNew1'; f.buffer=''; f.error=''; refreshLockUI(); }
+      }else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
+    }
+  }else if(f.mode==='setNew1'){
+    f.newPin = entered; f.buffer=''; f.mode='setNew2'; f.error=''; refreshLockUI();
+  }else if(f.mode==='setNew2'){
+    if(entered===f.newPin){ f.mode='setQuestion'; f.buffer=''; f.error=''; refreshLockUI(); }
+    else{ f.buffer=''; f.newPin=''; f.mode='setNew1'; f.error="PIN'ler eşleşmedi, tekrar deneyin."; refreshLockUI(); shakeLock(); }
+  }
+}
+async function checkForgotAnswer(){
+  const f = lockFlow; if(!f) return;
+  const inp = document.getElementById('pinAnswerInput');
+  const val = (inp && inp.value ? inp.value : '').trim().toLocaleLowerCase('tr-TR');
+  if(!val){ f.error='Lütfen bir cevap girin.'; refreshLockUI(); return; }
+  const hash = await hashText(val);
+  if(!lockFlow) return;
+  if(hash === state.appLock.answerHash){
+    f.purpose='forgotReset'; f.mode='setNew1'; f.buffer=''; f.newPin=''; f.error='';
+    refreshLockUI();
+  }else{ f.error='Cevap yanlış, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
+}
+async function saveNewSecurityQuestion(){
+  const f = lockFlow; if(!f) return;
+  const q = (document.getElementById('pinQSelect')||{}).value || '';
+  const a = (document.getElementById('pinAInput')||{}).value || '';
+  if(!q){ f.error='Lütfen bir hatırlatıcı soru seçin.'; refreshLockUI(); return; }
+  if(!a.trim()){ f.error='Lütfen cevabı doldurun.'; refreshLockUI(); return; }
+  const pinHash = await hashText(f.newPin);
+  const answerHash = await hashText(a.trim().toLocaleLowerCase('tr-TR'));
+  if(!lockFlow) return;
+  const purpose = f.purpose;
+  const prevAutoLock = (state.appLock && state.appLock.autoLockMs!=null) ? state.appLock.autoLockMs : 300000;
+  state.appLock = { enabled:true, pinHash, question:q, answerHash, autoLockMs:prevAutoLock };
+  save();
+  if(purpose==='forgotReset'){ lockFlow=null; markActive(); render(); }
+  else{ endLockFlow(); if(ui.page==='settings') render(); }
+}
+
 // ---------- MODALS ----------
 const $modalBackdrop = document.getElementById('modalBackdrop');
 const $modalSheet = document.getElementById('modalSheet');
@@ -2085,6 +2512,7 @@ function openModal(kind, id){
 function closeModal(){ $modalBackdrop.classList.remove('open'); $modalSheet.innerHTML=''; }
 
 const modalTemplates = {
+  pinFlow(){ return buildLockBoxHtml(lockFlow); },
   addLoan(){ return `
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>Kredi Ekle</h3>
@@ -2372,8 +2800,15 @@ const modalTemplates = {
 
 // ---------- EVENT DELEGATION ----------
 document.getElementById('navHomeBtn').addEventListener('click', ()=> navigate('home'));
+// iOS "large title" tarzı: içerik kaydırıldığında üst başlık küçülüp sıkışıyor, en üste dönünce eski haline geliyor.
+if($content){
+  $content.addEventListener('scroll', ()=>{
+    const $headerEl = document.querySelector('.header');
+    if($headerEl) $headerEl.classList.toggle('scrolled', $content.scrollTop > 16);
+  }, { passive:true });
+}
 document.getElementById('navAiBtn').addEventListener('click', ()=> navigate('ai'));
-document.getElementById('notifBell').addEventListener('click', ()=> openModal('notifications'));
+document.getElementById('notifBell').addEventListener('click', ()=> navigate('giris'));
 document.getElementById('downloadBtn').addEventListener('click', async ()=>{
   try{
     if(typeof claude === 'undefined' || !claude.use){
@@ -2457,6 +2892,66 @@ document.body.addEventListener('click', function(e){
   }
 
   if(action==='nav'){ navigate(t.dataset.page, t.dataset.id?{loanDetailId:t.dataset.id}:null); return; }
+
+  // ---- Ayarlar / PIN / Giriş Sayfası ----
+  if(action==='open-pin-setup'){ startLockFlow('setup','modal'); return; }
+  if(action==='open-pin-change'){ startLockFlow('change','modal'); return; }
+  if(action==='open-pin-disable'){ startLockFlow('disable','modal'); return; }
+  if(action==='open-data-delete'){
+    if(state.appLock && state.appLock.enabled){ startLockFlow('delete','modal'); }
+    else{
+      lockFlow = { purpose:'delete', target:'modal', mode:'deleteConfirm', buffer:'', newPin:'', question:'', answer:'', error:'' };
+      openModal('pinFlow'); attachLockFocus($modalSheet);
+    }
+    return;
+  }
+  if(action==='pin-key'){
+    const f = lockFlow; if(!f || f.buffer.length>=4) return;
+    f.buffer += t.dataset.digit;
+    if(f.buffer.length===4){ refreshLockUI(); handlePinComplete(); }
+    else{ refreshLockUI(); }
+    return;
+  }
+  if(action==='pin-backspace'){
+    const f = lockFlow; if(f){ f.buffer = f.buffer.slice(0,-1); refreshLockUI(); }
+    return;
+  }
+  if(action==='pin-forgot'){
+    const f = lockFlow; if(f){ f.mode='forgotAsk'; f.error=''; refreshLockUI(); }
+    return;
+  }
+  if(action==='pin-cancel-forgot'){
+    const f = lockFlow; if(f){ f.mode='enter'; f.buffer=''; f.error=''; refreshLockUI(); }
+    return;
+  }
+  if(action==='pin-cancel'){ endLockFlow(); return; }
+  if(action==='pin-check-answer'){ checkForgotAnswer(); return; }
+  if(action==='pin-save-question'){ saveNewSecurityQuestion(); return; }
+  if(action==='pin-confirm-delete'){ performDataDelete(); return; }
+  if(action==='set-autolock'){
+    if(state.appLock && state.appLock.enabled){ state.appLock.autoLockMs = Number(t.dataset.ms); save(); markActive(); render(); }
+    return;
+  }
+  if(action==='set-theme'){ state.uiTheme = t.dataset.theme; save(); applyTheme(state.uiTheme); render(); return; }
+  if(action==='backup-data'){ exportBackup(); return; }
+  if(action==='restore-data'){
+    const inp = document.getElementById('restoreFileInput');
+    if(inp) inp.click();
+    return;
+  }
+  if(action==='dismiss-notif'){
+    state.dismissedNotifs = state.dismissedNotifs||[];
+    if(!state.dismissedNotifs.includes(t.dataset.key)) state.dismissedNotifs.push(t.dataset.key);
+    save(); render();
+    return;
+  }
+  if(action==='dismiss-all-notifs'){
+    const n = getNotifications();
+    const keys = [...n.overdue, ...n.dueToday, ...n.soon].map(x=>x.key);
+    state.dismissedNotifs = Array.from(new Set([...(state.dismissedNotifs||[]), ...keys]));
+    save(); render();
+    return;
+  }
   if(action==='refresh-market'){ fetchLiveRates(); return; }
   if(action==='toggle-loan-sort'){
     ui.loanSort = (ui.loanSort==='amount') ? 'date' : 'amount';
@@ -2953,10 +3448,20 @@ function startInlineEdit(entityId, field, spanEl){
 }
 
 // initial dummy data note: start empty; render
+applyTheme(state.uiTheme||'system');
+if(isLocked()) ui.page = 'giris';
 state.visitCount = (state.visitCount||0) + 1;
 save();
 render();
 fetchLiveRates();
+// Kilit süresi dolduğunda (kullanıcı sekmeyi açık bırakıp uzun süre dokunmadığında) uygulamayı
+// otomatik olarak Giriş Sayfası'na döndürür — yeni bir gezinme/tıklama beklemeden.
+setInterval(()=>{ if(isLocked() && ui.page!=='giris'){ navigate('giris'); } }, 15000);
+// Kullanıcı uygulamayla etkileşimdeyken "son aktif" zamanını güncel tutar ki, aktif kullanım
+// sırasında otomatik kilitlenme tetiklenmesin.
+document.addEventListener('pointerdown', ()=>{ if(!appLockedNow) markActive(); }, { passive:true });
+document.addEventListener('keydown', ()=>{ if(!appLockedNow) markActive(); });
+document.addEventListener('scroll', ()=>{ if(!appLockedNow) markActive(); }, { passive:true, capture:true });
 const vcEl = document.getElementById('visitCountLabel');
 if(vcEl) vcEl.textContent = '🔢 Bu, ' + state.visitCount + '. açılışın (kalıcılık testi)';
 if(storageBroken) showStorageWarning();
