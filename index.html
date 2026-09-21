@@ -2941,17 +2941,20 @@ if(storageBroken) showStorageWarning();
 // çalışan bir arama-sonuçlarını-sisteme-ekleme mekanizmasıdır, model "tool calling" desteklemese
 // bile çalışır.
 //
-// MODEL SEÇİMİ: "google/gemma-4-31b-it:free" günlük ücretsiz kotayı (kredisiz hesapta 50
-// istek/gün) hızla dolduruyordu ve kalite/Türkçe anlama açısından sınırlıydı. Uygulama tool
-// calling KULLANMADIĞI için modelin "tool calling" desteklemesi gerekmiyor — sadece iyi bir
-// genel dil/anlama kalitesi ve geniş bağlam yeterli. "qwen/qwen3-next-80b-a3b-instruct:free"
-// ile değiştirildi: aynı ücretsiz kota kurallarına tabi (kredisiz hesapta günde 50, hesaba bir
-// kez 10$ kredi yüklenirse günde 1000 istek — bkz. openrouter.ai/settings/credits), çok dilli
-// (Türkçe dahil) ve "thinking" (düşünme izi) üretmiyor, bu da CEVAPLARIN KISA kalması
-// kuralıyla (bkz. buildAiSystemPrompt) daha uyumlu. Model erişilemez hale gelirse (kaldırılır/
-// yeniden adlandırılırsa) openrouter.ai/models?max_price=0 üzerinden güncel bir ücretsiz model
-// seçip burada değiştirmek yeterli — başka hiçbir yeri değiştirmeye gerek yok.
-const AI_MODEL = 'qwen/qwen3-next-80b-a3b-instruct:free';
+// MODEL SEÇİMİ: Önce "google/gemma-4-31b-it:free" kullanıldı (günlük kotayı hızla dolduruyordu,
+// kalite/Türkçe sınırlıydı), sonra tek bir başka ücretsiz modele (belirli bir "qwen/..." model
+// adına) sabitlendi — ancak OpenRouter'daki tekil ücretsiz modeller zaman zaman KALDIRILABİLİYOR
+// veya YENİDEN ADLANDIRILABİLİYOR; bu da elle seçilmiş bir model adının bir süre sonra "modele
+// ulaşılamadı" (404) hatasına yol açmasına neden oldu.
+// Bu riski KÖKTEN ortadan kaldırmak için OpenRouter'ın resmi "Free Models Router" (Ücretsiz
+// Model Yönlendiricisi) kullanılıyor: model kimliği olarak sabit "openrouter/free" gönderilir,
+// OpenRouter bu isteği o an GERÇEKTEN erişilebilir olan bir ücretsiz modele otomatik yönlendirir.
+// Böylece belirli bir modelin kaldırılması/adının değişmesi artık uygulamayı BOZMAZ. Kaynak:
+// openrouter.ai/docs/guides/routing/routers/free-router (resmi OpenRouter dokümantasyonu).
+// Aynı ücretsiz kota kuralları geçerli: kredisiz hesapta günde 50, hesaba bir kez 10$ kredi
+// yüklenirse günde 1000 istek (openrouter.ai/settings/credits). Uygulama tool calling
+// KULLANMADIĞI için yönlendirilen modelin "tool calling" desteklemesi de gerekmiyor.
+const AI_MODEL = 'openrouter/free';
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 let aiMessages = []; // {role:'user'|'assistant', text} — sadece bu oturumda tutulur.
 
@@ -3106,6 +3109,13 @@ async function callOpenRouter(messages, userText=''){
   const key = getORKey();
   if(!key){ const e = new Error('API anahtarı ayarlanmamış. Lütfen önce ⚙ API Ayarı üzerinden anahtarını gir.'); e.kind='no_key'; throw e; }
   const body = { model: AI_MODEL, messages };
+  // Bazı hesaplarda OpenRouter'ın varsayılan gizlilik/veri politikası, verileri eğitimde
+  // kullanabilen/loglayan ücretsiz uç noktaları (ki ücretsiz modellerin neredeyse tamamı böyledir)
+  // otomatik olarak filtreleyip 404 "No endpoints available matching your guardrail
+  // restrictions and data policy" hatası döndürebiliyor. Bunu hesap ayarlarına gitmeden, istek
+  // başına izin vererek çözüyoruz — OpenRouter'ın resmi "provider.data_collection" parametresi
+  // (kaynak: openrouter.ai/docs/guides/routing/provider-selection).
+  body.provider = { data_collection: 'allow', zdr: false };
   // Güncel fiyat/faiz/kur vb. gerektiğinde OpenRouter'ın web aramasını aç.
   // Normal Finansçım sorularında gereksiz web araması yapılmaz.
   if(needsCurrentWebSearch(userText)){
