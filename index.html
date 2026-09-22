@@ -1099,9 +1099,9 @@ function wheelCol(id, items, selectedValue, width){
     <div class="wheel-spacer"></div>
   </div>`;
 }
-function dayWheel(id, selectedDay){
+function dayWheel(id, selectedDay, width){
   const items = []; for(let d=1;d<=31;d++) items.push({value:d, label:String(d)});
-  return `<div class="wheel-picker">${wheelCol(id, items, selectedDay||new Date().getDate(), 100)}<div class="wheel-highlight"></div></div>`;
+  return `<div class="wheel-picker">${wheelCol(id, items, selectedDay||new Date().getDate(), width||48)}<div class="wheel-highlight"></div></div>`;
 }
 function loanDateWheel(idPrefix, selMonth, selDay){
   const monthItems = [];
@@ -1870,7 +1870,7 @@ function renderHome(){
       </button>
       <button class="mainCard c2" data-action="nav" data-page="monthly">
         <div class="circle" style="background:none;"><img src="${ICON_AYLIK_BORC}" alt="" style="width:34px;height:34px;border-radius:50%;display:block;"></div>
-        <div class="cardText"><strong>Aylık Borç</strong><span>Bu ay ödenecek toplam tutar</span></div>
+        <div class="cardText"><strong>Aylık Borç</strong><span>Ödediklerinizi işaretlemek için dokunun</span></div>
         <div class="amount">${formatTL(aylikBorc)}</div>
         <div class="go">›</div>
       </button>
@@ -2214,8 +2214,7 @@ function renderBillAdd(){
         <div class="toggle-row" style="margin-top:2px;"><span>Talimat var mı</span><div class="switch" id="f_autoPay" data-action="toggle-switch"><div class="knob"></div></div></div>
       </div>
     </div>
-    <div class="section-title">Son Ödeme Tarihi</div>
-    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('billDayChoice')}</div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('billDayChoice')}<span class="wheel-note">'i</span></div>
     <p style="font-size:10.5px;color:var(--ink-soft);margin:2px 0 4px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
     <div class="billadd-spacer"></div>
     <div class="btn-row">
@@ -2576,10 +2575,14 @@ function renderSettings(){
           :notifPerm==='denied'?`<span style="color:#C0392B;font-size:12px;">Kapalı — iOS Ayarlar'dan aç</span>`
           :`<button class="pill-btn" data-action="request-notif-permission">İzin Ver</button>`}
       </div>`:''}
+      <div class="settings-row">
+        <span>Bildirim Sesi</span>
+        <div class="switch ${soundOn?'on':''}" data-action="toggle-notif-sound"><div class="knob"></div></div>
+      </div>
     </div>
 
     <div class="settings-section" style="margin-top:8px;">
-      ${settingsSectionHead('🎨','badge-orange','Uygulama','Görünüm ve ses')}
+      ${settingsSectionHead('🎨','badge-orange','Uygulama','Görünüm')}
       <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:5px;">
         <span>Görünüm</span>
         <div class="choice-row">
@@ -2587,10 +2590,6 @@ function renderSettings(){
           <button data-action="set-theme" data-theme="light" class="${theme==='light'?'active':''}">Açık</button>
           <button data-action="set-theme" data-theme="dark" class="${theme==='dark'?'active':''}">Koyu</button>
         </div>
-      </div>
-      <div class="settings-row">
-        <span>Bildirim Sesi</span>
-        <div class="switch ${soundOn?'on':''}" data-action="toggle-notif-sound"><div class="knob"></div></div>
       </div>
     </div>
 
@@ -3047,8 +3046,7 @@ const modalTemplates = {
       <div class="field icon-field"><label>Bu Ay Ödenecek (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
       <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: Alışveriş Kartım"></div>
     </div>
-    <div class="section-title">Son Ödeme Tarihi</div>
-    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('cardDayChoice')}</div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('cardDayChoice')}<span class="wheel-note">'i</span></div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-card">Kaydet</button>
@@ -3072,8 +3070,7 @@ const modalTemplates = {
       <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(c.name||'')}" placeholder="Örn: Alışveriş Kartım"></div>
     </div>
     <div class="toggle-row"><span>Bu ay ödendi olarak işaretle</span><div class="switch ${st&&st.status==='odendi'?'on':''}" id="f_paid" data-action="toggle-switch"><div class="knob"></div></div></div>
-    <div class="section-title">Son Ödeme Tarihi</div>
-    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('cardDayChoice', c.dueDay)}</div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('cardDayChoice', c.dueDay)}<span class="wheel-note">'i</span></div>
     ${fi.total>0 ? `
     <p style="font-size:13px;color:var(--ink-soft);margin:8px 0 2px;line-height:1.5;">
       <b style="color:var(--ink);">TOPLAM FAİZ ≈ ${formatTL(fi.total)}</b><br>
@@ -3096,8 +3093,7 @@ const modalTemplates = {
       <div class="field icon-field"><label>KMH Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
       <div class="field icon-field"><label>Güncel Toplam Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
     </div>
-    <div class="section-title">Son Ödeme Tarihi</div>
-    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('kmhDayChoice')}</div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('kmhDayChoice')}<span class="wheel-note">'i</span></div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-kmh">Kaydet</button>
@@ -3123,8 +3119,7 @@ const modalTemplates = {
       <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_kmhRate" type="text" inputmode="decimal" class="tl-input" value="${k.customMonthlyRate!=null ? (k.customMonthlyRate*100).toLocaleString('tr-TR') : ''}" placeholder="~%${(bankRate*100).toLocaleString('tr-TR',{maximumFractionDigits:2})}"></div>
     </div>
     <p style="font-size:10.5px;color:var(--ink-soft);margin:-4px 0 8px;">Ödenecek borç, bu dönem ayırdığınız tutardır — toplamın tamamı olmak zorunda değil. Faiz oranı boş bırakılırsa bankanın yaklaşık oranı kullanılır.</p>
-    <div class="section-title">Son Ödeme Tarihi</div>
-    <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('kmhDayChoice', k.dueDay)}</div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('kmhDayChoice', k.dueDay)}<span class="wheel-note">'i</span></div>
     <p class="kmh-interest-note">Günlük faiz (BSMV + KKDF dahil) yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
     ${planned>0?`<button class="save-btn" style="background:var(--paid);margin-bottom:4px;" data-action="mark-kmh-paid" data-id="${id}">Ödenecek Borcu Ödendi Olarak İşaretle</button>
     <p style="font-size:10px;color:var(--ink-soft);margin:0 0 8px;">Ödediğin tutar önce birikmiş faize, kalanı anaparaya uygulanır — borç, ödediğin tutarın tamamı kadar azalmayabilir.</p>`:''}
