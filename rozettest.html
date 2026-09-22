@@ -8,21 +8,33 @@
 <meta name="apple-mobile-web-app-title" content="RozetTest">
 <title>Rozet Testi</title>
 <style>
-  body{font-family:-apple-system,sans-serif;background:#F7FAF9;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;padding:20px;text-align:center;}
+  body{font-family:-apple-system,sans-serif;background:#F7FAF9;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:20px;text-align:center;}
   button{font-size:18px;padding:16px 28px;border-radius:14px;border:none;background:#146EB9;color:#fff;margin:8px;}
+  button.izin{background:#C0392B;}
   #log{font-size:13px;color:#5A7378;margin-top:20px;white-space:pre-wrap;}
 </style>
 </head>
 <body>
 <h2>Rozet (Badge) Testi</h2>
-<p>Bu sayfayi ana ekrana ekleyip ikondan ac, sonra asagidaki butona bas.</p>
-<button onclick="setBadge()">Rozeti 5 Yap</button>
+<p>Once bildirim izni iste, sonra rozeti dene.</p>
+<button class="izin" onclick="istePermission()">1) Bildirim İzni İste</button>
+<br>
+<button onclick="setBadge()">2) Rozeti 5 Yap</button>
 <button onclick="clearBadge()">Rozeti Temizle</button>
 <div id="log"></div>
 <script>
 function log(msg){ document.getElementById('log').textContent += msg + '\n'; }
 log('setAppBadge destekleniyor mu: ' + ('setAppBadge' in navigator));
 log('standalone mi: ' + (window.navigator.standalone === true));
+log('Notification API var mi: ' + ('Notification' in window));
+if('Notification' in window) log('mevcut izin durumu: ' + Notification.permission);
+
+function istePermission(){
+  if(!('Notification' in window)){ log('HATA: Notification API yok'); return; }
+  Notification.requestPermission().then(perm=>{
+    log('izin sonucu: ' + perm);
+  }).catch(e=>log('HATA: ' + e));
+}
 function setBadge(){
   if(!('setAppBadge' in navigator)){ log('HATA: setAppBadge yok'); return; }
   navigator.setAppBadge(5).then(()=>log('setAppBadge(5) basarili cagrildi')).catch(e=>log('HATA: ' + e));
