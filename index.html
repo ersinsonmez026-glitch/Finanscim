@@ -487,15 +487,19 @@ button.mainCard{cursor:pointer;}
 .item-title-row{display:flex;align-items:center;gap:8px;}
 
 .kind-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:6px;}
-.debt-add-form{display:flex;flex-direction:column;min-height:100%;}
-.debt-add-form .billadd-spacer{flex:1;}
+.debt-add-form{display:flex;flex-direction:column;min-height:100%;justify-content:space-between;}
 .debt-add-form .back-link{padding-bottom:6px;}
 .debt-add-form .kind-toggle{margin-bottom:8px;}
 .debt-add-form h3{margin:0 0 6px;font-size:16px;}
 #content h3{margin:2px 0 5px;font-size:16px;}
-.billadd-wrap{display:flex;flex-direction:column;min-height:100%;}
-.billadd-wrap .billadd-spacer{flex:1;}
+.billadd-wrap{display:flex;flex-direction:column;min-height:100%;justify-content:space-between;}
 .billadd-wrap .btn-row{flex-shrink:0;}
+.page-top-block{flex-shrink:0;}
+.page-fields-block{flex-shrink:0;}
+.page-fields-block .section-title{margin-top:18px;}
+.page-fields-block .section-title:first-of-type{margin-top:2px;}
+.page-fields-block .field-row{margin-bottom:4px;}
+.page-fields-block .wheel-field{margin:12px 0 8px;}
 .debt-add-form .section-title{margin:8px 0 5px;}
 .debt-add-form .field{margin-bottom:2px;}
 .debt-add-form .field-row{gap:8px;}
@@ -970,10 +974,10 @@ const FATURA_KURUMLAR = [
   {name:'Doğalgaz', icon:'🔥', logo:LOGO_DOGALGAZ, bg:'#F7E9E7', color:'#B3483C'},
   {name:'Telefon', icon:'📱', logo:LOGO_TELEFON, bg:'#EDE9F5', color:'#6B5B95'},
   {name:'İnternet', icon:'🌐', logo:LOGO_INTERNET, bg:'#DEF0EF', color:'#0E7C86'},
-  {name:'Uydu TV', icon:'📡', logo:LOGO_TELEVIZYON, bg:'#F7E2E2', color:'#B3413C'},
-  {name:'Sabit Telefon', icon:'☎️', logo:LOGO_TELEFON, bg:'#F7E2E2', color:'#B3413C'},
   {name:'Kira', icon:'🏠', logo:LOGO_KIRA, bg:'#F7E2E2', color:'#B3413C'},
   {name:'Aidat', icon:'🏢', logo:LOGO_AIDAT, bg:'#E4ECF5', color:'#3B6B95'},
+  {name:'Isınma', icon:'♨️', logo:LOGO_DOGALGAZ, bg:'#F7E9E7', color:'#B3483C'},
+  {name:'Sigorta', icon:'🛡️', logo:LOGO_DIGER, bg:'#E4ECF5', color:'#3B6B95'},
   {name:'Diğer', icon:'⋯', logo:LOGO_DIGER, bg:'#EAEDF0', color:'#4A5568'},
 ];
 // Netflix, Spotify, YouTube, Disney+, Prime Video, MUBI ve TV+ için kullanıcının
@@ -1870,13 +1874,13 @@ function renderHome(){
       </button>
       <button class="mainCard c2" data-action="nav" data-page="monthly">
         <div class="circle" style="background:none;"><img src="${ICON_AYLIK_BORC}" alt="" style="width:34px;height:34px;border-radius:50%;display:block;"></div>
-        <div class="cardText"><strong>Aylık Borç</strong><span>Ödediklerinizi işaretlemek için dokunun</span></div>
+        <div class="cardText"><strong>Aylık Borç</strong><span>Ödemelerinizi görmek ve işaretlemek için dokunun</span></div>
         <div class="amount">${formatTL(aylikBorc)}</div>
         <div class="go">›</div>
       </button>
       <div class="mainCard c3">
         <div class="circle" style="background:none;"><img src="${ICON_AYLIK_KALAN}" alt="" style="width:34px;height:34px;border-radius:50%;display:block;"></div>
-        <div class="cardText"><strong>Aylık Kalan</strong><span>Gelirinizden sonra kalan tutar</span></div>
+        <div class="cardText"><strong>Aylık Kalan</strong><span>Ödemelerden sonra size kalan tutar</span></div>
         <div class="amount">${formatTL(aylikKalan)}</div>
         <div class="go">›</div>
       </div>
@@ -2193,12 +2197,15 @@ function renderBillAdd(){
   const pool = kind==='bill' ? FATURA_KURUMLAR : ABONELIK_KURUMLAR;
   return `
     <div class="billadd-wrap">
+    <div class="page-top-block">
     <button class="back-link" data-action="nav" data-page="bills">‹ Geri</button>
     <div class="kind-toggle">
       <button class="${kind==='bill'?'active':''}" data-action="set-bill-kind" data-kind="bill">📄 Fatura</button>
       <button class="${kind==='subscription'?'active':''}" data-action="set-bill-kind" data-kind="subscription">∞ Abonelik</button>
     </div>
     <h3>${kind==='bill' ? 'Yeni Fatura Ekle' : 'Yeni Abonelik Ekle'}</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">1. Kurum/Hizmet Sağlayıcı<small>Tıpkı banka seçer gibi seçin</small></div>
     <div class="field">${kurumChipRow('billKurumChoice', pool)}</div>
     <div class="section-title">2. ${kind==='bill'?'Fatura':'Abonelik'} Bilgileri</div>
@@ -2216,7 +2223,7 @@ function renderBillAdd(){
     </div>
     <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('billDayChoice')}<span class="wheel-note">'i</span></div>
     <p style="font-size:10.5px;color:var(--ink-soft);margin:2px 0 4px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
-    <div class="billadd-spacer"></div>
+    </div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="nav" data-page="bills">Vazgeç</button>
       <button class="save-btn" data-action="save-bill" data-kind="${kind}">Kaydet</button>
@@ -2383,12 +2390,15 @@ function renderDebtAdd(){
   const dir = ui.debtAddDir || 'borcum';
   return `
     <div class="debt-add-form">
+    <div class="page-top-block">
     <button class="back-link" data-action="nav" data-page="debts">‹ Geri</button>
     <div class="kind-toggle">
       <button class="${dir==='borcum'?'active':''}" data-action="set-debt-dir" data-dir="borcum">Borçlarım</button>
       <button class="${dir==='alacak'?'active':''}" data-action="set-debt-dir" data-dir="alacak">Alacaklarım</button>
     </div>
     <h3>${dir==='borcum' ? 'Yeni Borç Ekle' : 'Yeni Alacak Ekle'}</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">1. Kişi</div>
     <div class="field icon-field"><label>İsim <span style="color:var(--debt);">*</span></label><span class="fi">A</span><input id="f_person" autocomplete="off" autocapitalize="words" spellcheck="false" required placeholder="Örn: Göktuğ Sönmez"></div>
     <div class="section-title">2. Tür<small>Tıpkı banka seçer gibi seçin</small></div>
@@ -2401,7 +2411,7 @@ function renderDebtAdd(){
     </div>
     <div class="section-title">4. Tarih</div>
     <div class="field" style="display:flex;justify-content:center;">${fullDateWheel('debtDateWheel')}</div>
-    <div class="billadd-spacer"></div>
+    </div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="nav" data-page="debts">Vazgeç</button>
       <button class="save-btn" data-action="save-debt" data-dir="${dir}">Kaydet</button>
