@@ -194,6 +194,10 @@ button.mainCard{cursor:pointer;}
 
 .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;height:100dvh;overflow:hidden;}
 .content{flex:1;overflow-y:auto;padding:4px 14px 108px;}
+@keyframes navSlideBack{from{transform:translateX(-6%);opacity:.45;}to{transform:translateX(0);opacity:1;}}
+@keyframes navSlideFwd{from{transform:translateX(6%);opacity:.45;}to{transform:translateX(0);opacity:1;}}
+.content.nav-slide-back{animation:navSlideBack .38s cubic-bezier(.22,.61,.36,1);}
+.content.nav-slide-fwd{animation:navSlideFwd .38s cubic-bezier(.22,.61,.36,1);}
 .content.home-fit{overflow:hidden;padding-top:1px;}
 .content.ai-fit{overflow:hidden;}
 
@@ -577,8 +581,8 @@ button.mainCard{cursor:pointer;}
 /* Giriş (açılış) sayfasında tek logo büyütülmüş halde gösterilir; Ayarlar'ın geri başlığında ise normal (küçük) boyutta kalır. */
 /* Giriş sayfasındaki tek logo, kendi görseli (metin altta) — %100 büyütülmüş (64px -> 128px). */
 .giris-page .giris-header .giris-logo .giris-brand-logo{height:128px;width:auto;display:block;}
-.giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 8px;font-size:13.5px;font-style:italic;font-weight:600;color:var(--ink-soft);font-family:var(--font-display);}
-.giris-greeting{text-align:center;white-space:normal;overflow:visible;margin:0 0 2px;font-size:16px;font-weight:800;color:var(--ink);font-family:var(--font-display);min-height:20px;}
+.giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 8px;padding:2px 4px 0;font:13px/1.1 "Brush Script MT","Segoe Script",cursive;color:var(--paid);min-height:15px;}
+.giris-greeting{text-align:center;white-space:normal;overflow:visible;margin:0 0 2px;font-size:19px;font-weight:700;color:#146EB9;font-family:"Brush Script MT","Segoe Script",cursive;min-height:24px;}
 .tips-list{display:flex;flex-direction:column;gap:12px;margin:10px 0 4px;}
 .tips-item{display:flex;gap:10px;align-items:flex-start;}
 .tips-item-icon{font-size:22px;line-height:1;flex-shrink:0;width:28px;text-align:center;}
@@ -1205,6 +1209,7 @@ function navigateBack(){
   ui = navStack.pop();
   render();
   if($content) $content.scrollTop = 0;
+  playNavTransition('back');
   return true;
 }
 function navigateForward(){
@@ -1213,7 +1218,16 @@ function navigateForward(){
   ui = navFwdStack.pop();
   render();
   if($content) $content.scrollTop = 0;
+  playNavTransition('forward');
   return true;
+}
+// Geri/ileri gezinme sırasında içerik hafif ve biraz yavaş bir kayma efektiyle (soldan/sağdan
+// kayarak) belirir — geri giderken soldan, ileri giderken sağdan kayar.
+function playNavTransition(dir){
+  if(!$content) return;
+  $content.classList.remove('nav-slide-back','nav-slide-fwd');
+  void $content.offsetWidth; // reflow: aynı sınıf art arda eklenirse animasyon yeniden tetiklensin
+  $content.classList.add(dir==='back' ? 'nav-slide-back' : 'nav-slide-fwd');
 }
 
 function load(){
@@ -1584,7 +1598,7 @@ let girisTypewriterTimer = null;
 function ensureGirisTypewriter(){
   const el = document.getElementById('girisTypewriter');
   if(!el) return;
-  if(!girisTypewriterText) girisTypewriterText = getDayQuote();
+  if(!girisTypewriterText) girisTypewriterText = '“' + getDayQuote() + '”';
   if(girisTypewriterDone){ el.textContent = girisTypewriterText; return; }
   el.textContent = girisTypewriterText.slice(0, girisTypewriterIndex);
   if(girisTypewriterTimer) return; // yazma zaten sürüyor, yeniden başlatma
@@ -1605,10 +1619,10 @@ let girisGreetingDone = false;
 let girisGreetingTimer = null;
 function ensureGirisGreeting(){
   const el = document.getElementById('girisGreeting');
-  if(!el) return;
-  if(!state.userName) return;
-  if(!girisGreetingText) girisGreetingText = 'Hoşgeldin ' + state.userName;
-  if(girisGreetingDone){ el.textContent = girisGreetingText; return; }
+  if(!el){ ensureGirisTypewriter(); return; }
+  if(!state.userName){ ensureGirisTypewriter(); return; }
+  if(!girisGreetingText) girisGreetingText = 'Hoşgeldin ' + capitalizeWordsTr(state.userName) + '...';
+  if(girisGreetingDone){ el.textContent = girisGreetingText; ensureGirisTypewriter(); return; }
   el.textContent = girisGreetingText.slice(0, girisGreetingIndex);
   if(girisGreetingTimer) return; // yazma zaten sürüyor, yeniden başlatma
   girisGreetingTimer = setInterval(()=>{
@@ -1617,6 +1631,8 @@ function ensureGirisGreeting(){
     if(target) target.textContent = girisGreetingText.slice(0, girisGreetingIndex);
     if(girisGreetingIndex >= girisGreetingText.length){
       clearInterval(girisGreetingTimer); girisGreetingTimer = null; girisGreetingDone = true;
+      // Selamlama bitince, günün sözü AYNI hızda yazılmaya başlar (art arda, aynı anda değil).
+      ensureGirisTypewriter();
     }
   }, 40);
 }
@@ -1703,7 +1719,7 @@ function render(){
   // Giriş sayfasının kendi zil rozeti #content içinde yeniden oluşturulduğu için,
   // yukarıdaki ilk updateNotifBadge() çağrısı henüz DOM'da yokken çalışmış olabilir.
   // İçerik yazıldıktan sonra bir kez daha senkronize ediyoruz.
-  if(ui.page==='giris'){ updateNotifBadge(); ensureGirisGreeting(); ensureGirisTypewriter(); }
+  if(ui.page==='giris'){ updateNotifBadge(); ensureGirisGreeting(); }
   if(ui.page==='ai'){
     const el = document.getElementById('aiMessages');
     if(el) el.scrollTop = el.scrollHeight;
@@ -2824,13 +2840,18 @@ async function checkForgotAnswer(){
     refreshLockUI();
   }else{ f.error='Cevap yanlış, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
 }
+// Türkçe kurallarına göre her kelimenin baş harfini büyütür (ör. "ersin yilmaz" -> "Ersin Yilmaz").
+function capitalizeWordsTr(str){
+  return str.split(' ').map(w => w ? w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1) : w).join(' ');
+}
 function saveEnteredName(){
   const f = lockFlow; if(!f) return;
   const inp = document.getElementById('pinNameInput');
   const val = (inp && inp.value ? inp.value : '').trim();
   if(!val){ f.error='Lütfen adınızı girin.'; refreshLockUI(); return; }
-  f.name = val; f.error='';
-  state.userName = val; save();
+  const nameCap = capitalizeWordsTr(val);
+  f.name = nameCap; f.error='';
+  state.userName = nameCap; save();
   f.mode='setNew1'; f.buffer='';
   refreshLockUI();
 }
@@ -3896,7 +3917,10 @@ fetchLiveRates();
     if(e.touches.length!==1) return;
     const t = e.touches[0];
     sx = t.clientX; sy = t.clientY; tracking = true;
-    skipGesture = !!(e.target.closest && e.target.closest('.bank-grid, .wheel-col'));
+    // Bir modal (ör. Kredi/Kart/KMH ekleme formu) açıkken kaydırma, ARKADAKİ sayfayı geri/ileri
+    // götürmemeli — kullanıcı önce Kaydet/Vazgeç ya da modal içindeki geri okuna basmalı.
+    const modalOpen = $modalBackdrop && $modalBackdrop.classList.contains('open');
+    skipGesture = modalOpen || !!(e.target.closest && e.target.closest('.bank-grid, .wheel-col'));
   }, {passive:true});
   document.addEventListener('touchend', e=>{
     if(!tracking) return;
