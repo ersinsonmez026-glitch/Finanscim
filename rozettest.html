@@ -1,1 +1,36 @@
-
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="RozetTest">
+<title>Rozet Testi</title>
+<style>
+  body{font-family:-apple-system,sans-serif;background:#F7FAF9;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;padding:20px;text-align:center;}
+  button{font-size:18px;padding:16px 28px;border-radius:14px;border:none;background:#146EB9;color:#fff;margin:8px;}
+  #log{font-size:13px;color:#5A7378;margin-top:20px;white-space:pre-wrap;}
+</style>
+</head>
+<body>
+<h2>Rozet (Badge) Testi</h2>
+<p>Bu sayfayi ana ekrana ekleyip ikondan ac, sonra asagidaki butona bas.</p>
+<button onclick="setBadge()">Rozeti 5 Yap</button>
+<button onclick="clearBadge()">Rozeti Temizle</button>
+<div id="log"></div>
+<script>
+function log(msg){ document.getElementById('log').textContent += msg + '\n'; }
+log('setAppBadge destekleniyor mu: ' + ('setAppBadge' in navigator));
+log('standalone mi: ' + (window.navigator.standalone === true));
+function setBadge(){
+  if(!('setAppBadge' in navigator)){ log('HATA: setAppBadge yok'); return; }
+  navigator.setAppBadge(5).then(()=>log('setAppBadge(5) basarili cagrildi')).catch(e=>log('HATA: ' + e));
+}
+function clearBadge(){
+  if(!('clearAppBadge' in navigator)){ log('HATA: clearAppBadge yok'); return; }
+  navigator.clearAppBadge().then(()=>log('clearAppBadge basarili')).catch(e=>log('HATA: ' + e));
+}
+</script>
+</body>
+</html>
