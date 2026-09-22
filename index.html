@@ -925,6 +925,19 @@ function calculateLoanLateInterest(loan, thisMonthInst){
   const total = interest * (1 + CARD_BSMV_RATE);
   return { days, amount, total: Math.round(total) };
 }
+// Fatura/abonelikler için de aynı mantık: kurumların gerçek gecikme zammı tarifeleri
+// (elektrik/su/doğalgaz/telekom vb.) birbirinden çok farklı ve uygulamada tutulmadığı için,
+// kredi kartı gecikme faizi oranıyla AYNI genel YAKLAŞIK oran kullanılır — sadece "yaklaşık
+// böyle bir tutar birikebilir" fikrini vermek amaçlı, kesin/garanti bir tutar değildir.
+function calculateBillLateFee(bill, ym){
+  const r = billRecord(bill, ym);
+  if(r.status!=='gecikti' || !(r.amount>0)) return { days:0, amount:0 };
+  const dueDate = new Date(...ym.split('-').map((v,idx)=>idx===1?Number(v)-1:Number(v)), bill.dueDay||1);
+  const today = new Date(new Date().setHours(0,0,0,0));
+  const days = Math.max(1, Math.round((today - dueDate) / 86400000));
+  const amount = r.amount * (CARD_LATE_MONTHLY_INTEREST_RATE/30) * days;
+  return { days, amount: Math.round(amount) };
+}
 const INVEST_TYPES = ['Hisse Senedi','Fon','Mevduat','Döviz Hesabı','Altın Hesabı','Kripto','Diğer'];
 const INVEST_ICONS = { 'Hisse Senedi':'📈','Fon':'📊','Mevduat':'🏦','Döviz Hesabı':'💱','Altın Hesabı':'🪙','Kripto':'🌐','Diğer':'💼' };
 // Abonelik/Fatura kategori grupları — "Kategori Seç" tam sayfasında gösterilir. Marka renkli
@@ -1437,8 +1450,12 @@ function monthlyRows(ym){
     // Aylık Borç'a KMH'nin yalnızca bu dönem ödenmesi planlanan tutarı (Ödenecek Borç) dahil
     // edilir — toplam revolving bakiyenin tamamı değil. Ödenecek Borç ödenip sıfırlanınca satır
     // tamamen kalkar, böylece Toplam Borç ile Aylık Borç aynı tutarı iki kez saymaz.
+    // KMH'nin bill/loan/kart gibi AY BAZLI bir geçmiş kaydı yok — plannedPayment tek, o anki
+    // "güncel" bir alan. Bu yüzden bu satır sadece GERÇEKTEN İÇİNDE BULUNULAN ay görüntülenirken
+    // gösterilir; aksi halde geçmiş veya gelecek bir ayı incelerken o ayla hiç ilgisi olmayan,
+    // o anki planlanan ödeme yanlışlıkla her ayda görünüyordu.
     const amt = k.plannedPayment||0;
-    if(amt>0){
+    if(amt>0 && ym===currentYm()){
       rows.push({ kind:'kmh', refId:k.id, key:k.id+'#'+ym, day:k.dueDay||1, name:bankByCode(k.bankCode).name+' KMH', cat:'kmh',
         amount:amt, status: periodStatus(false, ym, k.dueDay) });
     }
@@ -1497,20 +1514,43 @@ function getNotifications(){
       bucket('loan-'+next.key, l.name+' Taksiti', bankByCode(l.bankCode).name, next.amount, new Date(y, m-1, l.dueDay||1), { kind:'bank', bankCode:l.bankCode });
     }
   });
+  // ÖNEMLİ: bildirimler HER ZAMAN gerçek bugünün ayına (currentYm()) göre hesaplanmalı —
+  // Aylık sayfada kullanıcının en son baktığı ay (state.selectedMonth) kalıcı olarak
+  // saklandığından, o değeri burada kullanmak kullanıcı başka bir aya bakıp uygulamayı öyle
+  // kapattığında zilin/Giriş ekranının YANLIŞ ayın verilerini göstermesine yol açardı.
+  const ym = currentYm();
   state.cards.forEach(c=>{
-    const st = cardStatement(c.id, state.selectedMonth);
+    const st = cardStatement(c.id, ym);
     if(st && st.status!=='odendi'){
-      const [y,m] = state.selectedMonth.split('-').map(Number);
+      const [y,m] = ym.split('-').map(Number);
       bucket('card-'+st.id, 'Kredi Kartı Ödemesi', bankByCode(c.bankCode).name, st.amount, new Date(y, m-1, c.dueDay||1), { kind:'bank', bankCode:c.bankCode });
     }
   });
   state.bills.forEach(b=>{
     if(b.autoPay) return;
-    const r = billRecord(b, state.selectedMonth);
+    const r = billRecord(b, ym);
     if(r.status!=='odendi'){
-      const [y,m] = state.selectedMonth.split('-').map(Number);
-      bucket('bill-'+b.id+'-'+state.selectedMonth, b.name, b.category, r.amount, new Date(y, m-1, b.dueDay||1), { kind:'kurum', category:b.category });
+      const [y,m] = ym.split('-').map(Number);
+      bucket('bill-'+b.id+'-'+ym, b.name, b.category, r.amount, new Date(y, m-1, b.dueDay||1), { kind:'kurum', category:b.category });
     }
+  });
+  // KMH: bu dönem ödenmesi planlanan (plannedPayment>0) bir tutar varsa, son ödeme günü
+  // yaklaştıkça/geçtikçe krediler/kartlar/faturalarla AYNI şekilde uyarı üretir — önceden hiç
+  // uyarı üretmiyordu.
+  state.kmhAccounts.forEach(k=>{
+    const planned = k.plannedPayment||0;
+    if(planned>0){
+      const [y,m] = ym.split('-').map(Number);
+      bucket('kmh-'+k.id+'-'+ym, bankByCode(k.bankCode).name+' KMH', 'Ödenecek Borç', planned, new Date(y, m-1, k.dueDay||1), { kind:'bank', bankCode:k.bankCode });
+    }
+  });
+  // Elden borçlar: vadesi olan ve henüz ödenmemiş "borcum" yönündeki kayıtlar da artık
+  // krediler/kartlar/faturalarla aynı şekilde hatırlatılıyor — önceden hiç uyarı üretmiyordu.
+  state.debts.forEach(d=>{
+    if(d.paid || d.direction!=='borcum' || !d.date) return;
+    const dt = new Date(d.date+'T00:00:00');
+    if(isNaN(dt.getTime())) return;
+    bucket('debt-'+d.id, d.person, 'Elden Borç', debtTL(d), dt, { kind:'kurum', category:'Diğer' });
   });
   return { overdue, dueToday, soon };
 }
@@ -1556,6 +1596,18 @@ function updateNotifBadge(){
     if(isNew) playNotifSound();
   }
   lastNotifKeys = keys;
+  updateAppIconBadge(count);
+}
+// Telefonun ana ekranındaki uygulama simgesinin üzerinde, tarayıcının/işletim sisteminin
+// desteklediği durumlarda (PWA olarak eklendiğinde iOS 16.4+ Safari ve çoğu Android tarayıcısı
+// destekler) sayısal bir rozet gösterir — tıpkı e-posta/mesaj uygulamalarındaki gibi. Destek
+// yoksa sessizce hiçbir şey yapmaz (hataya düşmez).
+function updateAppIconBadge(count){
+  try{
+    if(!('setAppBadge' in navigator)) return;
+    if(count>0) navigator.setAppBadge(count).catch(()=>{});
+    else if('clearAppBadge' in navigator) navigator.clearAppBadge().catch(()=>{});
+  }catch(e){}
 }
 
 // ---------- GÜNÜN SÖZÜ ----------
@@ -2232,6 +2284,7 @@ function renderBills(){
           <span>${r.amount>0?formatTL(r.amount):'Tutar bekleniyor'}</span>
           <span>Son ödeme: her ayın ${b.dueDay}'i</span>
         </div>
+        ${statusKey==='gecikti' ? (()=>{ const lf = calculateBillLateFee(b, state.selectedMonth); return lf.days>0 ? `<div class="item-meta-row"><span style="font-size:11.5px;color:var(--debt);">⚠ ${lf.days} gündür gecikti · tahmini gecikme bedeli ≈ ${formatTL(lf.amount)}</span></div>` : ''; })() : ''}
         <div class="item-meta-row" style="justify-content:space-between;align-items:center;">
           <span style="font-size:12.5px;color:var(--ink-soft);">🔁 Otomatik ödeme talimatı var</span>
           <div class="switch ${b.autoPay?'on':''}" data-action="toggle-bill-autopay" data-id="${b.id}"><div class="knob"></div></div>
@@ -3078,6 +3131,7 @@ const modalTemplates = {
     return `
     <h3>${esc(b.name)} — ${monthLabel(state.selectedMonth)}</h3>
     ${r.isEstimate ? `<p style="font-size:12px;color:var(--ink-soft);margin:-8px 0 12px;">Gösterilen tutar ${r.estimateType} bir tahmindir — gerçek tutarı öğrendiğinde güncelle.</p>` : ''}
+    ${(()=>{ const lf = calculateBillLateFee(b, state.selectedMonth); return lf.days>0 ? `<p style="font-size:12px;color:var(--debt);margin:-8px 0 12px;">⚠ ${lf.days} gündür gecikti — tahmini gecikme bedeli ≈ ${formatTL(lf.amount)} (kurumunuzun gerçek gecikme zammı farklı olabilir, bilgi amaçlıdır).</p>` : ''; })()}
     <div class="amount-fixed-row">
       <div class="field"><label>Bu Ayki Gerçek Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" value="${r.amount?r.amount.toLocaleString('tr-TR'):''}" placeholder="0"></div>
       <div class="fixed-toggle-mini"><span>Sabit</span><div class="switch ${b.isFixed?'on':''}" id="f_isFixed" data-action="toggle-switch"><div class="knob"></div></div></div>
@@ -3559,7 +3613,7 @@ document.body.addEventListener('click', function(e){
     const day = parseInt(wheelValue('kmhDayChoice'))||15;
     const totalDebt = tlVal('f_totalDebt');
     const transactions = totalDebt>0 ? [{ date: todayStr(), amount: totalDebt }] : [];
-    state.kmhAccounts.push({ id:uid(), bankCode, limit, dueDay:day, debt:totalDebt, plannedPayment:0, paymentStatus:'bekliyor', paymentStatusYm:null, transactions });
+    state.kmhAccounts.push({ id:uid(), bankCode, limit, dueDay:day, debt:totalDebt, plannedPayment:0, transactions });
     save(); closeModal(); navigate('kmh'); return;
   }
   if(action==='save-kmh-settings'){
