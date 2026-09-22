@@ -1068,14 +1068,14 @@ function wheelCol(id, items, selectedValue, width){
 }
 function dayWheel(id, selectedDay){
   const items = []; for(let d=1;d<=31;d++) items.push({value:d, label:String(d)});
-  return `<div class="wheel-picker">${wheelCol(id, items, selectedDay||15, 100)}<div class="wheel-highlight"></div></div>`;
+  return `<div class="wheel-picker">${wheelCol(id, items, selectedDay||new Date().getDate(), 100)}<div class="wheel-highlight"></div></div>`;
 }
 function loanDateWheel(idPrefix, selMonth, selDay){
   const monthItems = [];
   for(let i=-3;i<=24;i++){ const ym=addMonths(monthKey(new Date()), i); monthItems.push({value:ym, label:monthLabel(ym)}); }
   const dayItems = []; for(let d=1;d<=31;d++) dayItems.push({value:d, label:String(d)});
   return `<div class="wheel-picker">
-    ${wheelCol(idPrefix+'_d', dayItems, selDay||15, 32)}
+    ${wheelCol(idPrefix+'_d', dayItems, selDay||new Date().getDate(), 32)}
     ${wheelCol(idPrefix+'_m', monthItems, selMonth||monthKey(new Date()), 150)}
     <div class="wheel-highlight"></div>
   </div>`;
@@ -2779,7 +2779,7 @@ const modalTemplates = {
       <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: İhtiyaç Kredisi"></div>
     </div>
     <div class="section-title">3. Tarihler</div>
-    <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', state.selectedMonth, 15)}</div>
+    <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', monthKey(new Date()), new Date().getDate())}</div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-loan">Kaydet</button>
@@ -2946,7 +2946,7 @@ const modalTemplates = {
     <h3>Bu Aya Özel Ödeme Ekle</h3>
     <div class="field"><label>Açıklama</label><input id="f_desc" placeholder="Örn: Arkadaşa ödeme"></div>
     <div class="field"><label>Tutar (TL)</label><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
-    <div class="field"><label>Tarih</label>${fullDateWheel('paymentDateWheel', state.selectedMonth+'-01')}</div>
+    <div class="field"><label>Tarih</label>${fullDateWheel('paymentDateWheel', state.selectedMonth===monthKey(new Date()) ? null : state.selectedMonth+'-01')}</div>
     <div class="field"><label>Kategori</label>
       <div class="choice-row" id="manualPayCatChoice">
         <button data-val="elden" data-action="pick-choice" class="active">Elden Borç</button>
