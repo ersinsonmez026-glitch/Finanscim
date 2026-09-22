@@ -1171,6 +1171,14 @@ function initWheelPickers(root){
 }
 
 let state = load();
+// Uygulama açılışında, canlı veri çekimi tamamlanana/başarısız olana kadar (veya internet/API
+// yoksa hiç) en son BAŞARIYLA çekilmiş kur/altın değerlerini ve o çekimin gerçek tarihini
+// göster — sabit (donuk) yedek değerler ve "yaklaşık" yazısı yerine.
+if(state.marketPrev && state.marketPrev.at){
+  if(state.marketPrev.gold) GOLD_RATE = state.marketPrev.gold;
+  if(state.marketPrev.usd && state.marketPrev.eur) FX = { USD: state.marketPrev.usd, EUR: state.marketPrev.eur };
+  liveRatesUpdatedAt = new Date(state.marketPrev.at);
+}
 let ui = { page:'home', loanDetailId:null, loanSort:'date' };
 
 function load(){
