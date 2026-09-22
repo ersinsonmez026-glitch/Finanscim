@@ -482,16 +482,16 @@ button.mainCard{cursor:pointer;}
 
 .back-link{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:0 0 4px;display:flex;align-items:center;gap:4px;}
 
-.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;}
 .bank-grid.cols4{grid-template-columns:repeat(4,1fr);}
-.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 2px;
+.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:4px 2px;
   border-radius:14px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
-.bank-chip span:last-child{font-size:11.5px;line-height:1.15;color:var(--ink-soft);
+.bank-chip span:last-child{font-size:11px;line-height:1.1;color:var(--ink-soft);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .bank-chip.active{border-color:var(--accent);background:var(--accent-soft);}
 .bank-chip.active span:last-child{color:var(--accent);font-weight:600;}
-.bank-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
-  font-size:13px;font-weight:700;flex-shrink:0;}
+.bank-avatar{width:33px;height:33px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
+  font-size:12.5px;font-weight:700;flex-shrink:0;}
 .bank-avatar.sm{width:34px;height:34px;font-size:12px;}
 .bank-avatar.sq, .cat-icon.sq{border-radius:8px;}
 .item-title-row{display:flex;align-items:center;gap:8px;}
@@ -506,10 +506,13 @@ button.mainCard{cursor:pointer;}
 .billadd-wrap .btn-row{flex-shrink:0;margin-top:auto;padding-top:16px;}
 .page-top-block{flex-shrink:0;}
 .page-fields-block{flex-shrink:0;}
-.page-fields-block .section-title{margin-top:18px;}
+.page-fields-block .section-title{margin-top:10px;}
 .page-fields-block .section-title:first-of-type{margin-top:2px;}
-.page-fields-block .field-row{margin-bottom:4px;}
-.page-fields-block .wheel-field{margin:12px 0 8px;}
+.page-fields-block .field{margin-bottom:1px;}
+.page-fields-block .field label{margin-bottom:1px;}
+.page-fields-block .field input,.page-fields-block .field select{padding:5px 12px;}
+.page-fields-block .field-row{margin-bottom:1px;}
+.page-fields-block .wheel-field{margin:6px 0 2px;}
 .debt-add-form .section-title{margin:8px 0 5px;}
 .debt-add-form .field{margin-bottom:2px;}
 .debt-add-form .field-row{gap:8px;}
@@ -2062,7 +2065,6 @@ function renderLoanAdd(){
       <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" placeholder="Örn: 3,5"></div>
       <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: İhtiyaç Kredisi"></div>
     </div>
-    <div class="section-title">3. Tarihler</div>
     <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', monthKey(new Date()), new Date().getDate())}</div>
     </div>
     <div class="btn-row">
@@ -3123,7 +3125,6 @@ const modalTemplates = {
       <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" placeholder="Örn: 3,5"></div>
       <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: İhtiyaç Kredisi"></div>
     </div>
-    <div class="section-title">3. Tarihler</div>
     <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', monthKey(new Date()), new Date().getDate())}</div>
     </div>
     <div class="page-bottom-block">
@@ -3156,7 +3157,6 @@ const modalTemplates = {
       <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" value="${l.infoInterestRate!=null ? String(l.infoInterestRate).replace('.',',') : ''}" placeholder="Örn: 3,5"></div>
       <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" value="${esc(l.name)}" placeholder="Örn: İhtiyaç Kredisi"></div>
     </div>
-    <div class="section-title">3. Tarihler</div>
     <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', l.startMonth, l.dueDay)}</div>
     </div>
     <div class="page-bottom-block">
