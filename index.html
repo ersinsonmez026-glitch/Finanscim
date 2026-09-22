@@ -459,15 +459,14 @@ button.mainCard{cursor:pointer;}
 
 .back-link{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:0 0 4px;display:flex;align-items:center;gap:4px;}
 
-.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;}
+.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;}
 .bank-grid.cols4{grid-template-columns:repeat(4,1fr);}
-.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:1px 1px;
-  border-radius:10px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
-.bank-chip span:last-child{font-size:8.5px;line-height:1.05;color:var(--ink-soft);
-  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;
+  border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
+.bank-chip span:last-child{font-size:11px;line-height:1.15;color:var(--ink-soft);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .bank-chip.active{border-color:var(--accent);background:var(--accent-soft);}
 .bank-chip.active span:last-child{color:var(--accent);font-weight:600;}
-.bank-chip .bank-avatar{width:18px;height:18px;font-size:8px;}
 .bank-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
   font-size:10px;font-weight:700;flex-shrink:0;}
 .bank-avatar.sm{width:34px;height:34px;font-size:12px;}
@@ -475,10 +474,15 @@ button.mainCard{cursor:pointer;}
 .item-title-row{display:flex;align-items:center;gap:8px;}
 
 .kind-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:6px;}
+.debt-add-form{display:flex;flex-direction:column;min-height:100%;}
+.debt-add-form .billadd-spacer{flex:1;}
 .debt-add-form .back-link{padding-bottom:6px;}
 .debt-add-form .kind-toggle{margin-bottom:8px;}
 .debt-add-form h3{margin:0 0 6px;font-size:16px;}
 #content h3{margin:2px 0 5px;font-size:16px;}
+.billadd-wrap{display:flex;flex-direction:column;min-height:100%;}
+.billadd-wrap .billadd-spacer{flex:1;}
+.billadd-wrap .btn-row{flex-shrink:0;}
 .debt-add-form .section-title{margin:8px 0 5px;}
 .debt-add-form .field{margin-bottom:2px;}
 .debt-add-form .field-row{gap:8px;}
@@ -552,8 +556,8 @@ button.mainCard{cursor:pointer;}
 .settings-section{border:1px solid var(--border);border-radius:13px;padding:10px 12px;background:var(--surface);}
 .app.giris-mode .header{display:none;}
 .app.giris-mode .bottombar-wrap{display:none;}
-.app.giris-mode .content{padding:0 14px 24px;}
-.giris-page{display:flex;flex-direction:column;min-height:100%;}
+.app.giris-mode .content{padding:0 14px 24px;overflow:hidden;}
+.giris-page{display:flex;flex-direction:column;height:100%;}
 .giris-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:5px;padding:4px 0 6px;}
 .giris-header .bell{justify-self:end;}
 .giris-header .giris-settings-btn,.giris-header .bell{font-size:27px;background:none;border:none;cursor:pointer;padding:2px;line-height:1;color:var(--ink);}
@@ -566,7 +570,7 @@ button.mainCard{cursor:pointer;}
 /* Giriş sayfasındaki tek logo, kendi görseli (metin altta) — %100 büyütülmüş (64px -> 128px). */
 .giris-page .giris-header .giris-logo .giris-brand-logo{height:128px;width:auto;display:block;}
 .giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 8px;font-size:13.5px;font-style:italic;font-weight:600;color:var(--ink-soft);font-family:var(--font-display);}
-.giris-body{flex:1;display:flex;flex-direction:column;}
+.giris-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;}
 .giris-footer{padding:8px 0 4px;}
 /* Krediler sayfasındaki alt çubuğun (Finans Asistanı / Ana Sayfa) kompakt haliyle birebir aynı
    bölünme, yükseklik ve ikon boyutu: 1fr/1fr grid, 56px yükseklik, 24px ikon. */
@@ -2023,6 +2027,7 @@ function renderBillAdd(){
   const kind = ui.billAddKind || 'bill';
   const pool = kind==='bill' ? FATURA_KURUMLAR : ABONELIK_KURUMLAR;
   return `
+    <div class="billadd-wrap">
     <button class="back-link" data-action="nav" data-page="bills">‹ Geri</button>
     <div class="kind-toggle">
       <button class="${kind==='bill'?'active':''}" data-action="set-bill-kind" data-kind="bill">📄 Fatura</button>
@@ -2047,9 +2052,11 @@ function renderBillAdd(){
     <div class="section-title">Son Ödeme Tarihi</div>
     <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('billDayChoice')}</div>
     <p style="font-size:10.5px;color:var(--ink-soft);margin:2px 0 4px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
+    <div class="billadd-spacer"></div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="nav" data-page="bills">Vazgeç</button>
       <button class="save-btn" data-action="save-bill" data-kind="${kind}">Kaydet</button>
+    </div>
     </div>
   `;
 }
@@ -2229,6 +2236,7 @@ function renderDebtAdd(){
     </div>
     <div class="section-title">4. Tarih</div>
     <div class="field" style="display:flex;justify-content:center;">${fullDateWheel('debtDateWheel')}</div>
+    <div class="billadd-spacer"></div>
     <div class="btn-row">
       <button class="cancel-btn" data-action="nav" data-page="debts">Vazgeç</button>
       <button class="save-btn" data-action="save-debt" data-dir="${dir}">Kaydet</button>
