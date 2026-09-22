@@ -185,7 +185,7 @@ button.mainCard{cursor:pointer;}
 .mcard .mdown{color:#e52545;font-size:8.5px;font-weight:800;margin-top:2px;}
 
 .main{flex:1;display:flex;flex-direction:column;min-width:0;height:100vh;height:100dvh;overflow:hidden;}
-.content{flex:1;overflow-y:auto;padding:6px 14px 108px;}
+.content{flex:1;overflow-y:auto;padding:4px 14px 108px;}
 .content.home-fit{overflow:hidden;padding-top:1px;}
 .content.ai-fit{overflow:hidden;}
 
@@ -419,8 +419,8 @@ button.mainCard{cursor:pointer;}
 .cancel-btn{width:100%;padding:6px;border:none;background:none;color:var(--ink-soft);font-size:13.5px;cursor:pointer;}
 .back-link{display:inline-block;border:none;background:none;color:var(--accent);font-size:13.5px;font-weight:600;
   padding:0;margin-bottom:6px;cursor:pointer;}
-.section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:10px 0 6px;
-  font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--ink);border-top:1px solid var(--line);padding-top:8px;}
+.section-title{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:5px 0 4px;
+  font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--ink);border-top:1px solid var(--line);padding-top:5px;}
 .section-title:first-of-type{border-top:none;padding-top:0;margin-top:2px;}
 .section-title small{font-size:10px;font-weight:400;color:var(--ink-soft);text-align:right;}
 .icon-field{position:relative;}
@@ -437,7 +437,7 @@ button.mainCard{cursor:pointer;}
 .btn-row .save-btn{flex:1;margin:0;}
 .danger-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--debt);background:none;color:var(--debt);
   font-size:14px;font-weight:600;cursor:pointer;margin-top:8px;}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:8px 2px;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 2px;}
 .amount-fixed-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:13px;}
 .amount-fixed-row .field{flex:1;margin-bottom:0;}
 .fixed-toggle-mini{display:flex;flex-direction:column;align-items:center;gap:4px;padding-bottom:11px;flex-shrink:0;}
@@ -457,26 +457,28 @@ button.mainCard{cursor:pointer;}
 .inst-date{font-size:13px;width:70px;flex-shrink:0;color:var(--ink-soft);}
 .inst-amt{flex:1;font-size:14px;font-weight:500;font-family:var(--font-display);}
 
-.back-link{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:0 0 12px;display:flex;align-items:center;gap:4px;}
+.back-link{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:0 0 4px;display:flex;align-items:center;gap:4px;}
 
-.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;}
+.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;}
 .bank-grid.cols4{grid-template-columns:repeat(4,1fr);}
-.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;
-  border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
-.bank-chip span:last-child{font-size:11px;line-height:1.15;color:var(--ink-soft);
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:1px 1px;
+  border-radius:10px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
+.bank-chip span:last-child{font-size:8.5px;line-height:1.05;color:var(--ink-soft);
+  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
 .bank-chip.active{border-color:var(--accent);background:var(--accent-soft);}
 .bank-chip.active span:last-child{color:var(--accent);font-weight:600;}
+.bank-chip .bank-avatar{width:18px;height:18px;font-size:8px;}
 .bank-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
   font-size:10px;font-weight:700;flex-shrink:0;}
 .bank-avatar.sm{width:34px;height:34px;font-size:12px;}
 .bank-avatar.sq, .cat-icon.sq{border-radius:8px;}
 .item-title-row{display:flex;align-items:center;gap:8px;}
 
-.kind-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:14px;}
+.kind-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:6px;}
 .debt-add-form .back-link{padding-bottom:6px;}
 .debt-add-form .kind-toggle{margin-bottom:8px;}
 .debt-add-form h3{margin:0 0 6px;font-size:16px;}
+#content h3{margin:2px 0 5px;font-size:16px;}
 .debt-add-form .section-title{margin:8px 0 5px;}
 .debt-add-form .field{margin-bottom:2px;}
 .debt-add-form .field-row{gap:8px;}
@@ -530,15 +532,15 @@ button.mainCard{cursor:pointer;}
 .day-cell:hover{background:var(--accent-soft);}
 .day-cell.active{background:var(--accent);color:#fff;font-weight:600;}
 
-.wheel-picker{position:relative;display:flex;height:80px;background:var(--accent-soft);border:1px solid var(--border);
+.wheel-picker{position:relative;display:flex;height:66px;background:var(--accent-soft);border:1px solid var(--border);
   border-radius:12px;overflow:hidden;width:fit-content;margin:0;max-width:100%;}
 .wheel-col{flex:1;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-ms-overflow-style:none;}
 .wheel-col::-webkit-scrollbar{display:none;}
-.wheel-item{height:28px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;
+.wheel-item{height:22px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;
   font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:var(--font-body);}
 .wheel-item.selected{color:var(--ink);font-weight:700;font-family:var(--font-display);font-size:14px;}
-.wheel-spacer{height:26px;flex-shrink:0;}
-.wheel-highlight{position:absolute;top:26px;left:0;right:0;height:28px;border-top:1px solid var(--border);
+.wheel-spacer{height:22px;flex-shrink:0;}
+.wheel-highlight{position:absolute;top:22px;left:0;right:0;height:22px;border-top:1px solid var(--border);
   border-bottom:1px solid var(--border);pointer-events:none;}
 .cat-icon-row{display:flex;align-items:center;gap:10px;}
 .cat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
@@ -552,7 +554,7 @@ button.mainCard{cursor:pointer;}
 .app.giris-mode .bottombar-wrap{display:none;}
 .app.giris-mode .content{padding:0 14px 24px;}
 .giris-page{display:flex;flex-direction:column;min-height:100%;}
-.giris-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:5px;padding:6px 0 10px;}
+.giris-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:5px;padding:4px 0 6px;}
 .giris-header .bell{justify-self:end;}
 .giris-header .giris-settings-btn,.giris-header .bell{font-size:27px;background:none;border:none;cursor:pointer;padding:2px;line-height:1;color:var(--ink);}
 /* Giriş (açılış) sayfasında ayarlar ve bildirim ikonları %50 büyütülmüş (27px -> 40.5px) — sadece
@@ -563,9 +565,9 @@ button.mainCard{cursor:pointer;}
 /* Giriş (açılış) sayfasında tek logo büyütülmüş halde gösterilir; Ayarlar'ın geri başlığında ise normal (küçük) boyutta kalır. */
 /* Giriş sayfasındaki tek logo, kendi görseli (metin altta) — %100 büyütülmüş (64px -> 128px). */
 .giris-page .giris-header .giris-logo .giris-brand-logo{height:128px;width:auto;display:block;}
-.giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 16px;font-size:13.5px;font-style:italic;font-weight:600;color:var(--ink-soft);font-family:var(--font-display);}
+.giris-subtitle{text-align:center;white-space:normal;overflow:visible;margin:0 0 8px;font-size:13.5px;font-style:italic;font-weight:600;color:var(--ink-soft);font-family:var(--font-display);}
 .giris-body{flex:1;display:flex;flex-direction:column;}
-.giris-footer{padding:14px 0 4px;}
+.giris-footer{padding:8px 0 4px;}
 /* Krediler sayfasındaki alt çubuğun (Finans Asistanı / Ana Sayfa) kompakt haliyle birebir aynı
    bölünme, yükseklik ve ikon boyutu: 1fr/1fr grid, 56px yükseklik, 24px ikon. */
 .giris-footer-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
@@ -577,20 +579,20 @@ button.mainCard{cursor:pointer;}
 .giris-exit-btn .exit-ico{width:24px;height:24px;border-radius:50%;background:var(--debt);color:#fff;
   display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
 .giris-footer-row .homeico{width:24px;height:24px;}
-.giris-alerts-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 12px;}
+.giris-alerts-head{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px;}
 .giris-alerts-head h2{font-size:18px;margin:0;font-family:var(--font-display);}
 .giris-filter-chip{padding:6px 14px;border-radius:14px;border:none;background:var(--brand,#0aa3a3);background:linear-gradient(135deg,var(--brand,#0aa3a3),var(--accent,#0aa3a3));color:#fff;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:4px;}
 .giris-filter-chip .chev{font-size:11px;}
 .giris-congrats{font-family:var(--font-display);font-size:27px;font-weight:700;font-style:italic;color:var(--ink);}
 .notif-avatar{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:17px;flex-shrink:0;}
-.notif-group{margin-bottom:14px;}
-.notif-group-head{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:11px;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:8px;}
+.notif-group{margin-bottom:10px;}
+.notif-group-head{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-radius:11px;font-size:12.5px;font-weight:700;color:#fff;margin-bottom:6px;}
 .notif-group-head .ngh-left{display:flex;align-items:center;gap:6px;}
 .notif-group-head .ngh-chev{opacity:.85;font-size:12px;}
 .notif-group-head.sev-overdue{background:var(--debt,#ef2846);}
 .notif-group-head.sev-today{background:var(--pending,#e0812f);}
 .notif-group-head.sev-soon{background:#3a72d8;}
-.notif-row2{display:flex;align-items:center;gap:10px;padding:10px;border-radius:13px;margin-bottom:7px;}
+.notif-row2{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:13px;margin-bottom:5px;}
 .notif-row2.sev-overdue{background:var(--debt-soft);}
 .notif-row2.sev-today{background:var(--pending-soft);}
 .notif-row2.sev-soon{background:#e4edfb;}
@@ -1142,7 +1144,7 @@ function initSwipeDelete(root){
 function initWheelPickers(root){
   root.querySelectorAll('.wheel-col').forEach(col=>{
     const items = Array.from(col.querySelectorAll('.wheel-item'));
-    const itemH = 28;
+    const itemH = 22;
     function updateSelection(snap){
       let idx = Math.round(col.scrollTop / itemH);
       idx = Math.max(0, Math.min(items.length-1, idx));
@@ -2044,7 +2046,7 @@ function renderBillAdd(){
     </div>
     <div class="section-title">Son Ödeme Tarihi</div>
     <div class="field wheel-field"><span class="wheel-note">Her ayın</span>${dayWheel('billDayChoice')}</div>
-    <p style="font-size:10.5px;color:var(--ink-soft);margin:6px 0 8px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
+    <p style="font-size:10.5px;color:var(--ink-soft);margin:2px 0 4px;">Her ay otomatik satır oluşturulur; gerçek tutar geldiğinde ilgili ay için güncelleyebilirsin.</p>
     <div class="btn-row">
       <button class="cancel-btn" data-action="nav" data-page="bills">Vazgeç</button>
       <button class="save-btn" data-action="save-bill" data-kind="${kind}">Kaydet</button>
