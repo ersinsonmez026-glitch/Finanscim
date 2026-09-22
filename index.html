@@ -555,6 +555,10 @@ button.mainCard{cursor:pointer;}
 .giris-header{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:5px;padding:6px 0 10px;}
 .giris-header .bell{justify-self:end;}
 .giris-header .giris-settings-btn,.giris-header .bell{font-size:27px;background:none;border:none;cursor:pointer;padding:2px;line-height:1;color:var(--ink);}
+/* Giriş (açılış) sayfasında ayarlar ve bildirim ikonları %50 büyütülmüş (27px -> 40.5px) — sadece
+   Giriş sayfasında; Ayarlar sayfasının üstündeki geri oku aynı küçük boyutta kalır. */
+.giris-page .giris-header{grid-template-columns:58px minmax(0,1fr) 58px;}
+.giris-page .giris-header .giris-settings-btn,.giris-page .giris-header .bell{font-size:40.5px;}
 .giris-header .giris-logo{justify-self:center;display:flex;align-items:center;gap:9px;min-width:0;}
 /* Giriş (açılış) sayfasında tek logo büyütülmüş halde gösterilir; Ayarlar'ın geri başlığında ise normal (küçük) boyutta kalır. */
 /* Giriş sayfasındaki tek logo, kendi görseli (metin altta) — %100 büyütülmüş (64px -> 128px). */
