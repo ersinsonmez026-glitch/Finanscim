@@ -2539,6 +2539,8 @@ function renderSettings(){
   const soundOn = !!state.notifSoundEnabled;
   const daysAhead = (state.notifDaysAhead!=null) ? state.notifDaysAhead : 5;
   const NOTIF_DAY_OPTIONS = [ {v:5,label:'5 gün'}, {v:3,label:'3 gün'}, {v:1,label:'1 gün'} ];
+  const badgeSupported = (typeof navigator!=='undefined' && 'setAppBadge' in navigator);
+  const notifPerm = (typeof Notification!=='undefined') ? Notification.permission : 'unsupported';
   return `<div class="giris-header">
       <button class="giris-settings-btn" data-action="nav" data-page="giris" title="Geri">←</button>
       <div class="giris-logo">${BRAND_HTML}</div>
@@ -2567,6 +2569,12 @@ function renderSettings(){
       ${notifOn?`<div class="settings-row" style="flex-direction:column;align-items:stretch;gap:5px;">
         <span>Hatırlatma Süresi</span>
         <div class="choice-row">${NOTIF_DAY_OPTIONS.map(o=>`<button data-action="set-notif-days" data-days="${o.v}" class="${daysAhead===o.v?'active':''}">${o.label}</button>`).join('')}</div>
+      </div>`:''}
+      ${badgeSupported?`<div class="settings-row">
+        <span>Ana Ekran Rozeti</span>
+        ${notifPerm==='granted'?`<span style="color:var(--paid);font-weight:600;font-size:13px;">Açık ✓</span>`
+          :notifPerm==='denied'?`<span style="color:#C0392B;font-size:12px;">Kapalı — iOS Ayarlar'dan aç</span>`
+          :`<button class="pill-btn" data-action="request-notif-permission">İzin Ver</button>`}
       </div>`:''}
     </div>
 
@@ -3411,6 +3419,12 @@ document.body.addEventListener('click', function(e){
   if(action==='toggle-notif-enabled'){ state.notifEnabled = !(state.notifEnabled!==false); save(); markActive(); render(); return; }
   if(action==='toggle-notif-sound'){ state.notifSoundEnabled = !state.notifSoundEnabled; save(); markActive(); render(); return; }
   if(action==='set-notif-days'){ state.notifDaysAhead = Number(t.dataset.days); save(); markActive(); render(); return; }
+  if(action==='request-notif-permission'){
+    if(typeof Notification!=='undefined' && Notification.requestPermission){
+      Notification.requestPermission().then(()=>{ render(); updateNotifBadge(); }).catch(()=>{ render(); });
+    }
+    return;
+  }
   if(action==='backup-data'){
     // Uygulama Kilidi kapalı olsa bile, herkesin sahip olduğu PIN veri yedekleme için istenir.
     if(state.appLock && state.appLock.pinHash){ startLockFlow('backup','modal'); }
