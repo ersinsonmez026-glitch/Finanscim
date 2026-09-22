@@ -407,6 +407,16 @@ button.mainCard{cursor:pointer;}
   max-height:100vh;max-height:100dvh;overflow-y:auto;}
 .modal-sheet.sheet-compact{border-radius:18px;margin-bottom:16vh;padding-bottom:14px;}
 .modal-sheet h3{font-family:var(--font-display);font-weight:500;font-size:18px;margin:0 0 6px;}
+.modal-sheet .section-title{margin-top:16px;}
+.modal-sheet .section-title:first-of-type{margin-top:2px;}
+.modal-sheet .field-row{margin-bottom:6px;}
+.modal-sheet .wheel-field{margin:14px 0 18px;}
+.modal-sheet .toggle-row{margin-bottom:4px;}
+.modal-sheet .btn-row{margin-top:8px;}
+.modal-sheet.sheet-full{display:flex;flex-direction:column;min-height:82vh;min-height:82dvh;}
+.modal-sheet.sheet-full .page-top-block{flex-shrink:0;}
+.modal-sheet.sheet-full .page-fields-block{flex-shrink:0;}
+.modal-sheet.sheet-full .page-bottom-block{flex-shrink:0;margin-top:auto;padding-top:16px;}
 .field{margin-bottom:3px;}
 .field label{display:block;font-size:11px;color:var(--ink-soft);margin-bottom:3px;}
 .field-row.aligned-row{align-items:flex-end;}
@@ -472,28 +482,28 @@ button.mainCard{cursor:pointer;}
 
 .back-link{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:0 0 4px;display:flex;align-items:center;gap:4px;}
 
-.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;}
+.bank-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
 .bank-grid.cols4{grid-template-columns:repeat(4,1fr);}
-.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:5px 2px;
-  border-radius:12px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
-.bank-chip span:last-child{font-size:11px;line-height:1.15;color:var(--ink-soft);
+.bank-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:10px 2px;
+  border-radius:14px;border:1px solid var(--border);background:var(--bg);cursor:pointer;text-align:center;}
+.bank-chip span:last-child{font-size:11.5px;line-height:1.15;color:var(--ink-soft);
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
 .bank-chip.active{border-color:var(--accent);background:var(--accent-soft);}
 .bank-chip.active span:last-child{color:var(--accent);font-weight:600;}
-.bank-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
-  font-size:10px;font-weight:700;flex-shrink:0;}
+.bank-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;
+  font-size:13px;font-weight:700;flex-shrink:0;}
 .bank-avatar.sm{width:34px;height:34px;font-size:12px;}
 .bank-avatar.sq, .cat-icon.sq{border-radius:8px;}
 .item-title-row{display:flex;align-items:center;gap:8px;}
 
 .kind-toggle{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:4px;margin-bottom:6px;}
-.debt-add-form{display:flex;flex-direction:column;min-height:100%;justify-content:space-between;}
+.debt-add-form{display:flex;flex-direction:column;min-height:100%;}
 .debt-add-form .back-link{padding-bottom:6px;}
 .debt-add-form .kind-toggle{margin-bottom:8px;}
 .debt-add-form h3{margin:0 0 6px;font-size:16px;}
 #content h3{margin:2px 0 5px;font-size:16px;}
-.billadd-wrap{display:flex;flex-direction:column;min-height:100%;justify-content:space-between;}
-.billadd-wrap .btn-row{flex-shrink:0;}
+.billadd-wrap{display:flex;flex-direction:column;min-height:100%;}
+.billadd-wrap .btn-row{flex-shrink:0;margin-top:auto;padding-top:16px;}
 .page-top-block{flex-shrink:0;}
 .page-fields-block{flex-shrink:0;}
 .page-fields-block .section-title{margin-top:18px;}
@@ -504,7 +514,7 @@ button.mainCard{cursor:pointer;}
 .debt-add-form .field{margin-bottom:2px;}
 .debt-add-form .field-row{gap:8px;}
 .debt-add-form #debtTypeExtra .field{margin-top:2px;margin-bottom:0;}
-.debt-add-form .btn-row{margin-top:10px;}
+.debt-add-form .btn-row{margin-top:auto;padding-top:16px;}
 .kind-toggle button{flex:1;border:none;background:none;padding:9px 4px;border-radius:9px;font-size:13px;font-weight:600;
   color:var(--ink-soft);cursor:pointer;}
 .kind-toggle button.active{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.08);}
@@ -1736,10 +1746,10 @@ function render(){
   $fab.style.display='none';
   $headerAction.style.display='none';
   updateNotifBadge();
-  const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, cards:renderCards, kmh:renderKmh,
+  const map = { home:renderHome, loans:renderLoans, loanDetail:renderLoanDetail, loanAdd:renderLoanAdd, cards:renderCards, cardAdd:renderCardAdd, kmh:renderKmh, kmhAdd:renderKmhAdd,
     bills:renderBills, billAdd:renderBillAdd, debts:renderDebts, debtAdd:renderDebtAdd, monthly:renderMonthly, ai:renderAI, settings:renderSettings, giris:renderGiris };
   const fn = map[ui.page] || renderHome;
-  const titles = { home:'Ana Sayfa', loans:'Kredilerim', loanDetail:'Kredi Detayı', cards:'Kredi Kartlarım', kmh:'KMH Durumum',
+  const titles = { home:'Ana Sayfa', loans:'Kredilerim', loanDetail:'Kredi Detayı', loanAdd:'Kredi Ekle', cards:'Kredi Kartlarım', cardAdd:'Kredi Kartı Ekle', kmh:'KMH Durumum', kmhAdd:'KMH Hesabı Ekle',
     bills:'Abonelikler ve Faturalarım', billAdd:'Fatura / Abonelik Ekle', debts:'Borçlarım ve Alacaklarım', debtAdd:'Borç / Alacak Ekle', monthly:'Aylık', ai:'Finans Asistanım', settings:'Ayarlar', giris:'Finansçım' };
   let pageTitle = titles[ui.page] || 'Finansçım';
   if(ui.page==='debts') pageTitle = (ui.debtFilter==='alacak') ? 'Alacaklarım' : 'Borçlarım';
@@ -1749,8 +1759,8 @@ function render(){
   if($appEl) $appEl.classList.toggle('giris-mode', ui.page==='giris');
   if($appEl) $appEl.classList.toggle('settings-mode', ui.page==='settings');
   // Sayfaya özel ince vurgu rengi (başlığın altındaki çizgi) — her sayfanın kendi rengini yansıtır.
-  const PAGE_ACCENTS = { home:'var(--accent)', loans:'var(--pending)', loanDetail:'var(--pending)', cards:'var(--debt)',
-    kmh:'var(--purple,var(--accent))', bills:'var(--soon)', billAdd:'var(--soon)', debts:'var(--paid)', debtAdd:'var(--paid)',
+  const PAGE_ACCENTS = { home:'var(--accent)', loans:'var(--pending)', loanDetail:'var(--pending)', loanAdd:'var(--pending)', cards:'var(--debt)', cardAdd:'var(--debt)',
+    kmh:'var(--purple,var(--accent))', kmhAdd:'var(--purple,var(--accent))', bills:'var(--soon)', billAdd:'var(--soon)', debts:'var(--paid)', debtAdd:'var(--paid)',
     monthly:'var(--accent)', ai:'var(--accent)', settings:'var(--ink-soft)' };
   const $headerEl = document.querySelector('.header');
   if($headerEl) $headerEl.style.setProperty('--page-accent', PAGE_ACCENTS[ui.page] || 'var(--accent)');
@@ -1949,7 +1959,7 @@ function formatDMY(ym, day){
 }
 function renderLoans(){
   $fab.style.display='none';
-  const addBtn = `<button class="kr-add" data-action="open-modal" data-modal="addLoan">
+  const addBtn = `<button class="kr-add" data-action="nav" data-page="loanAdd">
       <span>＋</span>
       <div><strong>Yeni Kredi Eklemek İçin Dokunun</strong><small>Farklı bankalardaki kredilerinizi buradan ekleyebilirsiniz.</small></div>
     </button>`;
@@ -2016,6 +2026,40 @@ function renderLoans(){
   `;
 }
 
+function renderLoanAdd(){
+  $fab.style.display='none';
+  return `
+    <div class="billadd-wrap">
+    <div class="page-top-block">
+    <button class="back-link" data-action="nav" data-page="loans">‹ Geri</button>
+    <h3>Kredi Ekle</h3>
+    </div>
+    <div class="page-fields-block">
+    <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
+    <div class="field">${bankChipRow('loanBankChoice')}</div>
+    <div class="section-title">2. Kredi Bilgileri</div>
+    <div class="field"><label>Kredi Türü</label>
+      <div class="choice-row" id="loanTypeChoice">${LOAN_TYPES.map((tp,i)=>`<button data-val="${tp}" data-action="pick-choice" class="${i===0?'active':''}">${tp}</button>`).join('')}</div>
+    </div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Aylık Taksit (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Vade (Ay)</label><span class="fi">📅</span><input id="f_count" type="number" placeholder="Örn: 60"></div>
+    </div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Faiz Oranı (opsiyonel)</label><span class="fi">%</span><input id="f_infoRate" type="text" inputmode="decimal" class="tl-input" placeholder="Örn: 3,5"></div>
+      <div class="field icon-field"><label>Kredi Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: İhtiyaç Kredisi"></div>
+    </div>
+    <div class="section-title">3. Tarihler</div>
+    <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', monthKey(new Date()), new Date().getDate())}</div>
+    </div>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="nav" data-page="loans">Vazgeç</button>
+      <button class="save-btn" data-action="save-loan">Kaydet</button>
+    </div>
+    </div>
+  `;
+}
+
 function renderLoanDetail(){
   const l = state.loans.find(x=>x.id===ui.loanDetailId);
   if(!l) return '<div class="empty">Kredi bulunamadı.</div>';
@@ -2050,7 +2094,7 @@ function renderLoanDetail(){
 // ---------- CARDS ----------
 function renderCards(){
   $fab.style.display='none';
-  const addBtn = `<button class="kr-add" data-action="open-modal" data-modal="addCard">
+  const addBtn = `<button class="kr-add" data-action="nav" data-page="cardAdd">
       <span>＋</span>
       <div><strong>Yeni Kart Eklemek İçin Dokunun</strong><small>Farklı bankalardaki kredi kartlarınızı buradan ekleyebilirsiniz.</small></div>
     </button>`;
@@ -2119,10 +2163,40 @@ function renderCards(){
   `;
 }
 
+function renderCardAdd(){
+  $fab.style.display='none';
+  return `
+    <div class="billadd-wrap">
+    <div class="page-top-block">
+    <button class="back-link" data-action="nav" data-page="cards">‹ Geri</button>
+    <h3>Kredi Kartı Ekle</h3>
+    </div>
+    <div class="page-fields-block">
+    <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
+    <div class="field">${bankChipRow('cardBankChoice')}</div>
+    <div class="section-title">2. Kart Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Kredi Kartı Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Güncel Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field icon-field"><label>Bu Ay Ödenecek (TL)</label><span class="fi">₺</span><input id="f_amount" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: Alışveriş Kartım"></div>
+    </div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('cardDayChoice')}<span class="wheel-note">'i</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="nav" data-page="cards">Vazgeç</button>
+      <button class="save-btn" data-action="save-card">Kaydet</button>
+    </div>
+    </div>
+  `;
+}
+
 // ---------- KMH (Kredili Mevduat Hesabı) ----------
 function renderKmh(){
   $fab.style.display='none';
-  const addBtn = `<button class="kr-add" data-action="open-modal" data-modal="addKmh">
+  const addBtn = `<button class="kr-add" data-action="nav" data-page="kmhAdd">
       <span>＋</span>
       <div><strong>Yeni KMH Hesabı Eklemek İçin Dokunun</strong><small>Farklı bankalardaki KMH hesaplarınızı buradan ekleyebilirsiniz.</small></div>
     </button>`;
@@ -2188,6 +2262,31 @@ function renderKmh(){
       ${addBtn}
     </div>
     <div class="kr-info">ⓘ <span>Faiz oranı ve tutarlar yaklaşıktır (BDDK tavan oranı esas alınır).<br>Uzun basarak <b>Düzenle</b> veya <b>Sil</b> seçeneklerini açın.</span></div>
+  `;
+}
+function renderKmhAdd(){
+  $fab.style.display='none';
+  return `
+    <div class="billadd-wrap">
+    <div class="page-top-block">
+    <button class="back-link" data-action="nav" data-page="kmh">‹ Geri</button>
+    <h3>KMH Hesabı Ekle</h3>
+    </div>
+    <div class="page-fields-block">
+    <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
+    <div class="field">${bankChipRow('kmhBankChoice')}</div>
+    <div class="section-title">2. KMH Bilgileri</div>
+    <div class="field-row">
+      <div class="field icon-field"><label>KMH Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+      <div class="field icon-field"><label>Güncel Toplam Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
+    </div>
+    <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('kmhDayChoice')}<span class="wheel-note">'i</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="cancel-btn" data-action="nav" data-page="kmh">Vazgeç</button>
+      <button class="save-btn" data-action="save-kmh">Kaydet</button>
+    </div>
+    </div>
   `;
 }
 // ---------- ABONELİK/FATURA KATEGORİ SEÇİMİ ----------
@@ -2962,6 +3061,7 @@ function openModal(kind, id){
     firstChoice.dataset.value = activeBtn?.dataset.val || '';
   }
   $modalSheet.classList.toggle('sheet-compact', kind==='itemActions');
+  $modalSheet.classList.toggle('sheet-full', ['addLoan','editLoan','addCard','cardStatement','addKmh','kmhSettings'].includes(kind));
   if($modalSheet.querySelector('.wheel-col')) initWheelPickers($modalSheet);
   $modalSheet.querySelectorAll('.tl-input').forEach(formatTLInputLive);
   if($modalSheet.querySelector('.notif-wrap')) initSwipeDelete($modalSheet);
@@ -2991,8 +3091,11 @@ const modalTemplates = {
   pinFlow(){ return buildLockBoxHtml(lockFlow); },
   tips(){ return tipsModalHtml(); },
   addLoan(){ return `
+    <div class="page-top-block">
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>Kredi Ekle</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
     <div class="field">${bankChipRow('loanBankChoice')}</div>
     <div class="section-title">2. Kredi Bilgileri</div>
@@ -3009,16 +3112,22 @@ const modalTemplates = {
     </div>
     <div class="section-title">3. Tarihler</div>
     <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', monthKey(new Date()), new Date().getDate())}</div>
+    </div>
+    <div class="page-bottom-block">
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-loan">Kaydet</button>
+    </div>
     </div>
   `; },
   editLoan(id){
     const l = state.loans.find(x=>x.id===id);
     return `
+    <div class="page-top-block">
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>Krediyi Düzenle</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
     <div class="field">${bankChipRow('loanBankChoice', l.bankCode)}</div>
     <div class="section-title">2. Kredi Bilgileri</div>
@@ -3036,15 +3145,21 @@ const modalTemplates = {
     </div>
     <div class="section-title">3. Tarihler</div>
     <div class="field wheel-field left"><span class="wheel-note">İlk Taksit Tarihi</span>${loanDateWheel('loanDateWheel', l.startMonth, l.dueDay)}</div>
+    </div>
+    <div class="page-bottom-block">
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-loan-edit" data-id="${id}">Kaydet</button>
     </div>
     <button class="danger-btn" data-action="delete-loan" data-id="${id}" style="margin-top:8px;">Krediyi Sil</button>
+    </div>
   `; },
   addCard(){ return `
+    <div class="page-top-block">
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>Kredi Kartı Ekle</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
     <div class="field">${bankChipRow('cardBankChoice')}</div>
     <div class="section-title">2. Kart Bilgileri</div>
@@ -3057,9 +3172,12 @@ const modalTemplates = {
       <div class="field icon-field"><label>Kart Adı (opsiyonel)</label><span class="fi">A</span><input id="f_name" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="Örn: Alışveriş Kartım"></div>
     </div>
     <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('cardDayChoice')}<span class="wheel-note">'i</span></div>
+    </div>
+    <div class="page-bottom-block">
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-card">Kaydet</button>
+    </div>
     </div>
   `; },
   cardStatement(id){
@@ -3068,8 +3186,11 @@ const modalTemplates = {
     const st = cardStatement(id, state.selectedMonth);
     const fi = calculateCardInterest(c, state.selectedMonth);
     return `
+    <div class="page-top-block">
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>${bank.name} — Kart Ayarları</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">Kart Bilgileri</div>
     <div class="field-row">
       <div class="field icon-field"><label>Kredi Kartı Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${c.limit?c.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
@@ -3087,15 +3208,21 @@ const modalTemplates = {
       <span style="font-size:11px;">Bir sonraki döneme taşınan ≈ ${formatTL(fi.carried)} bakiye üzerinden, ${fi.late?'gecikme faizi oranıyla':'yaklaşık aylık faiz oranıyla'} hesaplanan tahmini tutardır (BSMV dahil). Kesin tutar için banka ekstrenizi kontrol edin.<br>
       Tahmini faiz sonrası kullanılabilir limit ≈ ${formatTL(Math.max(0,(c.limit||0)-(c.totalDebt||0)-fi.total))}</span>
     </p>` : ''}
+    </div>
+    <div class="page-bottom-block">
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-card-settings" data-id="${id}">Kaydet</button>
     </div>
     <button class="danger-btn" data-action="delete-card" data-id="${id}" style="margin-top:8px;">Kartı Sil</button>
+    </div>
   `; },
   addKmh(){ return `
+    <div class="page-top-block">
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>KMH Hesabı Ekle</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">1. Banka Seçimi<small>Bankayı seçin</small></div>
     <div class="field">${bankChipRow('kmhBankChoice')}</div>
     <div class="section-title">2. KMH Bilgileri</div>
@@ -3104,9 +3231,12 @@ const modalTemplates = {
       <div class="field icon-field"><label>Güncel Toplam Borç (TL)</label><span class="fi">₺</span><input id="f_totalDebt" type="text" inputmode="numeric" class="tl-input" placeholder="0"></div>
     </div>
     <div class="field wheel-field"><span class="wheel-note">Son ödeme tarihi her ayın</span>${dayWheel('kmhDayChoice')}<span class="wheel-note">'i</span></div>
+    </div>
+    <div class="page-bottom-block">
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-kmh">Kaydet</button>
+    </div>
     </div>
   `; },
   kmhSettings(id){
@@ -3117,8 +3247,11 @@ const modalTemplates = {
     const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
     const dailyInterest = Math.round(debt * (bankRate/30) * (1 + KMH_TAX_RATES.bsmv + KMH_TAX_RATES.kkdf));
     return `
+    <div class="page-top-block">
     <button class="back-link" data-action="close-modal">‹ Geri</button>
     <h3>${bank.name} — KMH Ayarları</h3>
+    </div>
+    <div class="page-fields-block">
     <div class="section-title">KMH Bilgileri</div>
     <div class="field-row">
       <div class="field icon-field"><label>KMH Limiti (TL)</label><span class="fi">₺</span><input id="f_limit" type="text" inputmode="numeric" class="tl-input" value="${k.limit?k.limit.toLocaleString('tr-TR'):''}" placeholder="0"></div>
@@ -3133,11 +3266,14 @@ const modalTemplates = {
     <p class="kmh-interest-note">Günlük faiz (BSMV + KKDF dahil) yaklaşık ${dailyInterest.toLocaleString('tr-TR')} TL'dir.</p>
     ${planned>0?`<button class="save-btn" style="background:var(--paid);margin-bottom:4px;" data-action="mark-kmh-paid" data-id="${id}">Ödenecek Borcu Ödendi Olarak İşaretle</button>
     <p style="font-size:10px;color:var(--ink-soft);margin:0 0 8px;">Ödediğin tutar önce birikmiş faize, kalanı anaparaya uygulanır — borç, ödediğin tutarın tamamı kadar azalmayabilir.</p>`:''}
+    </div>
+    <div class="page-bottom-block">
     <div class="btn-row">
       <button class="cancel-btn" data-action="close-modal">Vazgeç</button>
       <button class="save-btn" data-action="save-kmh-settings" data-id="${id}">Kaydet</button>
     </div>
     <button class="danger-btn" data-action="delete-kmh" data-id="${id}" style="margin-top:8px;">KMH Hesabını Sil</button>
+    </div>
   `; },
   billRecord(id){
     const b = state.bills.find(x=>x.id===id);
