@@ -680,6 +680,7 @@ button.mainCard{cursor:pointer;}
 .settings-icon-badge.badge-pink{background:#fde3ee;color:#e0508a;}
 .settings-icon-badge.badge-orange{background:var(--pending-soft,#fdead9);color:var(--pending,#e0812f);}
 .settings-icon-badge.badge-blue{background:#e1ecfd;color:#3a72d8;}
+.settings-icon-badge.badge-purple{background:#efe3fd;color:#7a4fd8;}
 .settings-section-desc{font-size:10.5px;color:var(--ink-soft);margin-top:1px;line-height:1.25;}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink);}
 .settings-section-head + .settings-row{border-top:none;}
@@ -1280,7 +1281,8 @@ function load(){
   const defaults = { loans:[], loanStatus:{}, cards:[], cardStatements:[], kmhAccounts:[], bills:[], billOverrides:{}, debts:[], manualPayments:[], monthlyIncome:0, dismissedNotifs:[], visitCount:0, selectedMonth: monthKey(new Date()),
     uiTheme:'system', userName:'', hasSeenTips:false,
     notifEnabled:true, notifSoundEnabled:false, notifDaysAhead:5,
-    appLock: { enabled:false, pinHash:null, question:null, answerHash:null } };
+    appLock: { enabled:false, pinHash:null, question:null, answerHash:null },
+    mailScan: { connected:false, account:null, lastScanAt:null, pending:[], seenIds:[] } };
   let s = defaults;
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -2644,6 +2646,181 @@ function loadExcelJS(){
   });
   return _excelJSPromise;
 }
+
+// ---------- MAİL TARAMA (Microsoft Graph, sadece Hotmail/Outlook kişisel hesaplar) ----------
+// Kredi kartı/fatura ekstre e-postalarını otomatik yakalamak için: MSAL.js ile kullanıcının kendi
+// Microsoft hesabına (sadece "Mail.Read" izniyle) bağlanılır, gerçek arka uç/sunucu YOK — jeton
+// sadece bu cihazda tutulur. Bulunan olası işlemler doğrudan kaydedilmez; kullanıcı onaylamadan
+// hiçbir veri eklenmez.
+const MSAL_CLIENT_ID = 'bd590fb2-f847-414c-8ab1-38a7e0df1a95';
+const MSAL_AUTHORITY = 'https://login.microsoftonline.com/consumers';
+const MSAL_SCOPES = ['Mail.Read'];
+let _msalPromise = null;
+function loadMsalJs(){
+  if(typeof msal!=='undefined') return Promise.resolve();
+  if(_msalPromise) return _msalPromise;
+  _msalPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/msal/3.7.1/msal-browser.min.js';
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ _msalPromise = null; reject(new Error('Bağlantı kütüphanesi yüklenemedi')); };
+    document.head.appendChild(s);
+  });
+  return _msalPromise;
+}
+let _msalInstance = null;
+async function getMsalInstance(){
+  await loadMsalJs();
+  if(_msalInstance) return _msalInstance;
+  _msalInstance = new msal.PublicClientApplication({
+    auth: { clientId: MSAL_CLIENT_ID, authority: MSAL_AUTHORITY, redirectUri: window.location.origin + window.location.pathname },
+    cache: { cacheLocation: 'localStorage' }
+  });
+  await _msalInstance.initialize();
+  return _msalInstance;
+}
+async function connectMailAccount(){
+  try{
+    const inst = await getMsalInstance();
+    const result = await inst.loginPopup({ scopes: MSAL_SCOPES });
+    state.mailScan = state.mailScan || { connected:false, account:null, lastScanAt:null, pending:[], seenIds:[] };
+    state.mailScan.connected = true;
+    state.mailScan.account = result.account ? (result.account.username || result.account.name || '') : '';
+    save(); render();
+    scanMailSilently();
+  }catch(e){
+    console.error('mail connect failed', e);
+    alert('Hesaba bağlanılamadı. Lütfen tekrar deneyin.\n\n' + (e && e.message ? e.message : ''));
+  }
+}
+function disconnectMailAccount(){
+  state.mailScan = { connected:false, account:null, lastScanAt:null, pending:[], seenIds:[] };
+  save(); render();
+}
+async function acquireGraphToken(){
+  const inst = await getMsalInstance();
+  const accounts = inst.getAllAccounts();
+  if(!accounts.length) throw new Error('Bağlı hesap yok');
+  try{
+    const r = await inst.acquireTokenSilent({ scopes: MSAL_SCOPES, account: accounts[0] });
+    return r.accessToken;
+  }catch(e){
+    const r = await inst.acquireTokenPopup({ scopes: MSAL_SCOPES, account: accounts[0] });
+    return r.accessToken;
+  }
+}
+// Banka/kurum e-postalarını tanımak için basit desenler. Yeni bir banka/format eklemek için
+// buraya { senderContains, } girilip tutar/tarih için örnek e-posta metnine göre bir desen
+// yazılması yeterli — şu an genel bir TL tutarı + Türkçe tarih avcısı kullanılıyor, banka bazlı
+// gerçek örnekler paylaşıldıkça daha isabetli hale getirilecek.
+const MAIL_AMOUNT_RE = /([\d.]{1,12},\d{2})\s*(?:TL|TRY|₺)/i;
+const MAIL_DATE_RE = /(\d{1,2})[.\/\s](\d{1,2}|Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık)[.\/\s](\d{2,4})/i;
+const MAIL_KEYWORD_RE = /ekstre|son ödeme|fatura|kredi kart|hesap özeti/i;
+function parseTLNumber(s){
+  return parseFloat(s.replace(/\./g,'').replace(',', '.')) || 0;
+}
+// JS'in varsayılan (Türkçe olmayan) harf küçültme kuralında büyük "İ" harfi düz "i" değil,
+// "i" + nokta işaretine dönüşüyor — bu yüzden "ZİRAAT" gibi büyük harfli banka isimleri normal
+// /i bayraklı regex'lerle eşleşmeyebiliyor. Banka/anahtar kelime taramasından önce metni bu
+// fonksiyonla "katlayıp" (İ/I/ı hepsi düz i'ye) ardından küçük harfe çeviriyoruz.
+function trFold(s){
+  return (s||'').replace(/İ/g,'i').replace(/I/g,'i').replace(/ı/g,'i').toLowerCase();
+}
+// Etiket + değer aynı satırda olmayıp (banka mailleri genelde tablo hücrelerinden dönüştüğü
+// için) etiket/":" /değer ayrı satırlara düşebiliyor — bu yüzden etiketten sonra birkaç satır
+// içinde ilk sayı/tarihi arıyoruz, tam aynı satırda olma şartı aramıyoruz.
+function findValueAfterLabel(text, label, valueRe){
+  const idx = text.search(label);
+  if(idx<0) return null;
+  const slice = text.slice(idx, idx+160);
+  const m = slice.match(valueRe);
+  return m ? m[1] : null;
+}
+function trDateToISO(d, m, y){
+  if(y.length===2) y = '20'+y;
+  return y+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+// Banka bazlı özel ayrıştırıcılar: genel avcıdan ÖNCE denenir, çünkü banka mailleri genelde
+// tutarın yanında "TL" yazmıyor (tablo hücresi olarak geliyor) ve genel desen onları yakalayamaz.
+// Yeni bir banka/format eklemek için buraya, gerçek bir örnek maile göre bir eleman eklemek yeterli.
+const BANK_PARSERS = [
+  {
+    label: 'Ziraat Bankası — KMH Ekstresi',
+    match: text => /kredili mevduat hesabi ekstresi/i.test(trFold(text)) && /ziraat bankas/i.test(trFold(text)),
+    parse: (msg, text) => {
+      const amtStr = findValueAfterLabel(text, /dönem borcu/i, /([\d.]{1,10},\d{2})/);
+      if(!amtStr) return null;
+      let receivedAt = msg.receivedDateTime || '';
+      const labelIdx = text.search(/bir sonraki hesap özetinin tarihi/i);
+      const rawDateMatch = labelIdx>=0 ? text.slice(labelIdx).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/) : null;
+      if(rawDateMatch) receivedAt = trDateToISO(rawDateMatch[1], rawDateMatch[2], rawDateMatch[3]) + 'T00:00:00';
+      return {
+        id: msg.id, from:'Ziraat Bankası (KMH)', subject:'KMH Ekstresi — Dönem Faizi/Borcu',
+        receivedAt, amount: parseTLNumber(amtStr),
+        preview:'Kredili Mevduat Hesabı ekstresi — bu dönemin faiz/borç tutarı (KMH hesap özeti).'
+      };
+    }
+  }
+];
+function extractMailCandidate(msg){
+  const bodyText = (msg.body && msg.body.content) ? msg.body.content : (msg.bodyPreview||'');
+  const text = ((msg.subject||'') + ' \n ' + bodyText);
+  for(const p of BANK_PARSERS){
+    if(p.match(text)){
+      try{ const r = p.parse(msg, text); if(r) return r; }catch(e){ console.error('bank parser failed', p.label, e); }
+    }
+  }
+  if(!MAIL_KEYWORD_RE.test(trFold(text))) return null;
+  const am = text.match(MAIL_AMOUNT_RE);
+  if(!am) return null;
+  return {
+    id: msg.id,
+    from: (msg.from && msg.from.emailAddress) ? (msg.from.emailAddress.name || msg.from.emailAddress.address) : 'Bilinmeyen gönderici',
+    subject: msg.subject || '',
+    receivedAt: msg.receivedDateTime || '',
+    amount: parseTLNumber(am[1]),
+    preview: (msg.bodyPreview||bodyText).slice(0,140)
+  };
+}
+async function scanMailSilently(){
+  try{
+    if(!state.mailScan || !state.mailScan.connected) return;
+    const token = await acquireGraphToken();
+    const url = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages'
+      + '?$top=25&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body';
+    const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Prefer: 'outlook.body-content-type="text"' } });
+    if(!res.ok) throw new Error('Graph API hata: ' + res.status);
+    const data = await res.json();
+    const seen = new Set(state.mailScan.seenIds || []);
+    const found = (data.value || [])
+      .filter(m => !seen.has(m.id))
+      .map(extractMailCandidate)
+      .filter(Boolean);
+    state.mailScan.lastScanAt = new Date().toISOString();
+    if(found.length){
+      state.mailScan.pending = (state.mailScan.pending || []).concat(found);
+      state.mailScan.seenIds = Array.from(seen).concat(found.map(f=>f.id)).slice(-500);
+    }
+    save();
+    if(ui.page==='giris' || ui.page==='settings') render();
+  }catch(e){
+    console.error('mail scan failed', e);
+  }
+}
+function mailCandidateAccept(id){
+  const list = state.mailScan.pending || [];
+  const it = list.find(x=>x.id===id);
+  if(!it) return;
+  state.manualPayments = state.manualPayments || [];
+  const dateStr = (it.receivedAt||todayStr()).slice(0,10);
+  state.manualPayments.push({ id: uid(), ym: dateStr.slice(0,7), description: it.from + ' — ' + it.subject, amount: it.amount, date: dateStr, category:'elden', status:'bekliyor' });
+  state.mailScan.pending = list.filter(x=>x.id!==id);
+  save(); render();
+}
+function mailCandidateReject(id){
+  state.mailScan.pending = (state.mailScan.pending||[]).filter(x=>x.id!==id);
+  save(); render();
+}
 // "05 Eylül 2026" gibi tam (gün-ay-yıl) tarih — sadece ay/yıl değil, tam ödeme günü net görünsün diye.
 function formatFullDateTR(ym, day){
   const [y,m]=ym.split('-').map(Number);
@@ -2986,6 +3163,8 @@ function renderSettings(){
   const NOTIF_DAY_OPTIONS = [ {v:5,label:'5 gün'}, {v:3,label:'3 gün'}, {v:1,label:'1 gün'} ];
   const badgeSupported = (typeof navigator!=='undefined' && 'setAppBadge' in navigator);
   const notifPerm = (typeof Notification!=='undefined') ? Notification.permission : 'unsupported';
+  const mailScan = state.mailScan || { connected:false, account:null, lastScanAt:null, pending:[] };
+  const mailPendingCount = (mailScan.pending||[]).length;
   return `<div class="giris-header">
       <button class="giris-settings-btn" data-action="nav" data-page="giris" title="Geri">←</button>
       <div class="giris-logo">${BRAND_HTML}</div>
@@ -3049,6 +3228,27 @@ function renderSettings(){
       </div>
       <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
     </div>
+
+    <div class="settings-section" style="margin-top:8px;">
+      ${settingsSectionHead('📧','badge-purple','Otomatik Mail Tarama', mailScan.connected?('Bağlı: '+(mailScan.account||'')):'Kredi kartı/fatura e-postalarını otomatik bulur')}
+      ${mailScan.connected ? `
+        <div class="settings-row">
+          <span>Bağlantı</span>
+          <button class="pill-btn" data-action="disconnect-mail">Bağlantıyı Kes</button>
+        </div>
+        <div class="settings-row">
+          <span>Bekleyen Bulgu</span>
+          ${mailPendingCount>0 ? `<button class="pill-btn" data-action="open-mail-review">${mailPendingCount} yeni — İncele</button>` : `<span style="color:var(--ink-soft);font-size:12px;">Yok</span>`}
+        </div>
+        <div class="settings-row">
+          <span style="font-size:11px;color:var(--ink-soft);">${mailScan.lastScanAt ? ('Son tarama: '+new Date(mailScan.lastScanAt).toLocaleString('tr-TR')) : 'Henüz taranmadı'}</span>
+          <button class="pill-btn" data-action="scan-mail-now">Şimdi Tara</button>
+        </div>
+      ` : `
+        <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;line-height:1.4;">Hesabını bağlarsan, uygulamayı her açtığında yeni kredi kartı/fatura e-postalarını sessizce kontrol eder ve onayına sunar. Hiçbir şey senin onayın olmadan kaydedilmez.</p>
+        <button class="save-btn" data-action="connect-mail">📧 Hesabımı Bağla</button>
+      `}
+    </div>
     <div class="settings-footer-text">Finansçım • Sürüm 1.0</div>
   `;
 }
@@ -3070,6 +3270,15 @@ function girisPageHtml(bodyHtml, showFooter, compact){
       </div>
     </div>` : ''}
   </div>`;
+}
+function mailPendingBannerHtml(){
+  const cnt = (state.mailScan && state.mailScan.pending) ? state.mailScan.pending.length : 0;
+  if(!cnt) return '';
+  return `<button data-action="open-mail-review" style="width:100%;display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--border);background:#efe3fd22;border-radius:12px;padding:10px 12px;margin-bottom:10px;cursor:pointer;font-family:var(--font-body);">
+    <span style="font-size:18px;">📧</span>
+    <span style="flex:1;font-size:12.5px;color:var(--ink);"><strong>${cnt} yeni işlem</strong> mailde bulundu — incelemek için dokunun</span>
+    <span style="color:var(--ink-soft);">›</span>
+  </button>`;
 }
 function renderAlertsContent(){
   const n = getNotifications();
@@ -3103,7 +3312,7 @@ function renderAlertsContent(){
     </div>`;
   }
   if(total===0){
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 10px;">
+    return `${mailPendingBannerHtml()}<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 10px;">
       <div style="display:flex;align-items:center;gap:10px;">
         <span style="display:inline-flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:var(--paid-soft);color:var(--paid);font-size:21px;">✓</span>
         <span class="giris-congrats">Tebrikler!</span>
@@ -3112,6 +3321,7 @@ function renderAlertsContent(){
     </div>`;
   }
   return `
+    ${mailPendingBannerHtml()}
     <div class="giris-alerts-head">
       <h2>Önemli Uyarılar</h2>
       <button class="giris-filter-chip" style="cursor:default;">Tümü <span class="chev">⌄</span></button>
@@ -3145,7 +3355,15 @@ function renderGiris(){
   }
   appLockedNow = false;
   lockFlow = null;
+  maybeAutoScanMail();
   return girisPageHtml(renderAlertsContent(), true);
+}
+let _mailAutoScanDoneThisSession = false;
+function maybeAutoScanMail(){
+  if(_mailAutoScanDoneThisSession) return;
+  if(!(state.mailScan && state.mailScan.connected)) return;
+  _mailAutoScanDoneThisSession = true;
+  setTimeout(()=>{ scanMailSilently(); }, 600);
 }
 
 // ---------- UYGULAMA KİLİDİ (4 haneli PIN) ----------
@@ -3813,6 +4031,26 @@ const modalTemplates = {
     ${section('🟡 Yaklaşan (5 gün içinde)', n.soon, 'soon')}
     <button class="cancel-btn" data-action="close-modal">Kapat</button>
   `; },
+  mailScan(){
+    const list = (state.mailScan && state.mailScan.pending) || [];
+    return `<h3>📧 Mailde Bulunanlar</h3>
+    ${list.length===0 ? '<p style="color:var(--ink-soft);font-size:13.5px;margin:0 0 14px;">Onay bekleyen bir bulgu yok.</p>' : '<p style="font-size:11px;color:var(--ink-soft);margin:-6px 0 12px;">Kaydetmeden önce gözden geçir — istediğini onayla, istemediğini reddet.</p>'}
+    ${list.map(it=>`<div class="notif-row" style="margin-bottom:8px;">
+      <div style="flex:1;min-width:0;">
+        <div class="n-name">${esc(it.subject || it.from)}</div>
+        <div class="n-sub">${esc(it.from)} • ${it.receivedAt ? new Date(it.receivedAt).toLocaleDateString('tr-TR') : ''}</div>
+        <div class="n-sub" style="margin-top:2px;">${esc(it.preview)}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+        <div class="n-amt">${formatTL(it.amount)}</div>
+        <div style="display:flex;gap:4px;">
+          <button class="pill-btn" data-action="mail-reject" data-id="${esc(it.id)}" style="padding:4px 9px;font-size:11px;">Reddet</button>
+          <button class="pill-btn" data-action="mail-accept" data-id="${esc(it.id)}" style="padding:4px 9px;font-size:11px;background:var(--paid-soft);color:var(--paid);">Onayla</button>
+        </div>
+      </div>
+    </div>`).join('')}
+    <button class="cancel-btn" data-action="close-modal">Kapat</button>
+  `; },
 };
 
 // ---------- EVENT DELEGATION ----------
@@ -4003,6 +4241,12 @@ document.body.addEventListener('click', function(e){
     else{ exportToExcel(); }
     return;
   }
+  if(action==='connect-mail'){ connectMailAccount(); return; }
+  if(action==='disconnect-mail'){ disconnectMailAccount(); return; }
+  if(action==='scan-mail-now'){ scanMailSilently(); return; }
+  if(action==='open-mail-review'){ openModal('mailScan'); return; }
+  if(action==='mail-accept'){ mailCandidateAccept(t.dataset.id); if(modalCtx.kind==='mailScan') $modalSheet.innerHTML = modalTemplates.mailScan(); return; }
+  if(action==='mail-reject'){ mailCandidateReject(t.dataset.id); if(modalCtx.kind==='mailScan') $modalSheet.innerHTML = modalTemplates.mailScan(); return; }
   if(action==='dismiss-notif'){
     state.dismissedNotifs = state.dismissedNotifs||[];
     if(!state.dismissedNotifs.includes(t.dataset.key)) state.dismissedNotifs.push(t.dataset.key);
