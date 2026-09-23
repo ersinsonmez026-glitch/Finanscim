@@ -2787,12 +2787,20 @@ function trDateToISO(d, m, y){
 const BANK_PARSERS = [
   {
     label: 'Ziraat Bankası — KMH Ekstresi',
-    match: text => /kredili mevduat hesabi ekstresi/i.test(trFold(text)) && /ziraat bankas/i.test(trFold(text)),
+    // Not: banka mailleri genelde bir tablodan dönüştüğü için etiket kelimeleri arasında BOŞLUK
+    // yerine SATIR SONU olabiliyor ("Kredili Mevduat\nHesabı\nEkstresi" gibi) — düz " " (tek
+    // boşluk) regex'i satır sonunu eşleştirmez, bu yüzden \s+ (her türlü boşluk/satır sonu)
+    // kullanıyoruz. Ayrıca tek bir tam ifadeye değil, gevşek bir kombinasyona bakıyoruz.
+    match: text => {
+      const f = trFold(text);
+      if(!/ziraat/i.test(f)) return false;
+      return /kredili\s+mevduat/i.test(f) || /\bkmh\b/i.test(f) || /kredili\s+mevduat\s+hesabi\s+ekstresi/i.test(f) || /dönem\s+borcu/i.test(text);
+    },
     parse: (msg, text) => {
-      const amtStr = findValueAfterLabel(text, /dönem borcu/i, /([\d.]{1,10},\d{2})/);
+      const amtStr = findValueAfterLabel(text, /dönem\s+borcu/i, /([\d.]{1,10},\d{2})/);
       if(!amtStr) return null;
       let receivedAt = msg.receivedDateTime || '';
-      const labelIdx = text.search(/bir sonraki hesap özetinin tarihi/i);
+      const labelIdx = text.search(/bir\s+sonraki\s+hesap\s+özetinin\s+tarihi/i);
       const rawDateMatch = labelIdx>=0 ? text.slice(labelIdx).match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/) : null;
       if(rawDateMatch) receivedAt = trDateToISO(rawDateMatch[1], rawDateMatch[2], rawDateMatch[3]) + 'T00:00:00';
       return {
@@ -2848,7 +2856,12 @@ async function scanMailSilently(manual){
     save();
     if(ui.page==='giris' || ui.page==='settings') render();
     if(manual && found.length===0){
-      alert('Yeni bir işlem bulunamadı.');
+      // Teşhis amaçlı: hangi tarih aralığının tarandığını gösteriyoruz, böylece aranan mail o
+      // aralığın dışında mı kaldı yoksa metin içinde mi bulunamadı ayırt edilebilsin.
+      const msgs = data.value || [];
+      const oldest = msgs.length ? new Date(msgs[msgs.length-1].receivedDateTime).toLocaleDateString('tr-TR') : '-';
+      const newest = msgs.length ? new Date(msgs[0].receivedDateTime).toLocaleDateString('tr-TR') : '-';
+      alert('Yeni bir işlem bulunamadı.\n\n(Teşhis: ' + msgs.length + ' mail tarandı, ' + oldest + ' – ' + newest + ' arası.)');
     }
   }catch(e){
     console.error('mail scan failed', e);
