@@ -166,7 +166,7 @@ button.mainCard{cursor:pointer;}
 .mainCard .amount{margin-left:auto;color:#fff;font-size:15px;font-weight:800;white-space:nowrap;margin-right:16px;}
 .mainCard .go{position:absolute;right:10px;color:#fff;font-size:22px;font-weight:300;}
 
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin-bottom:5px;box-shadow:0 5px 15px #28508210;}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;margin-bottom:5px;box-shadow:0 5px 15px #28508210;overflow:hidden;}
 .panel .head{display:flex;justify-content:space-between;align-items:center;padding:7px 12px 3px;}
 .panel .head h2{margin:0;font-size:14.5px;color:var(--ink);}
 .panel .head span{font-size:9.5px;color:var(--ink-soft);display:flex;align-items:center;gap:3px;}
@@ -1920,8 +1920,8 @@ function renderHome(){
     <div class="panel">
       <div class="head"><h2>Borç Dağılımı</h2><span>Toplam: <b>${formatTL(distTotal)}</b></span></div>
       ${dist.map(d=>`
-        <div class="row" data-action="nav" data-page="${d.page}">
-          <div class="ico" style="background:${CAT_ICONS[d.cat].bg};color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
+        <div class="row" data-action="nav" data-page="${d.page}" style="background:${CAT_ICONS[d.cat].bg};">
+          <div class="ico" style="background:var(--surface);color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
           <div class="rtext">
             <div class="rname marquee-text"><span class="mq-inner">${esc(d.name)}</span></div>
             <div class="rsub marquee-text"><span class="mq-inner">Görmek ve düzenlemek için dokunun</span></div>
@@ -1949,19 +1949,15 @@ function renderMarketSection(){
       <div class="market">
         <div class="mcard gold">
           <div class="mi"><img src="${MARKET_ICON_GOLD}" alt="" style="width:22px;height:auto;display:block;margin:0 auto;border-radius:5px;"></div><h3>Altın</h3><b>${Math.round(GOLD_RATE).toLocaleString('tr-TR')} TL</b><small>gram</small>
-          ${marketChangeHtml(chg.gold)}
         </div>
         <div class="mcard usd">
           <div class="mi"><img src="${MARKET_ICON_USD}" alt="" style="width:22px;height:auto;display:block;margin:0 auto;border-radius:5px;"></div><h3>Dolar</h3><b>${FX.USD.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} TL</b><small>1 USD</small>
-          ${marketChangeHtml(chg.usd)}
         </div>
         <div class="mcard eur">
           <div class="mi"><img src="${MARKET_ICON_EUR}" alt="" style="width:22px;height:auto;display:block;margin:0 auto;border-radius:5px;"></div><h3>Euro</h3><b>${FX.EUR.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})} TL</b><small>1 EUR</small>
-          ${marketChangeHtml(chg.eur)}
         </div>
         <div class="mcard bist">
           <div class="mi"><img src="${MARKET_ICON_BIST}" alt="" style="width:22px;height:auto;display:block;margin:0 auto;border-radius:5px;"></div><h3>BIST 100</h3><b>${state.bist100!=null ? Number(state.bist100).toLocaleString('tr-TR') : '—'}</b><small>XU100</small>
-          ${marketChangeHtml(chg.bist)}
         </div>
       </div>
     </div>
@@ -4151,9 +4147,12 @@ fetchLiveRates();
     if(skipGesture) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - sx, dy = t.clientY - sy;
-    if(Math.abs(dx) > THRESH && Math.abs(dx) > Math.abs(dy)*1.5){
-      if(dx < 0) navigateBack();
-      else navigateForward();
+    // Yalnızca sağdan sola kaydırma (geri) desteklenir — soldan sağa "ileri" kaydırması
+    // gereksiz/karıştırıcı olduğu için kaldırıldı. Geri okuna basmak veya sağdan sola
+    // kaydırmak, kullanıcıyı bir önceki sayfaya götürür (ör. Kredi Ekle'den Kredilerim'e,
+    // Kredilerim'den Ana Sayfa'ya) — bu zaten navStack'in doğal geçmişidir.
+    if(dx < 0 && Math.abs(dx) > THRESH && Math.abs(dx) > Math.abs(dy)*1.5){
+      navigateBack();
     }
   }, {passive:true});
 })();
@@ -4289,6 +4288,16 @@ function buildAiDataSummary(){
   const debts = get_cash_debt_data();
   const upcoming = get_upcoming_payments();
   const monthRows = get_monthly_payments(ym).map(r=>({ ad:r.name, tutar:r.amount, gun:r.day, durum:r.status }));
+  // Kullanıcının uygulamada seçili olan ay ile "önümüzdeki ay" gibi bugüne göre sorduğu
+  // sorular farklı şeyler olabilir (SEÇİLİ AY farklı bir ayda kalmış olabilir). Bu yüzden
+  // bugünün tarihine göre bu ay + sonraki 3 ayın verilerini AYRICA, sabit bir takvim olarak
+  // gönderiyoruz; model "önümüzdeki ay" derken buna bakar, SEÇİLİ AY'a değil.
+  const realTodayYm = monthKey(new Date());
+  const futureMonths = [];
+  for(let i=0;i<=3;i++){
+    const fm = addMonths(realTodayYm, i);
+    futureMonths.push({ ym:fm, due: monthlyDue(fm), rows: monthlyRows(fm).map(r=>({ ad:r.name, tutar:r.amount, gun:r.day, durum:r.status })) });
+  }
 
   const lines = [];
   lines.push(`SEÇİLİ AY: ${ym}`);
@@ -4329,6 +4338,14 @@ function buildAiDataSummary(){
   if(!upcoming.length) lines.push('  (bekleyen ödeme yok)');
   upcoming.forEach(u=>lines.push(`  - ${u.ad}: ${u.tutar} TL, ${u.gun}. gün`));
 
+  lines.push(`\nAY AY ÖDEME TAKVİMİ (bugünün gerçek tarihine göre; "bu ay", "gelecek ay", "önümüzdeki ay" gibi sorularda BUNU kullan, SEÇİLİ AY farklı olsa bile):`);
+  futureMonths.forEach((fm,i)=>{
+    const tag = i===0 ? ' (bu ay)' : (i===1 ? ' (gelecek ay / önümüzdeki ay)' : '');
+    lines.push(`  ${fm.ym}${tag}: o ay için ödenecek toplam ${fm.due} TL`);
+    if(!fm.rows.length) lines.push('    (o ay için kayıtlı ödeme kalemi yok)');
+    fm.rows.forEach(r=>lines.push(`    - ${r.ad}: ${r.tutar} TL, ${r.gun}. gün, durum: ${r.durum}`));
+  });
+
   return lines.join('\n');
 }
 
@@ -4339,7 +4356,7 @@ Bugünün tarihi: ${todayStr()}.
 
 ÇOK ÖNEMLİ - SADECE OKUMA: Sen SADECE aşağıda verilen gerçek finansal verileri okuyup yorumlayabilirsin. Hiçbir şekilde kredi/kart/KMH/fatura/abonelik/elden borç EKLEYEMEZ, SİLEMEZ, DÜZENLEYEMEZ, "ödendi" İŞARETLEYEMEZSİN, aylık geliri DEĞİŞTİREMEZSİN. Kullanıcı bir kayıt eklemek/değiştirmek/ödendi işaretlemek isterse bunu SEN YAPAMAZSIN — kullanıcıya bu işlemi uygulamanın ilgili sayfasından (Krediler, Kartlar, KMH, Faturalar, Elden Borç vb.) kendisinin yapması gerektiğini kısaca söyle.
 
-VERİ KURALI: Aşağıdaki "GÜNCEL FİNANSAL VERİLER" bölümü, uygulamadaki GERÇEK ve GÜNCEL verilerdir. Cevaplarını SADECE bu verilere dayandır. Burada olmayan hiçbir rakamı UYDURMA; bir bilgi burada yoksa "bu bilgi uygulamada yok" de.
+VERİ KURALI: Aşağıdaki "GÜNCEL FİNANSAL VERİLER" bölümü, uygulamadaki GERÇEK ve GÜNCEL verilerdir. Cevaplarını SADECE bu verilere dayandır. Burada olmayan hiçbir rakamı UYDURMA; bir bilgi burada yoksa "bu bilgi uygulamada yok" de. "Bu ay", "gelecek ay", "önümüzdeki ay", "şu an" gibi bugüne göre bir zaman ifadesi kullanan sorularda MUTLAKA verilerin en altındaki "AY AY ÖDEME TAKVİMİ" bölümüne bak — SEÇİLİ AY, kullanıcının uygulama arayüzünde o an baktığı farklı bir ay olabilir, bugünkü gerçek tarihle aynı olmak zorunda değildir.
 
 CEVAP UZUNLUĞU (ÇOK ÖNEMLİ): Cevapların KISA olsun — varsayılan olarak 2-5 kısa cümle. Gereksiz açıklama, uzun rapor veya madde listesi kullanma; kullanıcı açıkça daha fazla detay istemedikçe cevabı uzatma. Aynı bilgiyi tekrar etme. Örnek stil: "Toplam borcunuz 75.488 TL.\nBu ay ödemeniz gereken tutar 14.587 TL."
 
