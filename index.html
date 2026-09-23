@@ -3129,7 +3129,9 @@ function renderGiris(){
   if(needsMandatorySetup()){
     appLockedNow = true;
     if(!lockFlow || lockFlow.purpose!=='mandatorySetup'){
-      lockFlow = { purpose:'mandatorySetup', target:'giris', mode: state.userName ? 'setNew1' : 'askName', buffer:'', newPin:'', question:'', answer:'', name:'', error:'' };
+      // Ad, PIN ve hatırlatıcı soru tek ekranda birlikte toplanır — uygulamayı ilk açan kullanıcı
+      // art arda üç farklı ekranda ilerlemek zorunda kalmasın diye.
+      lockFlow = { purpose:'mandatorySetup', target:'giris', mode:'combinedSetup', buffer:'', newPin:'', question:'', answer:'', name: state.userName||'', error:'' };
     }
     return girisPageHtml(buildLockBoxHtml(lockFlow), false);
   }
@@ -3223,6 +3225,26 @@ function buildLockBoxHtml(f){
       ${f.error?`<p class="pin-error">${esc(f.error)}</p>`:''}
       <button class="save-btn" data-action="pin-check-answer">Kontrol Et</button>
       <button class="cancel-btn" style="margin-top:8px;" data-action="pin-cancel-forgot">Vazgeç</button>`;
+  } else if(f.mode==='combinedSetup'){
+    title='Hoş Geldiniz!'; sub='Devam etmek için aşağıdakileri doldurun';
+    body = `<div class="field" style="text-align:left;">
+        <label>Adınız <span style="color:var(--ink-soft);font-weight:400;">(opsiyonel)</span></label>
+        <input id="pinNameInput" type="text" autocomplete="off" placeholder="Adınız" value="${f.name?esc(f.name):''}" maxlength="24">
+      </div>
+      <div class="field" style="text-align:left;margin-top:16px;">
+        <label>PIN Kodu (4 haneli)</label>
+        ${pinPadHtml(f.buffer.length)}
+      </div>
+      <div class="field" style="text-align:left;margin-top:16px;">
+        <label>Hatırlatıcı Soru</label>
+        <select id="pinQSelect">
+          <option value="">Soru seçin…</option>
+          ${SECURITY_QUESTIONS.map(q=>`<option value="${esc(q)}" ${f.question===q?'selected':''}>${esc(q)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field" style="text-align:left;"><label>Cevabınız</label><input id="pinAInput" type="text" autocomplete="off" placeholder="Cevap" value="${f.answer?esc(f.answer):''}"></div>
+      ${f.error?`<p class="pin-error">${esc(f.error)}</p>`:''}
+      <button class="save-btn" style="margin-top:10px;" data-action="pin-save-combined">Devam Et</button>`;
   } else if(f.mode==='askName'){
     title='Merhaba!'; sub='Size nasıl hitap edelim?';
     body = `<div class="field" style="text-align:left;">
@@ -3259,7 +3281,7 @@ function buildLockBoxHtml(f){
       <button class="cancel-btn" style="margin-top:8px;" data-action="pin-cancel">Vazgeç</button>`;
   }
   return `<div class="lock-box" id="lockBox">
-      <div class="lock-icon">🔒</div>
+      ${f.mode==='combinedSetup' ? '' : `<div class="lock-icon">🔒</div>`}
       <h2>${title}</h2>
       ${sub?`<p class="lock-sub">${sub}</p>`:''}
       ${body}
@@ -3267,12 +3289,27 @@ function buildLockBoxHtml(f){
 }
 function attachLockFocus(container){
   const root = container || document;
+  const combined = !!(lockFlow && lockFlow.mode==='combinedSetup');
   const ans = root.querySelector('#pinAnswerInput');
   if(ans){ ans.focus(); ans.addEventListener('keydown', e=>{ if(e.key==='Enter') checkForgotAnswer(); }); }
   const aInp = root.querySelector('#pinAInput');
-  if(aInp){ aInp.addEventListener('keydown', e=>{ if(e.key==='Enter') saveNewSecurityQuestion(); }); }
+  if(aInp){ aInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ if(combined) saveCombinedSetup(); else saveNewSecurityQuestion(); } }); }
   const nInp = root.querySelector('#pinNameInput');
-  if(nInp){ nInp.focus(); nInp.addEventListener('keydown', e=>{ if(e.key==='Enter') saveEnteredName(); }); }
+  if(nInp){
+    // Tek ekranlı kurulumda (combinedSetup) ad alanına otomatik odaklanmıyoruz — mobil klavye
+    // açılıp altındaki PIN tuş takımını kapatmasın diye.
+    if(!combined) nInp.focus();
+    nInp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ if(combined) saveCombinedSetup(); else saveEnteredName(); } });
+  }
+  if(combined){
+    // combinedSetup'ta PIN tuşlarına her dokunuşta ekran yeniden çizildiği için (pin-key ->
+    // refreshLockUI), ad/soru/cevap alanlarındaki değerler her tuş vuruşunda lockFlow nesnesine
+    // canlı olarak yazılır — yoksa bir sonraki yeniden çizimde eski (boş) değerle silinirler.
+    if(nInp) nInp.addEventListener('input', ()=>{ if(lockFlow) lockFlow.name = nInp.value; });
+    if(aInp) aInp.addEventListener('input', ()=>{ if(lockFlow) lockFlow.answer = aInp.value; });
+    const qSel = root.querySelector('#pinQSelect');
+    if(qSel) qSel.addEventListener('change', ()=>{ if(lockFlow) lockFlow.question = qSel.value; });
+  }
 }
 function shakeLock(){
   const box = document.getElementById('lockBox');
@@ -3363,6 +3400,28 @@ function saveEnteredName(){
   state.userName = nameCap; save();
   f.mode='setNew1'; f.buffer='';
   refreshLockUI();
+}
+// Tek ekranlı ilk kurulum: ad (opsiyonel) + 4 haneli PIN (zorunlu) + hatırlatıcı soru/cevap
+// (zorunlu) hepsi birlikte, tek "Devam Et" ile kaydedilir.
+async function saveCombinedSetup(){
+  const f = lockFlow; if(!f || f.mode!=='combinedSetup') return;
+  const nameInp = document.getElementById('pinNameInput');
+  const name = (nameInp && nameInp.value ? nameInp.value : '').trim();
+  const q = (document.getElementById('pinQSelect')||{}).value || '';
+  const a = (document.getElementById('pinAInput')||{}).value || '';
+  // Doğrulama başarısız olup ekran yeniden çizilse bile o ana kadar girilenler kaybolmasın diye
+  // akış nesnesine geri yazıyoruz (yeniden çizim bu alanları f.name/f.question/f.answer'dan doldurur).
+  f.name = name; f.question = q; f.answer = a;
+  if(f.buffer.length!==4){ f.error='Lütfen 4 haneli bir PIN girin.'; refreshLockUI(); shakeLock(); return; }
+  if(!q){ f.error='Lütfen bir hatırlatıcı soru seçin.'; refreshLockUI(); return; }
+  if(!a.trim()){ f.error='Lütfen hatırlatıcı sorunun cevabını girin.'; refreshLockUI(); return; }
+  const pinHash = await hashText(f.buffer);
+  const answerHash = await hashText(a.trim().toLocaleLowerCase('tr-TR'));
+  if(!lockFlow) return; // akış iptal edildiyse devam etme
+  if(name) state.userName = capitalizeWordsTr(name);
+  state.appLock = { enabled:true, pinHash, question:q, answerHash };
+  save();
+  sessionUnlocked = true; lockFlow = null; markActive(); render();
 }
 async function saveNewSecurityQuestion(){
   const f = lockFlow; if(!f) return;
@@ -3867,13 +3926,14 @@ document.body.addEventListener('click', function(e){
   if(action==='pin-key'){
     const f = lockFlow; if(!f || f.buffer.length>=4) return;
     f.buffer += t.dataset.digit;
-    if(f.buffer.length===4){
-      refreshLockUI();
+    refreshLockUI();
+    // combinedSetup'ta 4. rakam girilince otomatik ilerlemiyoruz — ad/soru/cevap ile birlikte
+    // tek "Devam Et" düğmesiyle onaylanıyor. Diğer akışlarda eskisi gibi otomatik devam ediyor.
+    if(f.buffer.length===4 && f.mode!=='combinedSetup'){
       // 4. rakam girildiğinde dolan son noktayı görebilmeniz için kısa bir an bekleyip
       // öyle doğruluyoruz — ekran anında değişmesin diye.
       setTimeout(()=>{ if(lockFlow===f) handlePinComplete(); }, 350);
     }
-    else{ refreshLockUI(); }
     return;
   }
   if(action==='pin-backspace'){
@@ -3891,6 +3951,7 @@ document.body.addEventListener('click', function(e){
   if(action==='pin-cancel'){ endLockFlow(); return; }
   if(action==='pin-check-answer'){ checkForgotAnswer(); return; }
   if(action==='pin-save-name'){ saveEnteredName(); return; }
+  if(action==='pin-save-combined'){ saveCombinedSetup(); return; }
   if(action==='pin-save-question'){ saveNewSecurityQuestion(); return; }
   if(action==='pin-confirm-delete'){ performDataDelete(); return; }
   if(action==='set-theme'){ state.uiTheme = t.dataset.theme; save(); applyTheme(state.uiTheme); render(); return; }
