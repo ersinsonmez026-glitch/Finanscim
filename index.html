@@ -2827,8 +2827,11 @@ async function scanMailSilently(manual){
   try{
     if(!state.mailScan || !state.mailScan.connected) return;
     const token = await acquireGraphToken();
-    const url = 'https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages'
-      + '?$top=25&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body';
+    // "/me/mailFolders/inbox/messages" yerine "/me/messages" kullanıyoruz — böylece sadece Gelen
+    // Kutusu değil, otomatik kurallarla başka klasöre düşmüş banka mailleri de taranıyor. $top de
+    // 25'ten 50'ye çıkarıldı, taşınmış/geriden gelen mailleri de kapsasın diye.
+    const url = 'https://graph.microsoft.com/v1.0/me/messages'
+      + '?$top=50&$orderby=receivedDateTime desc&$select=id,subject,from,receivedDateTime,bodyPreview,body';
     const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token, Prefer: 'outlook.body-content-type="text"' } });
     if(!res.ok) throw new Error('Graph API hata: ' + res.status);
     const data = await res.json();
