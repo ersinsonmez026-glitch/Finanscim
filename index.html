@@ -2888,29 +2888,34 @@ function buildLoansSheetXL(workbook, banks){
     r++;
   });
 
-  // KALAN KREDİ BORCU: her ay sütununda, o ay ve sonrasındaki henüz ödenmemiş tüm taksitlerin
-  // (hücre bazında yuvarlanıp toplanan) tutarı; Toplam sütunu ise bugün itibarıyla ödenmemiş TÜM
-  // taksitlerin aynı yöntemle toplamı — ayrı bir formül değil, tablodaki taksit verisinin doğrudan toplamı.
+  // KALAN KREDİ BORCU satırı: ay sütunlarının ALTINDA o ayki TOPLAM ÖDEME (o ay vadesi gelen tüm
+  // taksitlerin toplamı — yukarıdaki satırlarda o ay sütununda görünen hücrelerin toplamıyla birebir
+  // aynı) yazar; ay tamamen ödenmişse ✓ ile yeşile boyanır. En sağdaki Toplam sütununda ise bugün
+  // itibarıyla henüz ödenmemiş TÜM taksitlerin toplamı, yani gerçek kalan kredi borcu yazar.
   const remRow = ws.getRow(r);
-  remRow.getCell(1).value = 'KALAN KREDİ BORCU';
-  let remTotal = 0;
-  loans.forEach(l=>loanInstallments(l).forEach(inst=>{ if(inst.status!=='odendi') remTotal += Math.round(inst.amount); }));
-  months.forEach((m,ci)=>{
-    let sum=0;
-    loans.forEach(l=>loanInstallments(l).forEach(inst=>{ if(inst.status!=='odendi' && inst.ym>=m) sum+=Math.round(inst.amount); }));
-    const cell = remRow.getCell(3+ci);
-    cell.value = sum.toLocaleString('tr-TR')+' TL';
-    cell.alignment = { horizontal:'center' };
-  });
-  const remTotalCell = remRow.getCell(3+months.length);
-  remTotalCell.value = remTotal.toLocaleString('tr-TR')+' TL';
-  remTotalCell.alignment = { horizontal:'right' };
   for(let col=1; col<=3+months.length; col++){
     const cell = remRow.getCell(col);
     cell.font = { bold:true };
     cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFF6ECDA'} };
     xlBorderAll(cell);
   }
+  remRow.getCell(1).value = 'KALAN KREDİ BORCU';
+  months.forEach((m,ci)=>{
+    let sum=0, anyInst=false, allPaid=true;
+    loans.forEach(l=>{
+      const inst = loanInstallmentForMonth(l, m);
+      if(inst){ anyInst=true; sum+=Math.round(inst.amount); if(inst.status!=='odendi') allPaid=false; }
+    });
+    const cell = remRow.getCell(3+ci);
+    cell.value = (anyInst && allPaid ? '✓ ' : '') + sum.toLocaleString('tr-TR')+' TL';
+    cell.alignment = { horizontal:'center' };
+    if(anyInst && allPaid) cell.font = { bold:true, color:{argb:'FF2F8F6F'} };
+  });
+  let remTotal = 0;
+  loans.forEach(l=>loanInstallments(l).forEach(inst=>{ if(inst.status!=='odendi') remTotal += Math.round(inst.amount); }));
+  const remTotalCell = remRow.getCell(3+months.length);
+  remTotalCell.value = remTotal.toLocaleString('tr-TR')+' TL';
+  remTotalCell.alignment = { horizontal:'right' };
 }
 
 async function exportToExcel(){
