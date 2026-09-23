@@ -2655,17 +2655,37 @@ function loadExcelJS(){
 const MSAL_CLIENT_ID = 'bd590fb2-f847-414c-8ab1-38a7e0df1a95';
 const MSAL_AUTHORITY = 'https://login.microsoftonline.com/consumers';
 const MSAL_SCOPES = ['Mail.Read'];
+// Not: MSAL.js v3, cdnjs gibi genel kütüphane CDN'lerinde artık dağıtılmıyor (Microsoft, v3 için
+// "kendin barındır" diyor, hazır bir tarayıcı paketi yayınlamıyor) — bu yüzden önceki cdnjs
+// adresi 404 veriyordu ("Bağlantı kütüphanesi yüklenemedi" hatası buradan geliyordu). Bizim
+// basit senaryomuz (tek hesap, Mail.Read) için MSAL v2 yeterli ve Microsoft'un KENDİ resmi
+// CDN'inde (alcdn.msauth.net) hâlâ barındırılıyor — daha güvenilir.
+const MSAL_CDN_URLS = [
+  'https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js',
+  'https://alcdn.msftauth.net/browser/2.35.0/js/msal-browser.min.js'
+];
+function loadScriptOnce(src){
+  return new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = ()=>resolve();
+    s.onerror = ()=>reject(new Error('yüklenemedi: '+src));
+    document.head.appendChild(s);
+  });
+}
 let _msalPromise = null;
 function loadMsalJs(){
   if(typeof msal!=='undefined') return Promise.resolve();
   if(_msalPromise) return _msalPromise;
-  _msalPromise = new Promise((resolve, reject)=>{
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/msal/3.7.1/msal-browser.min.js';
-    s.onload = ()=>resolve();
-    s.onerror = ()=>{ _msalPromise = null; reject(new Error('Bağlantı kütüphanesi yüklenemedi')); };
-    document.head.appendChild(s);
-  });
+  _msalPromise = (async ()=>{
+    let lastErr = null;
+    for(const url of MSAL_CDN_URLS){
+      try{ await loadScriptOnce(url); if(typeof msal!=='undefined') return; }
+      catch(e){ lastErr = e; }
+    }
+    _msalPromise = null;
+    throw new Error('Bağlantı kütüphanesi yüklenemedi' + (lastErr?(' ('+lastErr.message+')'):''));
+  })();
   return _msalPromise;
 }
 let _msalInstance = null;
@@ -2676,7 +2696,8 @@ async function getMsalInstance(){
     auth: { clientId: MSAL_CLIENT_ID, authority: MSAL_AUTHORITY, redirectUri: window.location.origin + window.location.pathname },
     cache: { cacheLocation: 'localStorage' }
   });
-  await _msalInstance.initialize();
+  // v2'de initialize() metodu yok; ileride v3'e geçilirse diye varsa çağırıyoruz, yoksa atlıyoruz.
+  if(typeof _msalInstance.initialize === 'function') await _msalInstance.initialize();
   return _msalInstance;
 }
 // ÖNEMLİ (mobil Safari uyumu): açılır pencere (loginPopup) MSAL kütüphanesinin CDN'den
