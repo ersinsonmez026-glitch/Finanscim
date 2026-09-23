@@ -14,31 +14,31 @@
 <style>
 :root{
   --bg:#F7FAF9;--surface:#FFFFFF;--ink:#132326;--ink-soft:#5A7378;--border:#DCE8E6;
-  --accent:#0E7C86;--accent-soft:#DEF0EF;
-  --debt:#B3483C;--debt-soft:#F7E9E7;
-  --paid:#2F8F6F;--paid-soft:#E1F2E9;
-  --pending:#B8791F;--pending-soft:#F6ECDA;
-  --soon:#A8901A;--soon-soft:#FBF3CE;
-  --purple:#3B6B95;--purple-soft:#E4ECF5;
+  --accent:#0E7C86;--accent-soft:#DEF0EF;--accent-row:#F0F8F8;
+  --debt:#B3483C;--debt-soft:#F7E9E7;--debt-row:#FBF5F4;
+  --paid:#2F8F6F;--paid-soft:#E1F2E9;--paid-row:#F2F9F5;
+  --pending:#B8791F;--pending-soft:#F6ECDA;--pending-row:#FBF6EE;
+  --soon:#A8901A;--soon-soft:#FBF3CE;--soon-row:#FDFAE9;
+  --purple:#3B6B95;--purple-soft:#E4ECF5;--purple-row:#F1F5FA;
   --font-display:'Fraunces',serif;--font-body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0F1B1D;--surface:#16292B;--ink:#EAF3F2;--ink-soft:#8FADB0;--border:#25393C;
-    --accent:#4FC3C9;--accent-soft:#1B3335;
-    --debt:#E08478;--debt-soft:#2E2220;
-    --paid:#6FCBA6;--paid-soft:#1B332B;
-    --pending:#E0AD5F;--pending-soft:#2E2718;
-    --soon:#D9C15E;--soon-soft:#332C12;
-    --purple:#8CB2DE;--purple-soft:#1E2A3A;
+    --accent:#4FC3C9;--accent-soft:#1B3335;--accent-row:#182E30;
+    --debt:#E08478;--debt-soft:#2E2220;--debt-row:#212626;
+    --paid:#6FCBA6;--paid-soft:#1B332B;--paid-row:#182E2B;
+    --pending:#E0AD5F;--pending-soft:#2E2718;--pending-row:#212822;
+    --soon:#D9C15E;--soon-soft:#332C12;--soon-row:#232A20;
+    --purple:#8CB2DE;--purple-soft:#1E2A3A;--purple-row:#1B2530;
   }
 }
 :root[data-theme="dark"]{
   --bg:#0F1B1D;--surface:#16292B;--ink:#EAF3F2;--ink-soft:#8FADB0;--border:#25393C;
-  --accent:#4FC3C9;--accent-soft:#1B3335;--debt:#E08478;--debt-soft:#2E2220;
-  --paid:#6FCBA6;--paid-soft:#1B332B;--pending:#E0AD5F;--pending-soft:#2E2718;
-  --soon:#D9C15E;--soon-soft:#332C12;
-  --purple:#8CB2DE;--purple-soft:#1E2A3A;
+  --accent:#4FC3C9;--accent-soft:#1B3335;--accent-row:#182E30;--debt:#E08478;--debt-soft:#2E2220;--debt-row:#212626;
+  --paid:#6FCBA6;--paid-soft:#1B332B;--paid-row:#182E2B;--pending:#E0AD5F;--pending-soft:#2E2718;--pending-row:#212822;
+  --soon:#D9C15E;--soon-soft:#332C12;--soon-row:#232A20;
+  --purple:#8CB2DE;--purple-soft:#1E2A3A;--purple-row:#1B2530;
 }
 *{box-sizing:border-box;}
 html,body{margin:0;height:100%;}
@@ -155,10 +155,10 @@ button{font-family:var(--font-body);}
 .mainCard{height:49px;border-radius:16px;display:flex;align-items:center;padding:5px 12px;position:relative;
   border:1px solid rgba(20,70,140,.13);width:100%;text-align:left;font-family:var(--font-body);cursor:default;}
 button.mainCard{cursor:pointer;}
-.mainCard.c1{background:linear-gradient(90deg,#11a99e,#169a95);}
-.mainCard.c2{background:linear-gradient(90deg,#287fdb,#1774d3);}
-.mainCard.c3{background:linear-gradient(90deg,#2caf75,#20a66b);}
-.mainCard.c4{background:linear-gradient(90deg,#d8780c,#d56f05);}
+.mainCard.c1{background:linear-gradient(90deg,#2CA69B,#33A69C);}
+.mainCard.c2{background:linear-gradient(90deg,#4A90D6,#3F84CE);}
+.mainCard.c3{background:linear-gradient(90deg,#4CB689,#42AC80);}
+.mainCard.c4{background:linear-gradient(90deg,#E0954A,#D98A3B);}
 .mainCard .circle{width:34px;height:34px;flex:none;border-radius:50%;background:rgba(255,255,255,.20);
   display:grid;place-items:center;color:#fff;font-size:20px;line-height:1;}
 .mainCard .cardText{margin-left:10px;color:#fff;line-height:1.05;min-width:0;}
@@ -816,9 +816,9 @@ function updateDebtTypeExtra(type){
       ${Object.keys(GOLD_LABELS).map(k=>`<option value="${k}">${GOLD_LABELS[k]}</option>`).join('')}</select></div>`;
   } else { el.innerHTML=''; }
 }
-const CAT_ICONS = { kredi:{icon:'🏦',bg:'var(--accent-soft)',color:'var(--accent)'}, kart:{icon:'💳',bg:'var(--pending-soft)',color:'var(--pending)'},
-  kmh:{icon:'🏧',bg:'var(--soon-soft)',color:'var(--soon)'},
-  fatura:{icon:'🧾',bg:'var(--debt-soft)',color:'var(--debt)'}, elden:{icon:'🤝',bg:'var(--paid-soft)',color:'var(--paid)'} };
+const CAT_ICONS = { kredi:{icon:'🏦',bg:'var(--accent-soft)',color:'var(--accent)',rowBg:'var(--accent-row)'}, kart:{icon:'💳',bg:'var(--pending-soft)',color:'var(--pending)',rowBg:'var(--pending-row)'},
+  kmh:{icon:'🏧',bg:'var(--soon-soft)',color:'var(--soon)',rowBg:'var(--soon-row)'},
+  fatura:{icon:'🧾',bg:'var(--debt-soft)',color:'var(--debt)',rowBg:'var(--debt-row)'}, elden:{icon:'🤝',bg:'var(--paid-soft)',color:'var(--paid)',rowBg:'var(--paid-row)'} };
 // KMH faizi Türkiye'de BDDK/TCMB tarafından tavanlanır ve bankaların büyük çoğunluğu bu tavanı doğrudan uygular.
 // 1 Ocak 2026 itibarıyla yasal tavan: normal kullanımda aylık %4,25, gecikmede aylık %4,55.
 // Banka bazlı gerçek farklar netleşmediği için (karşılaştırma siteleri hepsine aynı genel aralığı veriyor),
@@ -1921,8 +1921,8 @@ function renderHome(){
     <div class="panel">
       <div class="head"><h2>Borç Dağılımı</h2><span>Toplam: <b>${formatTL(distTotal)}</b></span></div>
       ${dist.map(d=>`
-        <div class="row" data-action="nav" data-page="${d.page}" style="background:${CAT_ICONS[d.cat].bg};">
-          <div class="ico" style="background:var(--surface);color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
+        <div class="row" data-action="nav" data-page="${d.page}" style="background:${CAT_ICONS[d.cat].rowBg};">
+          <div class="ico" style="background:${CAT_ICONS[d.cat].bg};color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
           <div class="rtext">
             <div class="rname marquee-text"><span class="mq-inner">${esc(d.name)}</span></div>
             <div class="rsub marquee-text"><span class="mq-inner">Görmek ve düzenlemek için dokunun</span></div>
