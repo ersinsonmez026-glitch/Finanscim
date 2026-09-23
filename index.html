@@ -2626,72 +2626,32 @@ function importBackupFile(file){
   reader.readAsText(file);
 }
 
-// ---------- EXCEL'E AKTAR (SheetJS, sadece dışa aktarma anında CDN'den yüklenir) ----------
-let _sheetJSPromise = null;
-function loadSheetJS(){
-  if(typeof XLSX!=='undefined') return Promise.resolve();
-  if(_sheetJSPromise) return _sheetJSPromise;
-  _sheetJSPromise = new Promise((resolve, reject)=>{
+// ---------- EXCEL'E AKTAR (ExcelJS, sadece dışa aktarma anında CDN'den yüklenir) ----------
+// Not: Renkli/birleştirilmiş hücreli tablo üretebilmek için (SheetJS'in ücretsiz sürümü hücre
+// rengi yazmayı desteklemiyor) ExcelJS kullanılıyor — tamamen ücretsiz/açık kaynak.
+let _excelJSPromise = null;
+function loadExcelJS(){
+  if(typeof ExcelJS!=='undefined') return Promise.resolve();
+  if(_excelJSPromise) return _excelJSPromise;
+  _excelJSPromise = new Promise((resolve, reject)=>{
     const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js';
     s.onload = ()=>resolve();
-    s.onerror = ()=>{ _sheetJSPromise = null; reject(new Error('SheetJS yüklenemedi')); };
+    s.onerror = ()=>{ _excelJSPromise = null; reject(new Error('ExcelJS yüklenemedi')); };
     document.head.appendChild(s);
   });
-  return _sheetJSPromise;
+  return _excelJSPromise;
+}
+// "05 Eylül 2026" gibi tam (gün-ay-yıl) tarih — sadece ay/yıl değil, tam ödeme günü net görünsün diye.
+function formatFullDateTR(ym, day){
+  const [y,m]=ym.split('-').map(Number);
+  const d=new Date(y, m-1, day||1);
+  return d.toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'});
 }
 function excelLoanDueLabel(loan){
   const insts = loanInstallments(loan);
   const next = insts.find(i=>i.status!=='odendi') || insts[insts.length-1];
-  return next ? formatDMonY(next.ym, loan.dueDay) : '-';
-}
-// "Krediler" sayfası: bankalar satır, aylar sütun — her hücrede o ayki taksit tutarı (ödenmişse
-// başında ✓), en sağda toplam kredi tutarı, en altta her ay için kalan kredi borcu satırı.
-function buildLoansSheet(XLSXref){
-  const loans = state.loans;
-  if(!loans.length) return XLSXref.utils.aoa_to_sheet([['Kayıtlı kredi yok.']]);
-
-  let minYm=null, maxYm=null;
-  loans.forEach(l=>{
-    const start = l.startMonth, end = addMonths(l.startMonth, l.count-1);
-    if(!minYm || start<minYm) minYm=start;
-    if(!maxYm || end>maxYm) maxYm=end;
-  });
-  const months = [];
-  for(let c=minYm; c<=maxYm; c=addMonths(c,1)) months.push(c);
-
-  // Aynı bankadan birden fazla kredi varsa "BANKA 1 / BANKA 2" şeklinde numaralandır.
-  const sameNameTotals = {};
-  loans.forEach(l=>{ const n=bankByCode(l.bankCode).name; sameNameTotals[n]=(sameNameTotals[n]||0)+1; });
-  const bankCounters = {};
-
-  const rows = [['Banka','Son Ödeme Tarihi', ...months.map(monthShortLabel), 'Toplam']];
-  loans.forEach(l=>{
-    const bankName = bankByCode(l.bankCode).name;
-    bankCounters[bankName] = (bankCounters[bankName]||0)+1;
-    const label = sameNameTotals[bankName]>1 ? (bankName.toLocaleUpperCase('tr-TR')+' '+bankCounters[bankName]) : bankName.toLocaleUpperCase('tr-TR');
-    const row = [label, excelLoanDueLabel(l)];
-    months.forEach(m=>{
-      const inst = loanInstallmentForMonth(l, m);
-      row.push(inst ? (inst.status==='odendi'?'✓ ':'') + Math.round(inst.amount).toLocaleString('tr-TR')+' TL' : '');
-    });
-    row.push(Math.round(l.amount*l.count).toLocaleString('tr-TR')+' TL');
-    rows.push(row);
-  });
-
-  // KALAN KREDİ BORCU: her ay sütununda, o ay ve sonrasındaki henüz ödenmemiş tüm taksitlerin toplamı.
-  const remRow = ['KALAN KREDİ BORCU', ''];
-  months.forEach(m=>{
-    let sum=0;
-    loans.forEach(l=>loanInstallments(l).forEach(inst=>{ if(inst.status!=='odendi' && inst.ym>=m) sum+=inst.amount; }));
-    remRow.push(Math.round(sum).toLocaleString('tr-TR')+' TL');
-  });
-  remRow.push(Math.round(loans.reduce((s,l)=>s+loanRemaining(l),0)).toLocaleString('tr-TR')+' TL');
-  rows.push(remRow);
-
-  const ws = XLSXref.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:20},{wch:16}, ...months.map(()=>({wch:12})), {wch:14}];
-  return ws;
+  return next ? formatFullDateTR(next.ym, loan.dueDay) : '-';
 }
 // Tüm aylara yayılan (kredi + kart + fatura/abonelik + KMH + elden borç/ödeme) ödeme kalemlerini
 // tek tek satır satır listeleyen sayfa için ay aralığını, uygulamada kayıtlı gerçek veriden çıkarır.
@@ -2713,39 +2673,207 @@ function computeOverallMonthRange(){
   if(!minYm) minYm = today;
   return { minYm, maxYm };
 }
-const EXCEL_CAT_LABELS = { loan:'Kredi', bill:'Fatura/Abonelik', card:'Kredi Kartı', manual:'Elden Ödeme', debt:'Elden Borç', kmh:'KMH' };
 const EXCEL_STATUS_LABELS = { odendi:'Ödendi', bekliyor:'Bekliyor', gecikti:'Gecikti' };
-function buildMonthlyPaymentsSheet(XLSXref){
+const EXCEL_STATUS_COLORS = { odendi:'FF2F8F6F', gecikti:'FFB3483C', bekliyor:'FFB8791F' };
+// İstenen sabit sıra: Krediler, Kredi Kartları, KMH, Faturalar, Elden Ödemeler.
+const EXCEL_CATEGORY_ORDER = [
+  { kinds:['loan'], label:'Krediler' },
+  { kinds:['card'], label:'Kredi Kartları' },
+  { kinds:['kmh'], label:'KMH' },
+  { kinds:['bill'], label:'Faturalar' },
+  { kinds:['manual','debt'], label:'Elden Ödemeler' }
+];
+// Her ay için, uygulamanın kendi renk diline (accent/debt/paid/pending/soon/purple) yakın bir
+// açık/koyu ton çifti — aylar art arda farklı tonlarla ayrışsın diye sırayla dönüyor.
+const EXCEL_MONTH_PALETTE = [
+  { light:'FFE9F5F4', dark:'FF0E7C86' },
+  { light:'FFF7E9E7', dark:'FFB3483C' },
+  { light:'FFE1F2E9', dark:'FF2F8F6F' },
+  { light:'FFF6ECDA', dark:'FFB8791F' },
+  { light:'FFFBF3CE', dark:'FFA8901A' },
+  { light:'FFE4ECF5', dark:'FF3B6B95' }
+];
+const THIN_BORDER = { style:'thin', color:{argb:'FFD9D9D9'} };
+function xlBorderAll(cell){ cell.border = { top:THIN_BORDER, bottom:THIN_BORDER, left:THIN_BORDER, right:THIN_BORDER }; }
+
+// "Aylık Ödemeler" sayfası: her ay kendi (ay adı + tam yıl) başlığıyla ayrı bir blok; blok
+// içinde kategoriler sabit sırada (Krediler, Kredi Kartları, KMH, Faturalar, Elden Ödemeler),
+// A sütununda kategori adı o kategorideki satır sayısı kadar birleştirilmiş; her ay farklı bir
+// renk tonunda, başlık daha koyu tonda ve tüm sütunlara ortalanmış şekilde birleştirilmiş.
+function buildMonthlyPaymentsSheetXL(workbook){
+  const ws = workbook.addWorksheet('Aylık Ödemeler');
+  ws.columns = [ {width:24}, {width:28}, {width:14}, {width:22}, {width:12} ];
+
   const {minYm, maxYm} = computeOverallMonthRange();
   const months = [];
   for(let c=minYm; c<=maxYm; c=addMonths(c,1)) months.push(c);
-  const rows = [['Ay','Kategori','Ad','Tutar','Gün','Durum']];
-  months.forEach(m=>{
+
+  let r = 1;
+  months.forEach((m, mi)=>{
+    const tone = EXCEL_MONTH_PALETTE[mi % EXCEL_MONTH_PALETTE.length];
     const items = monthlyRows(m);
-    if(!items.length){ rows.push([monthLabel(m), '-', '(kayıt yok)', '', '', '']); return; }
-    items.forEach(r=>{
-      rows.push([monthLabel(m), EXCEL_CAT_LABELS[r.kind]||r.kind, r.name||'', Math.round(r.amount).toLocaleString('tr-TR')+' TL', r.day, EXCEL_STATUS_LABELS[r.status]||r.status]);
+
+    ws.mergeCells(r,1,r,5);
+    const headerCell = ws.getCell(r,1);
+    headerCell.value = monthLabel(m);
+    headerCell.font = { bold:true, size:12, color:{argb:'FFFFFFFF'} };
+    headerCell.alignment = { horizontal:'center', vertical:'middle' };
+    headerCell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:tone.dark} };
+    ws.getRow(r).height = 22;
+    r++;
+
+    if(!items.length){
+      ws.mergeCells(r,1,r,5);
+      const c = ws.getCell(r,1);
+      c.value = 'Bu ay için kayıtlı ödeme yok';
+      c.alignment = { horizontal:'center' };
+      c.fill = { type:'pattern', pattern:'solid', fgColor:{argb:tone.light} };
+      c.font = { italic:true, color:{argb:'FF767676'} };
+      xlBorderAll(c);
+      r++;
+      return;
+    }
+
+    EXCEL_CATEGORY_ORDER.forEach(grp=>{
+      const groupItems = items.filter(it=>grp.kinds.includes(it.kind));
+      if(!groupItems.length) return;
+      const startRow = r;
+      groupItems.forEach(it=>{
+        const row = ws.getRow(r);
+        row.getCell(2).value = it.name || '';
+        row.getCell(3).value = Math.round(it.amount).toLocaleString('tr-TR')+' TL';
+        row.getCell(4).value = formatFullDateTR(m, it.day);
+        const statusCell = row.getCell(5);
+        statusCell.value = EXCEL_STATUS_LABELS[it.status] || it.status;
+        if(EXCEL_STATUS_COLORS[it.status]) statusCell.font = { bold:true, color:{argb:EXCEL_STATUS_COLORS[it.status]} };
+        for(let col=1; col<=5; col++){
+          const cell = ws.getCell(r,col);
+          cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:tone.light} };
+          xlBorderAll(cell);
+        }
+        row.getCell(3).alignment = { horizontal:'right' };
+        row.getCell(4).alignment = { horizontal:'center' };
+        row.getCell(5).alignment = { horizontal:'center' };
+        r++;
+      });
+      const endRow = r-1;
+      if(endRow > startRow) ws.mergeCells(startRow,1,endRow,1);
+      const labelCell = ws.getCell(startRow,1);
+      labelCell.value = `${grp.label} (${groupItems.length})`;
+      labelCell.font = { bold:true, color:{argb:tone.dark} };
+      labelCell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
     });
   });
-  const ws = XLSXref.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:18},{wch:16},{wch:28},{wch:14},{wch:6},{wch:12}];
-  return ws;
 }
+
+// "Krediler" sayfası: bankalar satır, aylar sütun — her hücrede o ayki taksit tutarı (ödenmişse
+// başında ✓), en sağda toplam kredi tutarı, en altta her ay için kalan kredi borcu satırı.
+function buildLoansSheetXL(workbook){
+  const ws = workbook.addWorksheet('Krediler');
+  const loans = state.loans;
+  if(!loans.length){ ws.getCell(1,1).value = 'Kayıtlı kredi yok.'; return; }
+
+  let minYm=null, maxYm=null;
+  loans.forEach(l=>{
+    const start = l.startMonth, end = addMonths(l.startMonth, l.count-1);
+    if(!minYm || start<minYm) minYm=start;
+    if(!maxYm || end>maxYm) maxYm=end;
+  });
+  const months = [];
+  for(let c=minYm; c<=maxYm; c=addMonths(c,1)) months.push(c);
+
+  const headerLabels = ['Banka','Son Ödeme Tarihi', ...months.map(monthShortLabel), 'Toplam'];
+  const headerRow = ws.getRow(1);
+  headerLabels.forEach((label,i)=>{
+    const cell = headerRow.getCell(i+1);
+    cell.value = label;
+    cell.font = { bold:true, color:{argb:'FFFFFFFF'} };
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF0E7C86'} };
+    cell.alignment = { horizontal:'center', vertical:'middle' };
+    xlBorderAll(cell);
+  });
+  headerRow.height = 20;
+
+  ws.getColumn(1).width = 22;
+  ws.getColumn(2).width = 20;
+  for(let i=0;i<months.length;i++) ws.getColumn(3+i).width = 13;
+  ws.getColumn(3+months.length).width = 15;
+
+  // Aynı bankadan birden fazla kredi varsa "BANKA 1 / BANKA 2" şeklinde numaralandır.
+  const sameNameTotals = {};
+  loans.forEach(l=>{ const n=bankByCode(l.bankCode).name; sameNameTotals[n]=(sameNameTotals[n]||0)+1; });
+  const bankCounters = {};
+
+  let r = 2;
+  loans.forEach(l=>{
+    const bankName = bankByCode(l.bankCode).name;
+    bankCounters[bankName] = (bankCounters[bankName]||0)+1;
+    const label = sameNameTotals[bankName]>1 ? (bankName.toLocaleUpperCase('tr-TR')+' '+bankCounters[bankName]) : bankName.toLocaleUpperCase('tr-TR');
+    const row = ws.getRow(r);
+    row.getCell(1).value = label;
+    row.getCell(1).font = { bold:true };
+    row.getCell(2).value = excelLoanDueLabel(l);
+    row.getCell(2).alignment = { horizontal:'center' };
+    months.forEach((m,ci)=>{
+      const inst = loanInstallmentForMonth(l, m);
+      const cell = row.getCell(3+ci);
+      cell.alignment = { horizontal:'center' };
+      if(inst){
+        cell.value = (inst.status==='odendi'?'✓ ':'') + Math.round(inst.amount).toLocaleString('tr-TR')+' TL';
+        if(inst.status==='odendi') cell.font = { color:{argb:'FF2F8F6F'}, bold:true };
+      }
+    });
+    const totalCell = row.getCell(3+months.length);
+    totalCell.value = Math.round(l.amount*l.count).toLocaleString('tr-TR')+' TL';
+    totalCell.font = { bold:true };
+    totalCell.alignment = { horizontal:'right' };
+    for(let col=1; col<=3+months.length; col++) xlBorderAll(row.getCell(col));
+    r++;
+  });
+
+  // KALAN KREDİ BORCU: her ay sütununda, o ay ve sonrasındaki henüz ödenmemiş tüm taksitlerin toplamı.
+  const remRow = ws.getRow(r);
+  remRow.getCell(1).value = 'KALAN KREDİ BORCU';
+  months.forEach((m,ci)=>{
+    let sum=0;
+    loans.forEach(l=>loanInstallments(l).forEach(inst=>{ if(inst.status!=='odendi' && inst.ym>=m) sum+=inst.amount; }));
+    const cell = remRow.getCell(3+ci);
+    cell.value = Math.round(sum).toLocaleString('tr-TR')+' TL';
+    cell.alignment = { horizontal:'center' };
+  });
+  const remTotalCell = remRow.getCell(3+months.length);
+  remTotalCell.value = Math.round(loans.reduce((s,l)=>s+loanRemaining(l),0)).toLocaleString('tr-TR')+' TL';
+  remTotalCell.alignment = { horizontal:'right' };
+  for(let col=1; col<=3+months.length; col++){
+    const cell = remRow.getCell(col);
+    cell.font = { bold:true };
+    cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:'FFF6ECDA'} };
+    xlBorderAll(cell);
+  }
+}
+
 async function exportToExcel(){
-  try{ await loadSheetJS(); }
+  try{ await loadExcelJS(); }
   catch(e){ alert("Excel'e aktarmak için internet bağlantısı gerekiyor. Lütfen bağlantınızı kontrol edip tekrar deneyin."); return; }
   try{
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, buildMonthlyPaymentsSheet(XLSX), 'Aylık Ödemeler');
-    XLSX.utils.book_append_sheet(wb, buildLoansSheet(XLSX), 'Krediler');
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Finansçım';
+    wb.created = new Date();
+    buildMonthlyPaymentsSheetXL(wb);
+    buildLoansSheetXL(wb);
+    const buf = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     const stamp = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, 'financim-tablo-' + stamp + '.xlsx');
+    a.href = url; a.download = 'financim-tablo-' + stamp + '.xlsx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
   }catch(e){
     console.error('[Finansçım/Excel] Hata:', e);
     alert("Excel dosyası oluşturulurken bir hata oluştu.");
   }
 }
-
 function performDataDelete(){
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   sessionUnlocked = false;
