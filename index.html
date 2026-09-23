@@ -3185,7 +3185,10 @@ let sessionUnlocked = false;
 let lastActiveTime = Date.now();
 let hiddenAt = 0;
 function markActive(){ lastActiveTime = Date.now(); }
+let forceLockedNow = false; // "Çıkış" ile elle kilitlenince, "Uygulama Kilidi" ayarı kapalı olsa
+                              // bile PIN ekranını bir kerelik zorunlu gösterir (aşağıdaki isLocked()).
 function isLocked(){
+  if(forceLockedNow && state.appLock && state.appLock.pinHash) return !sessionUnlocked;
   if(!(state.appLock && state.appLock.enabled)) return false;
   return !sessionUnlocked;
 }
@@ -3344,7 +3347,7 @@ async function handlePinComplete(){
     const hash = await hashText(entered);
     if(!lockFlow) return; // akış iptal edildiyse (ör. vazgeç) devam etme
     if(f.purpose==='unlock'){
-      if(state.appLock.pinHash===hash){ sessionUnlocked=true; lockFlow=null; markActive(); render(); }
+      if(state.appLock.pinHash===hash){ sessionUnlocked=true; forceLockedNow=false; lockFlow=null; markActive(); render(); }
       else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
     }else if(f.purpose==='delete'){
       if(state.appLock.pinHash===hash){ f.mode='deleteConfirm'; f.buffer=''; f.error=''; refreshLockUI(); }
@@ -3421,7 +3424,7 @@ async function saveCombinedSetup(){
   if(name) state.userName = capitalizeWordsTr(name);
   state.appLock = { enabled:true, pinHash, question:q, answerHash };
   save();
-  sessionUnlocked = true; lockFlow = null; markActive(); render();
+  sessionUnlocked = true; forceLockedNow = false; lockFlow = null; markActive(); render();
 }
 async function saveNewSecurityQuestion(){
   const f = lockFlow; if(!f) return;
@@ -3440,7 +3443,7 @@ async function saveNewSecurityQuestion(){
   const enabled = (purpose==='change') ? prevEnabled : true;
   state.appLock = { enabled, pinHash, question:q, answerHash };
   save();
-  if(purpose==='forgotReset' || purpose==='mandatorySetup'){ sessionUnlocked=true; lockFlow=null; markActive(); render(); }
+  if(purpose==='forgotReset' || purpose==='mandatorySetup'){ sessionUnlocked=true; forceLockedNow=false; lockFlow=null; markActive(); render(); }
   else{ endLockFlow(); if(ui.page==='settings') render(); }
 }
 
@@ -3997,11 +4000,13 @@ document.body.addEventListener('click', function(e){
     return;
   }
   if(action==='giris-exit'){
-    // Uygulamayı gerçekten kapatmak bir web sayfasından güvenilir şekilde yapılamıyor; bunun yerine
-    // PIN açıksa oturumu hemen kilitleyip Giriş ekranını kilitli haliyle gösteriyoruz — kullanıcı
-    // "çıkış" yapmış gibi tekrar PIN girmeden ileri gidemiyor. PIN yoksa sekmeyi kapatmayı dener.
-    if(state.appLock && state.appLock.enabled){
-      sessionUnlocked = false; hiddenAt = 0; lockFlow = null; render();
+    // Uygulamayı gerçekten kapatmak bir web sayfasından güvenilir şekilde yapılamıyor (tarayıcılar
+    // kendisi açmadığı bir sekmeyi/PWA'yı script ile kapatmaya izin vermez). Bunun yerine "Çıkış"
+    // her zaman oturumu hemen kilitleyip PIN ekranını gösterir — "Uygulama Kilidi" ayarı kapalı
+    // olsa bile: kullanıcı elle çıkış yaptığında tekrar PIN girmeden ileri gidememeli. Ayar sadece
+    // uygulamayı YENİDEN AÇARKEN otomatik kilitlenip kilitlenmeyeceğini belirler.
+    if(state.appLock && state.appLock.pinHash){
+      sessionUnlocked = false; hiddenAt = 0; lockFlow = null; forceLockedNow = true; render();
     } else {
       try{ window.close(); }catch(e){}
     }
