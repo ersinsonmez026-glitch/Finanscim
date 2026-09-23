@@ -2679,18 +2679,38 @@ async function getMsalInstance(){
   await _msalInstance.initialize();
   return _msalInstance;
 }
+// ÖNEMLİ (mobil Safari uyumu): açılır pencere (loginPopup) MSAL kütüphanesinin CDN'den
+// yüklenmesini beklediği için, tıklama anındaki "kullanıcı jesti" (user gesture) zinciri kopuyor
+// ve iOS Safari pencereyi sessizce engelliyor — "Yükle" butonundaki dosya seçici sorununun
+// birebir aynısı. Çözüm: açılır pencere yerine TAM SAYFA YÖNLENDİRME (loginRedirect) kullanmak —
+// bu, popup engelleyicilerine tabi değil. Kullanıcı Microsoft'a gidip giriş yaptıktan sonra
+// otomatik olarak uygulamaya geri döner; dönüşü handleMailRedirectReturn() tamamlar.
 async function connectMailAccount(){
   try{
     const inst = await getMsalInstance();
-    const result = await inst.loginPopup({ scopes: MSAL_SCOPES });
-    state.mailScan = state.mailScan || { connected:false, account:null, lastScanAt:null, pending:[], seenIds:[] };
-    state.mailScan.connected = true;
-    state.mailScan.account = result.account ? (result.account.username || result.account.name || '') : '';
-    save(); render();
-    scanMailSilently();
+    await inst.loginRedirect({ scopes: MSAL_SCOPES });
   }catch(e){
     console.error('mail connect failed', e);
     alert('Hesaba bağlanılamadı. Lütfen tekrar deneyin.\n\n' + (e && e.message ? e.message : ''));
+  }
+}
+async function handleMailRedirectReturn(){
+  try{
+    const inst = await getMsalInstance();
+    const result = await inst.handleRedirectPromise();
+    if(result && result.account){
+      state.mailScan = state.mailScan || { connected:false, account:null, lastScanAt:null, pending:[], seenIds:[] };
+      state.mailScan.connected = true;
+      state.mailScan.account = result.account.username || result.account.name || '';
+      save();
+      if(ui.page==='giris' || ui.page==='settings') render();
+      scanMailSilently();
+    }
+  }catch(e){
+    console.error('mail redirect handling failed', e);
+    if(state.mailScan && !state.mailScan.connected){
+      alert('Hesaba bağlanırken bir sorun oluştu. Lütfen tekrar deneyin.\n\n' + (e && e.message ? e.message : ''));
+    }
   }
 }
 function disconnectMailAccount(){
@@ -2701,13 +2721,13 @@ async function acquireGraphToken(){
   const inst = await getMsalInstance();
   const accounts = inst.getAllAccounts();
   if(!accounts.length) throw new Error('Bağlı hesap yok');
-  try{
-    const r = await inst.acquireTokenSilent({ scopes: MSAL_SCOPES, account: accounts[0] });
-    return r.accessToken;
-  }catch(e){
-    const r = await inst.acquireTokenPopup({ scopes: MSAL_SCOPES, account: accounts[0] });
-    return r.accessToken;
-  }
+  // Sessiz yenileme (kullanıcı görmeden, gizli bir pencere üzerinden) başarısız olursa, burada
+  // ZORLA bir yönlendirme başlatmıyoruz — bu, kullanıcı hiç istemeden Microsoft'a atılması
+  // anlamına gelirdi (özellikle arka plandaki otomatik taramada). Onun yerine hatayı yukarı
+  // fırlatıyoruz; "Şimdi Tara" butonundaki elle tetiklenen tarama bunu yakalayıp kullanıcıya
+  // yeniden bağlanmasını önerir.
+  const r = await inst.acquireTokenSilent({ scopes: MSAL_SCOPES, account: accounts[0] });
+  return r.accessToken;
 }
 // Banka/kurum e-postalarını tanımak için basit desenler. Yeni bir banka/format eklemek için
 // buraya { senderContains, } girilip tutar/tarih için örnek e-posta metnine göre bir desen
@@ -2782,7 +2802,7 @@ function extractMailCandidate(msg){
     preview: (msg.bodyPreview||bodyText).slice(0,140)
   };
 }
-async function scanMailSilently(){
+async function scanMailSilently(manual){
   try{
     if(!state.mailScan || !state.mailScan.connected) return;
     const token = await acquireGraphToken();
@@ -2803,8 +2823,14 @@ async function scanMailSilently(){
     }
     save();
     if(ui.page==='giris' || ui.page==='settings') render();
+    if(manual && found.length===0){
+      alert('Yeni bir işlem bulunamadı.');
+    }
   }catch(e){
     console.error('mail scan failed', e);
+    if(manual){
+      alert('Tarama yapılamadı — bağlantının süresi dolmuş olabilir. "Bağlantıyı Kes" edip tekrar bağlanmayı deneyin.\n\n' + (e && e.message ? e.message : ''));
+    }
   }
 }
 function mailCandidateAccept(id){
@@ -4243,7 +4269,7 @@ document.body.addEventListener('click', function(e){
   }
   if(action==='connect-mail'){ connectMailAccount(); return; }
   if(action==='disconnect-mail'){ disconnectMailAccount(); return; }
-  if(action==='scan-mail-now'){ scanMailSilently(); return; }
+  if(action==='scan-mail-now'){ scanMailSilently(true); return; }
   if(action==='open-mail-review'){ openModal('mailScan'); return; }
   if(action==='mail-accept'){ mailCandidateAccept(t.dataset.id); if(modalCtx.kind==='mailScan') $modalSheet.innerHTML = modalTemplates.mailScan(); return; }
   if(action==='mail-reject'){ mailCandidateReject(t.dataset.id); if(modalCtx.kind==='mailScan') $modalSheet.innerHTML = modalTemplates.mailScan(); return; }
@@ -4786,6 +4812,7 @@ state.visitCount = (state.visitCount||0) + 1;
 save();
 render();
 fetchLiveRates();
+handleMailRedirectReturn();
 // Kaydırma hareketiyle geri/ileri gezinme: ekranı sağdan sola çekmek geri, soldan sağa çekmek
 // ileri gider. Kurum çipleri (.bank-grid) ve gün/tarih tekerlekleri (.wheel-col) kendi içinde
 // yatay/dikey kaydığından, dokunuş bunların üzerinde başladıysa sayfa geçişi devreye girmez.
