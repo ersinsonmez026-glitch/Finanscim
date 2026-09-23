@@ -683,8 +683,8 @@ button.mainCard{cursor:pointer;}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink);}
 .settings-section-head + .settings-row{border-top:none;}
 .pill-btn{padding:5px 13px;border-radius:16px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;}
-.data-actions-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:2px;}
-.data-action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 2px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:10.5px;font-weight:600;cursor:pointer;}
+.data-actions-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:2px;}
+.data-action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 2px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:9.5px;font-weight:600;cursor:pointer;line-height:1.15;}
 .data-action-btn span:first-child{font-size:16px;}
 .data-action-btn.data-action-danger{color:var(--debt);}
 .pill-btn.pill-danger{color:var(--debt);border-color:var(--debt-soft,var(--border));}
@@ -1340,6 +1340,9 @@ function monthKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart
 function addMonths(ym, n){ const [y,m]=ym.split('-').map(Number); const d=new Date(y, m-1+n, 1); return monthKey(d); }
 function monthLabel(ym){ const [y,m]=ym.split('-').map(Number); const d=new Date(y,m-1,1);
   return d.toLocaleDateString('tr-TR',{month:'long',year:'numeric'}); }
+const MONTH_SHORT_TR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+function monthShortLabel(ym){ const [y,m]=ym.split('-').map(Number); return MONTH_SHORT_TR[m-1]+'-'+String(y).slice(2); }
+function formatDMonY(ym, day){ const [y,m]=ym.split('-').map(Number); return String(day).padStart(2,'0')+'-'+MONTH_SHORT_TR[m-1]+'-'+String(y).slice(2); }
 function todayYM(){ return monthKey(new Date()); }
 function cmpYM(a,b){ return a===b?0:(a<b?-1:1); }
 
@@ -2622,6 +2625,127 @@ function importBackupFile(file){
   };
   reader.readAsText(file);
 }
+
+// ---------- EXCEL'E AKTAR (SheetJS, sadece dışa aktarma anında CDN'den yüklenir) ----------
+let _sheetJSPromise = null;
+function loadSheetJS(){
+  if(typeof XLSX!=='undefined') return Promise.resolve();
+  if(_sheetJSPromise) return _sheetJSPromise;
+  _sheetJSPromise = new Promise((resolve, reject)=>{
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+    s.onload = ()=>resolve();
+    s.onerror = ()=>{ _sheetJSPromise = null; reject(new Error('SheetJS yüklenemedi')); };
+    document.head.appendChild(s);
+  });
+  return _sheetJSPromise;
+}
+function excelLoanDueLabel(loan){
+  const insts = loanInstallments(loan);
+  const next = insts.find(i=>i.status!=='odendi') || insts[insts.length-1];
+  return next ? formatDMonY(next.ym, loan.dueDay) : '-';
+}
+// "Krediler" sayfası: bankalar satır, aylar sütun — her hücrede o ayki taksit tutarı (ödenmişse
+// başında ✓), en sağda toplam kredi tutarı, en altta her ay için kalan kredi borcu satırı.
+function buildLoansSheet(XLSXref){
+  const loans = state.loans;
+  if(!loans.length) return XLSXref.utils.aoa_to_sheet([['Kayıtlı kredi yok.']]);
+
+  let minYm=null, maxYm=null;
+  loans.forEach(l=>{
+    const start = l.startMonth, end = addMonths(l.startMonth, l.count-1);
+    if(!minYm || start<minYm) minYm=start;
+    if(!maxYm || end>maxYm) maxYm=end;
+  });
+  const months = [];
+  for(let c=minYm; c<=maxYm; c=addMonths(c,1)) months.push(c);
+
+  // Aynı bankadan birden fazla kredi varsa "BANKA 1 / BANKA 2" şeklinde numaralandır.
+  const sameNameTotals = {};
+  loans.forEach(l=>{ const n=bankByCode(l.bankCode).name; sameNameTotals[n]=(sameNameTotals[n]||0)+1; });
+  const bankCounters = {};
+
+  const rows = [['Banka','Son Ödeme Tarihi', ...months.map(monthShortLabel), 'Toplam']];
+  loans.forEach(l=>{
+    const bankName = bankByCode(l.bankCode).name;
+    bankCounters[bankName] = (bankCounters[bankName]||0)+1;
+    const label = sameNameTotals[bankName]>1 ? (bankName.toLocaleUpperCase('tr-TR')+' '+bankCounters[bankName]) : bankName.toLocaleUpperCase('tr-TR');
+    const row = [label, excelLoanDueLabel(l)];
+    months.forEach(m=>{
+      const inst = loanInstallmentForMonth(l, m);
+      row.push(inst ? (inst.status==='odendi'?'✓ ':'') + Math.round(inst.amount).toLocaleString('tr-TR')+' TL' : '');
+    });
+    row.push(Math.round(l.amount*l.count).toLocaleString('tr-TR')+' TL');
+    rows.push(row);
+  });
+
+  // KALAN KREDİ BORCU: her ay sütununda, o ay ve sonrasındaki henüz ödenmemiş tüm taksitlerin toplamı.
+  const remRow = ['KALAN KREDİ BORCU', ''];
+  months.forEach(m=>{
+    let sum=0;
+    loans.forEach(l=>loanInstallments(l).forEach(inst=>{ if(inst.status!=='odendi' && inst.ym>=m) sum+=inst.amount; }));
+    remRow.push(Math.round(sum).toLocaleString('tr-TR')+' TL');
+  });
+  remRow.push(Math.round(loans.reduce((s,l)=>s+loanRemaining(l),0)).toLocaleString('tr-TR')+' TL');
+  rows.push(remRow);
+
+  const ws = XLSXref.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:20},{wch:16}, ...months.map(()=>({wch:12})), {wch:14}];
+  return ws;
+}
+// Tüm aylara yayılan (kredi + kart + fatura/abonelik + KMH + elden borç/ödeme) ödeme kalemlerini
+// tek tek satır satır listeleyen sayfa için ay aralığını, uygulamada kayıtlı gerçek veriden çıkarır.
+function computeOverallMonthRange(){
+  let minYm=null, maxYm=null;
+  function consider(ym){ if(!ym) return; if(!minYm||ym<minYm) minYm=ym; if(!maxYm||ym>maxYm) maxYm=ym; }
+  state.loans.forEach(l=>{ consider(l.startMonth); consider(addMonths(l.startMonth, l.count-1)); });
+  (state.cardStatements||[]).forEach(s=>consider(s.ym));
+  Object.keys(state.billOverrides||{}).forEach(billId=>{
+    Object.keys(state.billOverrides[billId]||{}).forEach(ym=>consider(ym));
+  });
+  (state.manualPayments||[]).forEach(p=>consider(p.ym));
+  (state.debts||[]).forEach(d=>{ if(d.date) consider(monthKey(new Date(d.date))); });
+  const today = currentYm();
+  consider(today);
+  // Faturalar/abonelikler süresiz devam eder; bugünden en az 3 ay ileriye kadar görünür olsun.
+  const minForwardMax = addMonths(today, 3);
+  if(!maxYm || maxYm<minForwardMax) maxYm = minForwardMax;
+  if(!minYm) minYm = today;
+  return { minYm, maxYm };
+}
+const EXCEL_CAT_LABELS = { loan:'Kredi', bill:'Fatura/Abonelik', card:'Kredi Kartı', manual:'Elden Ödeme', debt:'Elden Borç', kmh:'KMH' };
+const EXCEL_STATUS_LABELS = { odendi:'Ödendi', bekliyor:'Bekliyor', gecikti:'Gecikti' };
+function buildMonthlyPaymentsSheet(XLSXref){
+  const {minYm, maxYm} = computeOverallMonthRange();
+  const months = [];
+  for(let c=minYm; c<=maxYm; c=addMonths(c,1)) months.push(c);
+  const rows = [['Ay','Kategori','Ad','Tutar','Gün','Durum']];
+  months.forEach(m=>{
+    const items = monthlyRows(m);
+    if(!items.length){ rows.push([monthLabel(m), '-', '(kayıt yok)', '', '', '']); return; }
+    items.forEach(r=>{
+      rows.push([monthLabel(m), EXCEL_CAT_LABELS[r.kind]||r.kind, r.name||'', Math.round(r.amount).toLocaleString('tr-TR')+' TL', r.day, EXCEL_STATUS_LABELS[r.status]||r.status]);
+    });
+  });
+  const ws = XLSXref.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:18},{wch:16},{wch:28},{wch:14},{wch:6},{wch:12}];
+  return ws;
+}
+async function exportToExcel(){
+  try{ await loadSheetJS(); }
+  catch(e){ alert("Excel'e aktarmak için internet bağlantısı gerekiyor. Lütfen bağlantınızı kontrol edip tekrar deneyin."); return; }
+  try{
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, buildMonthlyPaymentsSheet(XLSX), 'Aylık Ödemeler');
+    XLSX.utils.book_append_sheet(wb, buildLoansSheet(XLSX), 'Krediler');
+    const stamp = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, 'financim-tablo-' + stamp + '.xlsx');
+  }catch(e){
+    console.error('[Finansçım/Excel] Hata:', e);
+    alert("Excel dosyası oluşturulurken bir hata oluştu.");
+  }
+}
+
 function performDataDelete(){
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
   sessionUnlocked = false;
@@ -2719,6 +2843,7 @@ function renderSettings(){
       <div class="data-actions-row">
         <button class="data-action-btn" data-action="backup-data"><span aria-hidden="true">📤</span><span>Yedekle</span></button>
         <button class="data-action-btn" data-action="restore-data"><span aria-hidden="true">📥</span><span>Yükle</span></button>
+        <button class="data-action-btn" data-action="export-excel"><span aria-hidden="true">📊</span><span>Excel'e Aktar</span></button>
         <button class="data-action-btn data-action-danger" data-action="open-data-delete"><span aria-hidden="true">🗑️</span><span>Sil</span></button>
       </div>
       <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
@@ -2887,6 +3012,7 @@ function buildLockBoxHtml(f){
     else if(f.purpose==='delete'){ title='Verileri Sil'; sub="Onaylamak için mevcut PIN'inizi girin"; }
     else if(f.purpose==='backup'){ title='Verileri Yedekle'; sub="Onaylamak için mevcut PIN'inizi girin"; }
     else if(f.purpose==='restore'){ title='Verileri Geri Yükle'; sub="Onaylamak için mevcut PIN'inizi girin"; }
+    else if(f.purpose==='excelExport'){ title="Excel'e Aktar"; sub="Onaylamak için mevcut PIN'inizi girin"; }
     body = pinPadHtml(f.buffer.length)
       + (f.error?`<p class="pin-error">${esc(f.error)}</p>`:'')
       + (f.purpose==='unlock' && state.appLock.question ? `<button class="pin-forgot-link" data-action="pin-forgot">PIN'i unuttum</button>` : '')
@@ -3000,6 +3126,8 @@ async function handlePinComplete(){
           endLockFlow();
           const inp = document.getElementById('restoreFileInput');
           if(inp) inp.click();
+        }else if(f.purpose==='excelExport'){
+          endLockFlow(); exportToExcel();
         }else{ f.mode='setNew1'; f.buffer=''; f.error=''; refreshLockUI(); }
       }else{ f.buffer=''; f.error='Yanlış PIN, tekrar deneyin.'; refreshLockUI(); shakeLock(); }
     }
@@ -3588,6 +3716,11 @@ document.body.addEventListener('click', function(e){
       const inp = document.getElementById('restoreFileInput');
       if(inp) inp.click();
     }
+    return;
+  }
+  if(action==='export-excel'){
+    if(state.appLock && state.appLock.pinHash){ startLockFlow('excelExport','modal'); }
+    else{ exportToExcel(); }
     return;
   }
   if(action==='dismiss-notif'){
