@@ -155,10 +155,10 @@ button{font-family:var(--font-body);}
 .mainCard{height:49px;border-radius:16px;display:flex;align-items:center;padding:5px 12px;position:relative;
   border:1px solid rgba(20,70,140,.13);width:100%;text-align:left;font-family:var(--font-body);cursor:default;}
 button.mainCard{cursor:pointer;}
-.mainCard.c1{background:linear-gradient(90deg,#2CA69B,#33A69C);}
-.mainCard.c2{background:linear-gradient(90deg,#4A90D6,#3F84CE);}
-.mainCard.c3{background:linear-gradient(90deg,#4CB689,#42AC80);}
-.mainCard.c4{background:linear-gradient(90deg,#E0954A,#D98A3B);}
+.mainCard.c1{background:linear-gradient(90deg,#3DB7AC,#259088);}
+.mainCard.c2{background:linear-gradient(90deg,#5A9FE0,#2E76C7);}
+.mainCard.c3{background:linear-gradient(90deg,#5CC093,#359C72);}
+.mainCard.c4{background:linear-gradient(90deg,#E8A15C,#C87A2C);}
 .mainCard .circle{width:34px;height:34px;flex:none;border-radius:50%;background:rgba(255,255,255,.20);
   display:grid;place-items:center;color:#fff;font-size:20px;line-height:1;}
 .mainCard .cardText{margin-left:10px;color:#fff;line-height:1.05;min-width:0;}
@@ -1921,7 +1921,7 @@ function renderHome(){
     <div class="panel">
       <div class="head"><h2>Borç Dağılımı</h2><span>Toplam: <b>${formatTL(distTotal)}</b></span></div>
       ${dist.map(d=>`
-        <div class="row" data-action="nav" data-page="${d.page}" style="background:${CAT_ICONS[d.cat].rowBg};">
+        <div class="row" data-action="nav" data-page="${d.page}" style="background:linear-gradient(90deg,${CAT_ICONS[d.cat].rowBg},${CAT_ICONS[d.cat].bg});">
           <div class="ico" style="background:${CAT_ICONS[d.cat].bg};color:${CAT_ICONS[d.cat].color}">${CAT_ICONS[d.cat].icon}</div>
           <div class="rtext">
             <div class="rname marquee-text"><span class="mq-inner">${esc(d.name)}</span></div>
