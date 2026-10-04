@@ -674,7 +674,12 @@ button.mainCard{cursor:pointer;}
 .app.settings-mode .header{display:none;}
 .app.settings-mode .bottombar-wrap{display:none;}
 .app.settings-mode .content{padding:0 14px 24px;}
-.settings-section-head{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;}
+.settings-section-head{display:flex;align-items:center;gap:8px;width:100%;background:none;border:none;padding:0;margin:0 0 6px;text-align:left;cursor:pointer;font-family:inherit;}
+.settings-section-head.has-body{margin-bottom:0;}
+.settings-section-chev{font-size:19px;color:var(--ink-soft);flex-shrink:0;line-height:1;transition:transform .18s ease;transform:rotate(0deg);}
+.settings-section-chev.open{transform:rotate(90deg);}
+.settings-section-body{overflow:hidden;max-height:0;transition:max-height .22s ease;}
+.settings-section-body.open{max-height:1000px;margin-top:6px;}
 .settings-icon-badge{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
 .settings-icon-badge.badge-green{background:var(--paid-soft,#e2f6ea);color:var(--paid,#1fa35a);}
 .settings-icon-badge.badge-pink{background:#fde3ee;color:#e0508a;}
@@ -684,6 +689,7 @@ button.mainCard{cursor:pointer;}
 .settings-section-desc{font-size:10.5px;color:var(--ink-soft);margin-top:1px;line-height:1.25;}
 .settings-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink);}
 .settings-section-head + .settings-row{border-top:none;}
+.settings-section-body > .settings-row:first-child{border-top:none;}
 .pill-btn{padding:5px 13px;border-radius:16px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:11.5px;font-weight:600;cursor:pointer;}
 .data-actions-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:2px;}
 .data-action-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:9px 2px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--accent);font-size:9.5px;font-weight:600;cursor:pointer;line-height:1.15;}
@@ -1288,6 +1294,14 @@ function load(){
     const raw = localStorage.getItem(STORAGE_KEY);
     if(raw) s = Object.assign(defaults, JSON.parse(raw));
   }catch(e){ console.error('load failed', e); }
+  // Aylık sayfada "önceki/sonraki ay" ile gezinilen ay (selectedMonth) oturum İÇİNDE kalıcı
+  // olarak saklanıyordu, ama bu, uygulama başka bir ayda kapatılıp SONRA (başka bir gün/ay)
+  // yeniden açıldığında seçili ayın gerçek "bu ay"ın gerisinde/ilerisinde donup kalmasına yol
+  // açıyordu — bu da "Son Ödeme" tarihinin eski ayı göstermesi ve o dönem için ayrılan KMH
+  // "Ödenecek Miktar"ın Aylık Borç'a hiç düşmemesi gibi hatalara sebep oluyordu (KMH satırı
+  // sadece gerçek bugünün ayında görünür). Bu yüzden her açılışta seçili ay gerçek bugünün ayına
+  // sıfırlanır; kullanıcı yine de o oturum içinde dilediği aya gezinebilir.
+  s.selectedMonth = monthKey(new Date());
   // Geriye dönük uyumluluk: eski KMH hesaplarında işlem geçmişi (transactions) yoktu,
   // sadece tek bir "Toplam Borç" sayısı vardı. Gerçek geçmişi bilmediğimiz için,
   // mevcut borcu "bugün itibarıyla tek bir kullanım" olarak kaydediyoruz — bundan
@@ -2150,7 +2164,7 @@ function renderCards(){
       const cfi = calculateCardInterest(c, state.selectedMonth);
       const cardRate = cfi.late ? CARD_LATE_MONTHLY_INTEREST_RATE : CARD_MONTHLY_INTEREST_RATE;
       const cardDailyInterest = cfi.carried>0 ? Math.round(cfi.carried * (cardRate/30) * (1 + CARD_BSMV_RATE)) : 0;
-      const cardDueDateStr = c.dueDay ? formatDMY(currentYm(), c.dueDay) : '—';
+      const cardDueDateStr = c.dueDay ? formatDMY(state.selectedMonth, c.dueDay) : '—';
       return `<article class="kr-card" data-action="open-modal" data-modal="cardStatement" data-id="${c.id}" data-lp-type="card" data-lp-id="${c.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
@@ -2246,13 +2260,13 @@ function renderKmh(){
       // Kullanım'da bakiye kalmış olsa bile henüz "bu ay ödenecek" bir şey yoktur. Sadece Ödenecek
       // Miktar > 0 iken durum (BEKLİYOR/GECİKTİ) hesaplanır.
       const hasCharge = planned > 0;
-      const statusKey = hasCharge ? periodStatus(false, currentYm(), k.dueDay) : 'odendi';
+      const statusKey = hasCharge ? periodStatus(false, state.selectedMonth, k.dueDay) : 'odendi';
       const statusCls = statusKey==='odendi' ? 'paid' : (statusKey==='gecikti' ? 'late' : 'waiting');
       const pillLabel = !hasCharge ? '&nbsp;' : (statusKey==='odendi' ? 'ÖDENDİ' : (statusKey==='gecikti' ? '! GECİKTİ' : '◷ BEKLİYOR'));
       const bankRate = k.customMonthlyRate!=null ? k.customMonthlyRate : kmhRateForBank(k.bankCode);
       const dailyInterest = Math.round(debt * (bankRate/30) * (1 + KMH_TAX_RATES.bsmv + KMH_TAX_RATES.kkdf));
       const estTotal = calculateKmhInterest(k.transactions||[], todayStr(), bankRate);
-      const dueDateStr = k.dueDay ? formatDMY(currentYm(), k.dueDay) : '—';
+      const dueDateStr = k.dueDay ? formatDMY(state.selectedMonth, k.dueDay) : '—';
       return `<article class="kr-card" data-action="open-modal" data-modal="kmhSettings" data-id="${k.id}" data-lp-type="kmh" data-lp-id="${k.id}" style="background:${bank.color}17;">
         <div class="kr-main">
           ${bankLogoHtml(bank, 'kr-bank-logo')}
@@ -2715,6 +2729,16 @@ async function connectMailAccount(){
     alert('Hesaba bağlanılamadı. Lütfen tekrar deneyin.\n\n' + (e && e.message ? e.message : ''));
   }
 }
+// MSAL hata kodundan, gerçekten kullanıcının yeniden giriş/onay yapması GEREKEN bir durum mu
+// (interaction_required/consent_required/login_required — bu durumda "Bağlantıyı Kes" edip
+// yeniden bağlanmak gerçekten gerekli), yoksa geçici bir ağ/CDN sorunu mu (bu durumda bağlantı
+// hâlâ geçerli, sadece bu taramanın tekrar denenmesi yeterli) olduğunu ayırt eder. Bu ayrım
+// olmadan her geçici ağ hatasında kullanıcıya "bağlantın koptu, yeniden bağlan" denmesi, bağlantı
+// hiç kesilmediği halde sürekli kesiliyormuş hissi veriyordu.
+function isMsalAuthError(e){
+  const code = (e && (e.errorCode || e.name)) || '';
+  return /interaction_required|consent_required|login_required|InteractionRequiredAuthError/i.test(code);
+}
 async function handleMailRedirectReturn(){
   try{
     const inst = await getMsalInstance();
@@ -2866,7 +2890,13 @@ async function scanMailSilently(manual){
   }catch(e){
     console.error('mail scan failed', e);
     if(manual){
-      alert('Tarama yapılamadı — bağlantının süresi dolmuş olabilir. "Bağlantıyı Kes" edip tekrar bağlanmayı deneyin.\n\n' + (e && e.message ? e.message : ''));
+      if(isMsalAuthError(e)){
+        alert('Bağlantının yeniden onaylanması gerekiyor. Lütfen Ayarlar\'dan "Bağlantıyı Kes" edip tekrar bağlanın.\n\n' + (e && e.message ? e.message : ''));
+      }else{
+        // Ağ/CDN kaynaklı geçici bir sorun — hesap bağlantısı hâlâ kayıtlı, kullanıcıyı
+        // "bağlantın koptu" diyerek gereksiz yere tekrar bağlanmaya yönlendirmiyoruz.
+        alert('Tarama şu an yapılamadı (bağlantı/ağ sorunu olabilir). Lütfen birazdan tekrar "Şimdi Tara" deneyin.\n\n' + (e && e.message ? e.message : ''));
+      }
     }
   }
 }
@@ -3200,14 +3230,18 @@ function performDataDelete(){
   render();
 }
 
-function settingsSectionHead(icon, colorClass, title, desc){
-  return `<div class="settings-section-head">
+// Her Ayarlar bölümü (Güvenlik/Bildirimler/Uygulama/Veriler/Tarama) açılır/kapanır bir panel:
+// başlığa dokununca içerik açılır/kapanır, yanındaki ok açıkken aşağı döner. Sayfa fazla yer
+// kaplamasın diye bölümler varsayılan olarak KAPALI başlar (bkz. renderSettings).
+function settingsSectionHead(icon, colorClass, title, desc, sectionKey, isOpen){
+  return `<button type="button" class="settings-section-head has-body" data-action="toggle-settings-section" data-section="${sectionKey}">
       <div class="settings-icon-badge ${colorClass}">${icon}</div>
-      <div style="min-width:0;">
+      <div style="min-width:0;flex:1;">
         <div style="font-size:14.5px;font-weight:700;color:var(--ink);">${esc(title)}</div>
         ${desc?`<div class="settings-section-desc">${esc(desc)}</div>`:''}
       </div>
-    </div>`;
+      <span class="settings-section-chev ${isOpen?'open':''}" aria-hidden="true">›</span>
+    </button>`;
 }
 function renderSettings(){
   $fab.style.display='none';
@@ -3228,6 +3262,10 @@ function renderSettings(){
   const notifPerm = (typeof Notification!=='undefined') ? Notification.permission : 'unsupported';
   const mailScan = state.mailScan || { connected:false, account:null, lastScanAt:null, pending:[] };
   const mailPendingCount = (mailScan.pending||[]).length;
+  // Bölümler sayfa çok yer kaplamasın diye varsayılan olarak KAPALI başlar; kullanıcı bir
+  // bölümü açtığında (ui.settingsOpen) o oturum boyunca açık kalır.
+  const sOpen = ui.settingsOpen || {};
+  const oSec = !!sOpen.security, oNotif = !!sOpen.notif, oApp = !!sOpen.app, oData = !!sOpen.data, oMail = !!sOpen.mail;
   return `<div class="giris-header">
       <button class="giris-settings-btn" data-action="nav" data-page="giris" title="Geri">←</button>
       <div class="giris-logo">${BRAND_HTML}</div>
@@ -3235,7 +3273,8 @@ function renderSettings(){
     </div>
     <button class="pill-btn" style="width:100%;margin-bottom:8px;font-size:13.5px;padding:11px;" data-action="open-tips">💡 İpuçları</button>
     <div class="settings-section">
-      ${settingsSectionHead('🛡️','badge-green','Güvenlik', locked?'Uygulama açılışta PIN ister':'PIN yalnızca veri işlemlerinde istenir')}
+      ${settingsSectionHead('🛡️','badge-green','Güvenlik', locked?'Uygulama açılışta PIN ister':'PIN yalnızca veri işlemlerinde istenir', 'security', oSec)}
+      <div class="settings-section-body ${oSec?'open':''}"><div>
       <div class="settings-row">
         <span>Uygulama Kilidi</span>
         <div class="switch ${locked?'on':''}" data-action="toggle-app-lock"><div class="knob"></div></div>
@@ -3245,10 +3284,12 @@ function renderSettings(){
         <button class="pill-btn" data-action="open-pin-change">Değiştir</button>
       </div>
       ${locked?`<div class="settings-row"><span>Otomatik Kilitleme</span><span style="color:var(--ink-soft);font-size:11px;">10 dk</span></div>`:''}
+      </div></div>
     </div>
 
     <div class="settings-section" style="margin-top:8px;">
-      ${settingsSectionHead('🔔','badge-pink','Bildirimler','Ödeme hatırlatmaları')}
+      ${settingsSectionHead('🔔','badge-pink','Bildirimler','Ödeme hatırlatmaları', 'notif', oNotif)}
+      <div class="settings-section-body ${oNotif?'open':''}"><div>
       <div class="settings-row">
         <span>Ödeme Bildirimleri</span>
         <div class="switch ${notifOn?'on':''}" data-action="toggle-notif-enabled"><div class="knob"></div></div>
@@ -3267,10 +3308,12 @@ function renderSettings(){
         <span>Bildirim Sesi</span>
         <div class="switch ${soundOn?'on':''}" data-action="toggle-notif-sound"><div class="knob"></div></div>
       </div>
+      </div></div>
     </div>
 
     <div class="settings-section" style="margin-top:8px;">
-      ${settingsSectionHead('🎨','badge-orange','Uygulama','Görünüm')}
+      ${settingsSectionHead('🎨','badge-orange','Uygulama','Görünüm', 'app', oApp)}
+      <div class="settings-section-body ${oApp?'open':''}"><div>
       <div class="settings-row" style="flex-direction:column;align-items:stretch;gap:5px;">
         <span>Görünüm</span>
         <div class="choice-row">
@@ -3279,10 +3322,12 @@ function renderSettings(){
           <button data-action="set-theme" data-theme="dark" class="${theme==='dark'?'active':''}">Koyu</button>
         </div>
       </div>
+      </div></div>
     </div>
 
     <div class="settings-section" style="margin-top:8px;">
-      ${settingsSectionHead('🗄️','badge-blue','Veriler', locked?'Yedekle, geri yükle veya sil — hepsi PIN ister':'Yedekle, geri yükle veya sil')}
+      ${settingsSectionHead('🗄️','badge-blue','Veriler', locked?'Yedekle, geri yükle veya sil — hepsi PIN ister':'Yedekle, geri yükle veya sil', 'data', oData)}
+      <div class="settings-section-body ${oData?'open':''}"><div>
       <div class="data-actions-row">
         <button class="data-action-btn" data-action="backup-data"><span aria-hidden="true">📤</span><span>Yedekle</span></button>
         <button class="data-action-btn" data-action="restore-data"><span aria-hidden="true">📥</span><span>Yükle</span></button>
@@ -3290,10 +3335,12 @@ function renderSettings(){
         <button class="data-action-btn data-action-danger" data-action="open-data-delete"><span aria-hidden="true">🗑️</span><span>Sil</span></button>
       </div>
       <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
+      </div></div>
     </div>
 
     <div class="settings-section" style="margin-top:8px;">
-      ${settingsSectionHead('📧','badge-purple','Otomatik Mail Tarama', mailScan.connected?('Bağlı: '+(mailScan.account||'')):'Kredi kartı/fatura e-postalarını otomatik bulur')}
+      ${settingsSectionHead('📧','badge-purple','Otomatik Mail Tarama', mailScan.connected?('Bağlı: '+(mailScan.account||'')):'Kredi kartı/fatura e-postalarını otomatik bulur', 'mail', oMail)}
+      <div class="settings-section-body ${oMail?'open':''}"><div>
       ${mailScan.connected ? `
         <div class="settings-row">
           <span>Bağlantı</span>
@@ -3311,6 +3358,7 @@ function renderSettings(){
         <p style="font-size:11.5px;color:var(--ink-soft);margin:0 0 8px;line-height:1.4;">Hesabını bağlarsan, uygulamayı her açtığında yeni kredi kartı/fatura e-postalarını sessizce kontrol eder ve onayına sunar. Hiçbir şey senin onayın olmadan kaydedilmez.</p>
         <button class="save-btn" data-action="connect-mail">📧 Hesabımı Bağla</button>
       `}
+      </div></div>
     </div>
     <div class="settings-footer-text">Finansçım • Sürüm 1.0</div>
   `;
@@ -4210,6 +4258,17 @@ document.body.addEventListener('click', function(e){
   }
 
   if(action==='nav'){ navigate(t.dataset.page, t.dataset.id?{loanDetailId:t.dataset.id}:null); return; }
+
+  // ---- Ayarlar sayfası: her bölüm (Güvenlik/Bildirimler/Uygulama/Veriler/Tarama) açılır/kapanır
+  // bir panel — sayfa çok yer kaplamasın diye varsayılan olarak kapalı başlıyor, oklu başlığa
+  // dokununca açılıp kapanıyor. Bu sadece görünüm tercihi olduğu için kalıcı kaydedilmiyor (ui).
+  if(action==='toggle-settings-section'){
+    ui.settingsOpen = ui.settingsOpen || {};
+    const key = t.dataset.section;
+    ui.settingsOpen[key] = !ui.settingsOpen[key];
+    render();
+    return;
+  }
 
   // ---- Ayarlar / PIN / Giriş Sayfası ----
   if(action==='open-pin-setup'){ startLockFlow('setup','modal'); return; }
